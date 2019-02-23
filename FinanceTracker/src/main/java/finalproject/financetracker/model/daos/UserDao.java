@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public final class UserDao {
     private static JdbcTemplate jdbcTemplate = new JdbcTemplate(SpringJdbcConfig.mysqlDataSource());
 
+
     public static void registerUser(User user) {
         String sql = "INSERT INTO final_project.users(username, password, first_name, last_name, email) " +
                 "VALUES (?, ?, ?, ?, ?);";
