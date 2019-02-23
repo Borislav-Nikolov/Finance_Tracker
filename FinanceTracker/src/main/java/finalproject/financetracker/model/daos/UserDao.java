@@ -18,6 +18,7 @@ public final class UserDao {
         String lastName = user.getLastName();
         String email = user.getEmail();
         jdbcTemplate.update(sql, username, password, firstName, lastName, email);
+        user.setUserId(getUserId(user));
     }
 
     public static User getUserByUsername(String username) {
@@ -44,8 +45,8 @@ public final class UserDao {
         return user;
     }
 
-    public static void getUserId(User user) {
-
+    public static int getUserId(User user) {
+        return getUserByUsername(user.getUsername()).getUserId();
     }
 
 }

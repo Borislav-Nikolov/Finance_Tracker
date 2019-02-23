@@ -45,13 +45,11 @@ public class UserController {
             resp.getWriter().append(ex.getMessage());
             return null;
         }
-        user.setUserId(UserDao.getUserByUsername(user.getUsername()).getUserId());
-        System.out.println("-------------------------- " + UserDao.getUserByUsername(user.getUsername()).getUserId() + " ----------------------------------");
         return user;
     }
 
     @PostMapping(value = "/login")
-    public void loginUser(@RequestBody LoginInfo loginInfo, HttpServletResponse resp, HttpSession session) throws IOException {
+    public User loginUser(@RequestBody LoginInfo loginInfo, HttpServletResponse resp, HttpSession session) throws IOException {
         String username = loginInfo.username;
         String password = loginInfo.password;
         User user = UserDao.getUserByUsername(username);
@@ -60,17 +58,74 @@ public class UserController {
                 !user.getPassword().equals(password)) {
                 resp.setStatus(400);
                 resp.getWriter().append("Wrong user or password.");
+                return null;
             } else {
-
+                session.setAttribute("User", user);
+                session.setAttribute("Username", user.getUsername());
+                session.setMaxInactiveInterval(60);
+                return user;
             }
         } else {
-            // TODO already logged in
+            resp.getWriter().append("You are already logged in.");
+            // TODO resp.sendRedirect("");
+            return null;
         }
     }
 
+    @PostMapping(value = "/logout")
+    public void logoutUser(HttpSession session, HttpServletResponse resp) throws IOException {
+        if (checkIfLoggedIn(session)) {
+            session.invalidate();
+            resp.getWriter().append("You've logged out successfully.");
+            // TODO resp.sendRedirect("");
+        } else {
+            resp.getWriter().append("You're already logged out.");
+            // TODO resp.sendRedirect("");
+        }
+    }
+
+
+    @GetMapping(value = "/profile/{username}")
+    public User viewProfile(@PathVariable("username") String username, HttpSession session, HttpServletResponse resp)
+                            throws IOException {
+        User user = UserDao.getUserByUsername(username);
+        if (!checkIfLoggedIn(session)) {
+            resp.setStatus(401);
+            resp.getWriter().append("You are not logged in.");
+            // TODO resp.sendRedirect("");
+            return null;
+        }
+        /* --- MAYBE (probably not) --- */
+        // fill accounts
+        // TODO user.setAccounts(AccountDao.getAllAcc());
+        // fill categories
+        // TODO user.setCategories(CategoryDao.getAllCategories());
+        /* --- MAYBE (probably not) --- */
+        return user;
+    }
+
+    @PostMapping(value = "/profile/edit/password")
+    public User changePassword(@RequestBody NewPassword newPass, HttpSession session, HttpServletResponse resp) throws IOException {
+        if (!checkIfLoggedIn(session)) {
+            resp.setStatus(401);
+            resp.getWriter().append("You are not logged in.");
+            // TODO resp.sendRedirect("");
+            return null;
+        } else {
+            User user = UserDao.getUserByUsername(session.getAttribute("Username").toString());
+            // TODO not finished
+        }
+        return null;
+    }
+
+
     public static boolean checkIfLoggedIn(HttpSession session) {
-        // TODO
-        return false;
+        if (session.isNew()) {
+            return false;
+        } else if (session.getAttribute("User") == null) {
+            return false;
+        }
+        return true;
     }
 
     private boolean checkIfUserOrEmailExist(User user) throws RegistrationCheckException {
@@ -108,6 +163,17 @@ public class UserController {
         private LoginInfo(String username, String password) {
             this.username = username;
             this.password = password;
+        }
+    }
+
+    private static class NewPassword {
+        private String oldPass;
+        private String newPass;
+        private String newPass2;
+        public NewPassword(String oldPass, String newPass, String newPass2) {
+            this.oldPass = oldPass;
+            this.newPass = newPass;
+            this.newPass2 = newPass2;
         }
     }
 
