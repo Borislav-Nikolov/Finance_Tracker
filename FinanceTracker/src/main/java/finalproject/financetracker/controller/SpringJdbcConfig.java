@@ -1,14 +1,17 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.model.exceptions.SQLCreateSchemaException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import javax.sql.DataSource;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.*;
+import java.util.Scanner;
 
 @Configuration
 @ComponentScan("finalproject.financetracker")
@@ -33,14 +36,27 @@ public class SpringJdbcConfig {
     private static final String USERNAME = "root";
     private static final String PASSWORD = "Cql100gLeshnik+";
 
+    private static Object obj;
+
+    SpringJdbcConfig(){
+        SpringJdbcConfig.obj = new Object();
+        try {
+            createSchemaIfNotExists();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     @Bean
-    public static DataSource mysqlDataSource() {
+    public static DataSource mysqlDataSource(){
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        System.out.println(dataSource.getUrl());
         dataSource.setDriverClassName(DRIVER);
         dataSource.setUrl(FULL_URL);
         dataSource.setUsername(USERNAME);
         dataSource.setPassword(PASSWORD);
+        if (SpringJdbcConfig.obj == null){
+                new SpringJdbcConfig();
+        }
         return dataSource;
     }
 
@@ -55,4 +71,40 @@ public class SpringJdbcConfig {
             rs.close();
         }
     }
+
+
+    public static void createSchemaIfNotExists() throws SQLException{
+        StringBuilder sql = new StringBuilder();
+        File file = new File("schemaSQL.txt");
+
+        if (file.exists()) {
+            System.out.println("SQL schema query file - found!");
+            Scanner sc = null;
+            try {
+                sc = new Scanner(file);
+
+            } catch (FileNotFoundException e) {
+                System.out.println("Error creating DB schema! File " + file.getName() + " read error! " + e.getMessage());
+                return;
+            }
+
+            while (sc.hasNextLine()) {
+                sql.append(sc.nextLine());
+            }
+            String sqlString = sql.toString();
+            PreparedStatement ps =SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sqlString);
+            ps.executeUpdate();
+            if (ps!=null){
+                ps.close();
+            }
+        } else {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println("File with schema create query not found!");
+        }
+    }
+
 }

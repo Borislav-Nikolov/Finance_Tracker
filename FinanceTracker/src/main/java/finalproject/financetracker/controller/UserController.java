@@ -27,13 +27,13 @@ public class UserController {
 
     /* ----- STATUS CHANGES ----- */
 
-    @PostMapping(value ="/register")
+    @PostMapping(value = "/register")
     public User registerUser(@RequestBody RegistrationInfo pass2,
                              HttpServletResponse resp) throws IOException {
         User user = pass2.user;
         String password2 = pass2.password2;
         if ((user.getPassword() == null || password2 == null) ||
-           (user.getPassword().isEmpty() || password2.isEmpty())) {
+                (user.getPassword().isEmpty() || password2.isEmpty())) {
             resp.setStatus(400);
             resp.getWriter().append("Input valid passwords.");
             resp.sendRedirect("/register.html");
@@ -41,8 +41,8 @@ public class UserController {
         }
         try {
             if (!this.checkIfUserOrEmailExist(user) &&
-                password2.equals(user.getPassword()) &&
-                this.validateEmail(user.getEmail())) {
+                    password2.equals(user.getPassword()) &&
+                    this.validateEmail(user.getEmail())) {
                 if (user.getFirstName() != null && user.getFirstName().isEmpty()) {
                     user.setFirstName(null);
                 }
@@ -73,14 +73,14 @@ public class UserController {
         User user = UserDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
             if (UserDao.getUserByUsername(username) == null ||
-                !user.getPassword().equals(password)) {
+                    !user.getPassword().equals(password)) {
                 resp.setStatus(400);
                 resp.getWriter().append("Wrong user or password.");
                 return null;
             } else {
-                session.setAttribute("User", user);
+                session.setAttribute("User", AccountController.toJson(user));
                 session.setAttribute("Username", user.getUsername());
-                session.setMaxInactiveInterval(60);
+                session.setMaxInactiveInterval(-1);
                 return user;
             }
         } else {
@@ -106,7 +106,7 @@ public class UserController {
 
     @GetMapping(value = "/profile/{username}")
     public User viewProfile(@PathVariable("username") String username, HttpSession session, HttpServletResponse resp)
-                            throws IOException {
+            throws IOException {
         User user = UserDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
             resp.setStatus(401);
@@ -116,7 +116,7 @@ public class UserController {
         }
         /* --- MAYBE (probably not) --- */
         // fill accounts
-        // TODO user.setAccounts(AccountDao.getAllAcc());
+        // TODO user.setAccounts(AccountDao.getAll());
         // fill categories
         // TODO user.setCategories(CategoryDao.getAllCategories());
         /* --- MAYBE (probably not) --- */
@@ -164,7 +164,7 @@ public class UserController {
 
     @PostMapping(value = "/profile/edit/deleteProfile")
     public void deleteProfile(@RequestBody Map<String, String> password, HttpSession session, HttpServletResponse resp)
-                                throws IOException {
+            throws IOException {
         if (!isLoggedIn(session)) {
             resp.setStatus(401);
             resp.getWriter().append("You are not logged in.");
@@ -177,98 +177,105 @@ public class UserController {
                 UserDao.deleteUser(user);
                 resp.sendRedirect("/index.html");
             }
+
         }
     }
 
-    /* ----- VALIDATIONS ----- */
+        /* ----- VALIDATIONS ----- */
 
-    public static boolean isLoggedIn(HttpSession session) {
-        return !(session.isNew() || session.getAttribute("User") == null);
-    }
-
-    private boolean checkIfUserOrEmailExist(User user) throws RegistrationCheckException {
-        if (UserDao.getUserByUsername(user.getUsername()) != null) {
-            throw new UserAlreadyExistsException("User already exists.");
-        } else if (UserDao.getUserByEmail(user.getEmail()) != null) {
-            throw new EmailAlreadyUsedException("Email already used.");
+        public static boolean isLoggedIn (HttpSession session){
+            return !(session.isNew() || session.getAttribute("User") == null);
         }
-        return false;
-    }
 
-    private boolean validateEmail(String email) throws InvalidEmailException {
-        boolean result = true;
-        try {
-            InternetAddress emailAddr = new InternetAddress(email);
-            emailAddr.validate();
-        } catch (AddressException ex) {
-            throw new InvalidEmailException("Invalid email address.");
+        private boolean checkIfUserOrEmailExist (User user) throws RegistrationCheckException {
+            if (UserDao.getUserByUsername(user.getUsername()) != null) {
+                throw new UserAlreadyExistsException("User already exists.");
+            } else if (UserDao.getUserByEmail(user.getEmail()) != null) {
+                throw new EmailAlreadyUsedException("Email already used.");
+            }
+            return false;
         }
-        return result;
-    }
 
-    /* ----- INNER CLASSES ----- */
-
-    /* ----- DTO classes ----- */
-
-    private static class RegistrationInfo {
-        private String password2;
-        private User user;
-        private RegistrationInfo(String username, String password, String firstName, String lastName, String email, String password2) {
-            this.user = new User(username, password, firstName, lastName, email);
-            this.password2 = password2;
+        private boolean validateEmail (String email) throws InvalidEmailException {
+            boolean result = true;
+            try {
+                InternetAddress emailAddr = new InternetAddress(email);
+                emailAddr.validate();
+            } catch (AddressException ex) {
+                throw new InvalidEmailException("Invalid email address.");
+            }
+            return result;
         }
+
+        /* ----- INNER CLASSES ----- */
+
+        /* ----- DTO classes ----- */
+
+        private static class RegistrationInfo {
+            private String password2;
+            private User user;
+
+            private RegistrationInfo(String username, String password, String firstName, String lastName, String email, String password2) {
+                this.user = new User(username, password, firstName, lastName, email);
+                this.password2 = password2;
+            }
+        }
+
+        private static class LoginInfo {
+            private String username;
+            private String password;
+
+            private LoginInfo(String username, String password) {
+                this.username = username;
+                this.password = password;
+            }
+        }
+
+        private static class NewPassword {
+            private String oldPass;
+            private String newPass;
+            private String newPass2;
+
+            private NewPassword(String oldPass, String newPass, String newPass2) {
+                this.oldPass = oldPass;
+                this.newPass = newPass;
+                this.newPass2 = newPass2;
+            }
+        }
+
+        private static class NewEmail {
+            private String password;
+            private String newEmail;
+
+            private NewEmail(String password, String newEmail) {
+                this.password = password;
+                this.newEmail = newEmail;
+            }
+        }
+
+        /* ----- UserController specific exceptions ----- */
+
+        private static class EmailAlreadyUsedException extends RegistrationCheckException {
+            private EmailAlreadyUsedException(String message) {
+                super(message);
+            }
+        }
+        private static class InvalidEmailException extends RegistrationCheckException {
+            private InvalidEmailException(String message) {
+                super(message);
+            }
+        }
+        private static class UserAlreadyExistsException extends RegistrationCheckException {
+            private UserAlreadyExistsException(String message) {
+                super(message);
+            }
+        }
+        private static class RegistrationCheckException extends Exception {
+            private RegistrationCheckException(String message) {
+                super(message);
+            }
+        }
+
+
     }
 
-    private static class LoginInfo {
-        private String username;
-        private String password;
-        private LoginInfo(String username, String password) {
-            this.username = username;
-            this.password = password;
-        }
-    }
-
-    private static class NewPassword {
-        private String oldPass;
-        private String newPass;
-        private String newPass2;
-        private NewPassword(String oldPass, String newPass, String newPass2) {
-            this.oldPass = oldPass;
-            this.newPass = newPass;
-            this.newPass2 = newPass2;
-        }
-    }
-
-    private static class NewEmail {
-        private String password;
-        private String newEmail;
-        private NewEmail(String password, String newEmail) {
-            this.password = password;
-            this.newEmail = newEmail;
-        }
-    }
-
-    /* ----- UserController specific exceptions ----- */
-
-    private static class EmailAlreadyUsedException extends RegistrationCheckException {
-        private EmailAlreadyUsedException(String message) {
-            super(message);
-        }
-    }
-    private static class InvalidEmailException extends RegistrationCheckException {
-        private InvalidEmailException(String message) {
-            super(message);
-        }
-    }
-    private static class UserAlreadyExistsException extends RegistrationCheckException {
-        private UserAlreadyExistsException(String message) {
-            super(message);
-        }
-    }
-    private static class RegistrationCheckException extends Exception {
-        private RegistrationCheckException(String message) {
-            super(message);
-        }
-    }
-
-}
