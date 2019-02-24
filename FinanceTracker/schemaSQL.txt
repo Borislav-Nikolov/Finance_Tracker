@@ -1,7 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS final_project;
 USE final_project;
 CREATE TABLE IF NOT EXISTS users (
-	user_id INT PRIMARY KEY AUTO_INCREMENT,
+	id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(45) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL,
     first_name VARCHAR(45),
@@ -10,12 +10,11 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX username_idx (username ASC)
 );
 CREATE TABLE IF NOT EXISTS images (
-	image_id INT PRIMARY KEY AUTO_INCREMENT,
+	id INT PRIMARY KEY AUTO_INCREMENT,
     uri VARCHAR(200) NOT NULL
 );
-
 CREATE TABLE IF NOT EXISTS categories (
-	category_id INT PRIMARY KEY AUTO_INCREMENT,
+	id INT PRIMARY KEY AUTO_INCREMENT,
     category_name VARCHAR(45) NOT NULL,
     is_income TINYINT(1) NOT NULL,
     user_id INT,
@@ -28,7 +27,7 @@ CREATE TABLE IF NOT EXISTS categories (
     REFERENCES images(image_id)
 );
 CREATE TABLE IF NOT EXISTS accounts (
-	account_id INT PRIMARY KEY AUTO_INCREMENT,
+	id INT PRIMARY KEY AUTO_INCREMENT,
     account_name VARCHAR(45) NOT NULL,
     amount DOUBLE NOT NULL,
     user_id INT NOT NULL,
@@ -37,7 +36,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     REFERENCES users(user_id)
 );
 CREATE TABLE IF NOT EXISTS transactions (
-	transaction_id INT PRIMARY KEY AUTO_INCREMENT,
+	id INT PRIMARY KEY AUTO_INCREMENT,
     transaction_name VARCHAR(45) NOT NULL,
     amount DOUBLE NOT NULL,
     execution_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -51,11 +50,12 @@ CREATE TABLE IF NOT EXISTS transactions (
     REFERENCES categories(category_id)
 );
 CREATE TABLE IF NOT EXISTS planned_transactions (
-	pt_id INT PRIMARY KEY AUTO_INCREMENT,
+	id INT PRIMARY KEY AUTO_INCREMENT,
     pt_name VARCHAR(45) NOT NULL,
     pt_amount DOUBLE NOT NULL,
     next_execution_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    period LONG,
+    day_period INT,
+    month_period INT,
     user_id INT,
     category_id INT NOT NULL,
     INDEX user_fk_idx (user_id ASC) ,
@@ -65,14 +65,14 @@ CREATE TABLE IF NOT EXISTS planned_transactions (
     CONSTRAINT pt_category_fk FOREIGN KEY (category_id)
     REFERENCES categories(category_id)
 );
-CREATE TABLE IF NOT EXISTS budget (
-	budget_id INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS budgets (
+	id INT PRIMARY KEY AUTO_INCREMENT,
     budget_name VARCHAR(45) NOT NULL,
     amount DOUBLE NOT NULL,
     starting_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     end_date TIMESTAMP,
     category_id INT NOT NULL,
     INDEX category_fk_idx (category_id ASC) ,
-    CONSTRAINT budg_category_fk FOREIGN KEY (category_id)
+    CONSTRAINT budget_category_fk FOREIGN KEY (category_id)
     REFERENCES categories(category_id)
 );

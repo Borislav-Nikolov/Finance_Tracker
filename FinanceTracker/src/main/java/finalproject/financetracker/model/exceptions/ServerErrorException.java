@@ -5,13 +5,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-public class SeverErrorException extends Exception {
+public class ServerErrorException extends Exception {
 
-    public SeverErrorException(){
+    public ServerErrorException(){
         super("Server error occurred");
     }
 
-    public SeverErrorException(String msg){
+    public ServerErrorException(String msg){
         super(msg);
     }
 }
