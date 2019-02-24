@@ -53,16 +53,16 @@ public class UserController {
         String username = loginInfo.username;
         String password = loginInfo.password;
         User user = UserDao.getUserByUsername(username);
-        if (!checkIfLoggedIn(session)) {
+        if (!isLoggedIn(session)) {
             if (UserDao.getUserByUsername(username) == null ||
                 !user.getPassword().equals(password)) {
                 resp.setStatus(400);
                 resp.getWriter().append("Wrong user or password.");
                 return null;
             } else {
-                session.setAttribute("User", user);
+                session.setAttribute("User",AccountController.toJson(user));
                 session.setAttribute("Username", user.getUsername());
-                session.setMaxInactiveInterval(60);
+                session.setMaxInactiveInterval(-1);
                 return user;
             }
         } else {
@@ -74,7 +74,7 @@ public class UserController {
 
     @PostMapping(value = "/logout")
     public void logoutUser(HttpSession session, HttpServletResponse resp) throws IOException {
-        if (checkIfLoggedIn(session)) {
+        if (isLoggedIn(session)) {
             session.invalidate();
             resp.getWriter().append("You've logged out successfully.");
             // TODO resp.sendRedirect("");
@@ -89,7 +89,7 @@ public class UserController {
     public User viewProfile(@PathVariable("username") String username, HttpSession session, HttpServletResponse resp)
                             throws IOException {
         User user = UserDao.getUserByUsername(username);
-        if (!checkIfLoggedIn(session)) {
+        if (!isLoggedIn(session)) {
             resp.setStatus(401);
             resp.getWriter().append("You are not logged in.");
             // TODO resp.sendRedirect("");
@@ -97,7 +97,7 @@ public class UserController {
         }
         /* --- MAYBE (probably not) --- */
         // fill accounts
-        // TODO user.setAccounts(AccountDao.getAllAcc());
+        // TODO user.setAccounts(AccountDao.getAll());
         // fill categories
         // TODO user.setCategories(CategoryDao.getAllCategories());
         /* --- MAYBE (probably not) --- */
@@ -106,7 +106,7 @@ public class UserController {
 
     @PostMapping(value = "/profile/edit/password")
     public User changePassword(@RequestBody NewPassword newPass, HttpSession session, HttpServletResponse resp) throws IOException {
-        if (!checkIfLoggedIn(session)) {
+        if (!isLoggedIn(session)) {
             resp.setStatus(401);
             resp.getWriter().append("You are not logged in.");
             // TODO resp.sendRedirect("");
@@ -119,7 +119,7 @@ public class UserController {
     }
 
 
-    public static boolean checkIfLoggedIn(HttpSession session) {
+    public static boolean isLoggedIn(HttpSession session) {
         if (session.isNew()) {
             return false;
         } else if (session.getAttribute("User") == null) {
@@ -197,5 +197,6 @@ public class UserController {
             super(message);
         }
     }
+
 
 }
