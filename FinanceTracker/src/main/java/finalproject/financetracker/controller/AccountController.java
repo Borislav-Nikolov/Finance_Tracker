@@ -30,7 +30,7 @@ public class AccountController {
             a.getAccountName().isEmpty()||
             a.getAmount()<= 0 ||
             a.getUserId()<=0||
-            !UserController.checkIfLoggedIn(session)){
+            !UserController.isLoggedIn(session)){
 
             throw new InvalidRequestDataException();
         }

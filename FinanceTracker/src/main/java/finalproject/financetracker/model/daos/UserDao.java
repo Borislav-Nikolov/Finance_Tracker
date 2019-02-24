@@ -8,19 +8,59 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 public final class UserDao {
     private static JdbcTemplate jdbcTemplate = new JdbcTemplate(SpringJdbcConfig.mysqlDataSource());
-
-
+    private UserDao(){}
     public static void registerUser(User user) {
-        String sql = "INSERT INTO final_project.users(username, password, first_name, last_name, email) " +
-                "VALUES (?, ?, ?, ?, ?);";
+        insertUserIntoChosenTable("users", user);
+        user.setUserId(getUserId(user));
+    }
+
+    public static void deleteUser(User user) {
+        insertUserIntoChosenTable("deleted_users", user);
+        String deleteSQL = "DELETE FROM final_project.users WHERE user_id = ?;";
+        long userID = getUserId(user);
+        jdbcTemplate.update(deleteSQL, userID);
+
+    }
+
+    private static void insertUserIntoChosenTable(String table, User user) {
+        String sql = "INSERT INTO final_project." + table + "(username, password, first_name, last_name, email) " +
+            "VALUES (?, ?, ?, ?, ?);";
         String username = user.getUsername();
         String password = user.getPassword();
         String firstName = user.getFirstName();
         String lastName = user.getLastName();
         String email = user.getEmail();
         jdbcTemplate.update(sql, username, password, firstName, lastName, email);
-        user.setUserId(getUserId(user));
     }
+
+    public static void insertAdmin() {
+        long adminId = 1;
+        String adminName = "Admin";
+        String password = "adminpass123";
+        String firstName = "Big";
+        String lastName = "Boss";
+        String email = "admin@fintrack.ft";
+        if (getUserByUsername(adminName) != null) return;
+        jdbcTemplate.update(
+                "INSERT INTO final_project.users(user_id, username, password, first_name, last_name, email) " +
+                        "VALUES (?, ?, ?, ?, ?, ?);", adminId, adminName, password, firstName, lastName, email
+        );
+    }
+
+    /* ----- UPDATE QUERIES ----- */
+    public static void updatePassword(User user, String newPass) {
+        String sql = "UPDATE final_project.users SET password = ? WHERE user_id = ?;";
+        long id = getUserId(user);
+        jdbcTemplate.update(sql, newPass, id);
+    }
+
+    public static void updateEmail(User user, String newEmail) {
+        String sql = "UPDATE final_project.users SET email = ? WHERE user_id = ?;";
+        long id = getUserId(user);
+        jdbcTemplate.update(sql, newEmail, id);
+    }
+
+    /* ----- SELECT QUERIES ----- */
 
     public static User getUserByUsername(String username) {
         User user = getUserByStringParam("username", username);
@@ -46,7 +86,7 @@ public final class UserDao {
         return user;
     }
 
-    public static int getUserId(User user) {
+    public static long getUserId(User user) {
         return getUserByUsername(user.getUsername()).getUserId();
     }
 

@@ -72,7 +72,7 @@ public class AccountDao {
                 throw new InvalidRequestDataException();
             }
 
-            if (!UserController.checkIfLoggedIn(req.getSession())) {
+            if (!UserController.isLoggedIn(req.getSession())) {
                 throw new NotLoggedInException();
             }
 
