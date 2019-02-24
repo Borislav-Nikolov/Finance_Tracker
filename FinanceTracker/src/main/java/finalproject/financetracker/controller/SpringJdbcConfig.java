@@ -17,16 +17,16 @@ import java.util.Scanner;
 @ComponentScan("finalproject.financetracker")
 public class SpringJdbcConfig {
 
-    private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
-    private static final String BASE_URL = "jdbc:mysql://";
-    private static final String HOST = "127.0.0.1";
-    private static final String PORT = "3306";
-    private static final String DATABASE_NAME = "hr?allowMultiQueries=true&useUnicode=yes&characterEncoding=UTF-8";
-    private static final String FULL_URL = BASE_URL + HOST + ":" + PORT + "/" + DATABASE_NAME;
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "1234";
+//    private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
+//    private static final String BASE_URL = "jdbc:mysql://";
+//    private static final String HOST = "127.0.0.1";
+//    private static final String PORT = "3306";
+//    private static final String DATABASE_NAME = "hr?allowMultiQueries=true&useUnicode=yes&characterEncoding=UTF-8";
+//    private static final String FULL_URL = BASE_URL + HOST + ":" + PORT + "/" + DATABASE_NAME;
+//    private static final String USERNAME = "root";
+//    private static final String PASSWORD = "1234";
 
-    /*private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
+    private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
     private static final String BASE_URL = "jdbc:mysql://";
     private static final String HOST = "127.0.0.1";
     private static final String PORT = "3306";
@@ -34,7 +34,7 @@ public class SpringJdbcConfig {
     // "jdbc:mysql://127.0.0.1:3306/final_project"
     private static final String FULL_URL = BASE_URL + HOST + ":" + PORT + "/" + DATABASE_NAME;
     private static final String USERNAME = "root";
-    private static final String PASSWORD = "Cql100gLeshnik+";*/
+    private static final String PASSWORD = "Cql100gLeshnik+";
 
     private static Object obj;
 

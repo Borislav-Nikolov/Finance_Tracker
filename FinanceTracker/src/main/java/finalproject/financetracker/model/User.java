@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class User {
-    private int userId;
+    private long userId;
     private String username;
     private String password;
     private String firstName;

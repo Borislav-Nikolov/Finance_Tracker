@@ -43,36 +43,45 @@ public class AccountController {
             NotLoggedInException,
             IOException {
 
-        //TODO to be removed after testing
-        System.out.println("!isLogged " + !UserController.isLoggedIn(sess));
-        System.out.println("!isValidAccountData " + !isValidAccount(a));
 
-        if (!isValidAccount(a)) {
-            throw new InvalidRequestDataException();
-        }
-        if (!UserController.isLoggedIn(sess)) {
-            throw new NotLoggedInException();
-        }
-        User u = getUserFromSession(sess);
-
-        if (!(u.getUserId() == a.getUserId())) {
+        if (a == null ||
+            a.getAccountName()==null||
+            a.getAccountName().isEmpty()||
+            a.getAmount()<= 0 ||
+            a.getUserId()<=0||
+            !UserController.isLoggedIn(sess)) {
 
             //TODO to be removed after testing
-            System.out.println("a.id " + a.getUserId());
-            System.out.println("u.id " + u.getUserId());
-            throw new NotLoggedInException("not logged in a.userId!=u.userId");
-        }
-        Account[] checkAcc = dao.getAllAsc(a.getUserId());
+            System.out.println("!isLogged " + !UserController.isLoggedIn(sess));
+            System.out.println("!isValidAccountData " + !isValidAccount(a));
 
-        //TODO to be removed after testing
-        System.out.println(Arrays.toString(checkAcc));
 
-        for (Account account : checkAcc) {
-            if (a.getAccountName().equalsIgnoreCase(account.getAccountName())) {
-                throw new ForbiddenRequestException("account with such name exists");
+            if (!isValidAccount(a)) {
+                throw new InvalidRequestDataException();
+            }
+            if (!UserController.isLoggedIn(sess)) {
+                throw new NotLoggedInException();
+            }
+            User u = getUserFromSession(sess);
+
+            if (!(u.getUserId() == a.getUserId())) {
+
+                //TODO to be removed after testing
+                System.out.println("a.id " + a.getUserId());
+                System.out.println("u.id " + u.getUserId());
+                throw new NotLoggedInException("not logged in a.userId!=u.userId");
+            }
+            Account[] checkAcc = dao.getAllAsc(a.getUserId());
+
+            //TODO to be removed after testing
+            System.out.println(Arrays.toString(checkAcc));
+
+            for (Account account : checkAcc) {
+                if (a.getAccountName().equalsIgnoreCase(account.getAccountName())) {
+                    throw new ForbiddenRequestException("account with such name exists");
+                }
             }
         }
-
         long accId = dao.addAcc(a);
 
         //TODO to be removed after testing
@@ -171,7 +180,7 @@ public class AccountController {
         throw new NotFoundException("st: not found");
     }
 
-  /*  @RequestMapping(value = "/all", method = RequestMethod.POST)
+    /*@RequestMapping(value = "/all", method = RequestMethod.POST)
     @ResponseBody
     public void allAcc(HttpServletResponse resp) throws NotLoggedInException, IOException, SQLException, NotFoundException {
         resp.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
