@@ -146,15 +146,17 @@ public class AccountController {
                 throw new ForbiddenRequestException("account with such name exists");
             }
         }
-
         dao.updateAcc(a);
         return a;
     }
 
-    @RequestMapping(value = "/all/{desc}", method = RequestMethod.GET)
+    @RequestMapping(value = "/all/{desc}", method = RequestMethod.POST)
     @ResponseBody
     public Account[] allAccOrdered(@RequestBody User u, @PathVariable(name = "desc") String order, HttpSession sess) throws NotLoggedInException, IOException, SQLException, NotFoundException, InvalidRequestDataException {
-        if (u== null) throw new InvalidRequestDataException();
+
+        if (u== null){
+            throw new InvalidRequestDataException();
+        }
         User sessUser = getUserFromSession(sess);
         if (!UserController.isLoggedIn(sess) || sessUser.getUserId() != u.getUserId()) {
             throw new NotLoggedInException();
@@ -166,13 +168,13 @@ public class AccountController {
             return dao.getAllAsc(u.getUserId());
         }
         //TODO remove msg
-        throw new NotFoundException("fdasghf");
+        throw new NotFoundException("st: not found");
     }
 
-   /* @RequestMapping(value = "/all", method = RequestMethod.GET)
+  /*  @RequestMapping(value = "/all", method = RequestMethod.POST)
     @ResponseBody
     public void allAcc(HttpServletResponse resp) throws NotLoggedInException, IOException, SQLException, NotFoundException {
-        resp.setStatus(HttpServletResponse.SC_FOUND);
+        resp.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
         resp.sendRedirect("/all/asc");
     }*/
 
@@ -187,13 +189,18 @@ public class AccountController {
     public static User getUserFromSession(HttpSession sess) throws NotLoggedInException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
         if(sess.isNew()){
+            throw new NotLoggedInException();
+        }
+        if(sess.getAttribute("User") == null){
             throw new NotLoggedInException();
         }
         User u = mapper.readValue(sess.getAttribute("User").toString(), User.class);
         if (u == null) {
             throw new NotLoggedInException();
         }
+        System.out.println(u);
         return u;
     }
 

@@ -24,10 +24,11 @@ public class AccountDao {
     }
 
     public void updateAcc(Account acc) throws SQLException {
-        String sql = "USE final_project; UPDATE accounts SET account_name = ?, amount = ?;";
+        String sql = "USE final_project; UPDATE accounts SET account_name = ?, amount = ? WHERE account_id = ?;";
         PreparedStatement ps = SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
         ps.setString(1, acc.getAccountName());
         ps.setDouble(2, acc.getAmount());
+        ps.setLong(3, acc.getAccountId());
         ps.executeUpdate();
         mySQL.closeStatement(ps);
     }
@@ -74,7 +75,7 @@ public class AccountDao {
     }
 
     public Account[] getAllAsc(long userId) throws SQLException {
-        return getAll(userId,QUERY_RETURN_MAX_LIMIT,QUERY_RETURN_OFFSET_DEFAULT, SQLOderBy.DESC);
+        return getAll(userId,QUERY_RETURN_MAX_LIMIT,QUERY_RETURN_OFFSET_DEFAULT, SQLOderBy.ASC);
     }
 
     public Account[] getAllDesc(long userId) throws SQLException {
@@ -86,6 +87,7 @@ public class AccountDao {
     }
 
     private Account[] getAllWhere(SQLColumnName param, SQLCompareOperator operator, long idColumnValueLong, int limit, int offset, SQLOderBy order) throws SQLException {
+        System.out.println(order);
         String sql =
                 "SELECT a.account_id, a.account_name, a.amount, a.user_id " +
                 "FROM final_project.accounts AS a " +
