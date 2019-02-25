@@ -1,8 +1,14 @@
 package finalproject.financetracker.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import finalproject.financetracker.model.Account;
+import finalproject.financetracker.model.Transaction;
+import finalproject.financetracker.model.User;
+import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.model.exceptions.MyException;
+import finalproject.financetracker.model.exceptions.NotLoggedInException;
 import finalproject.financetracker.model.exceptions.ServerErrorException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -10,6 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -18,10 +25,54 @@ import javax.servlet.http.HttpServletResponse;
 @RestController
 public abstract class AbstractController {
 
+    //---------------------< Methods >----------------------//
+
+    public static boolean isValidAccount(Account a) {
+        return a != null &&
+                a.getAccountName() != null &&
+                !a.getAccountName().isEmpty() &&
+                !(a.getAmount() <= 0) &&
+                a.getUserId() > 0;
+    }
+
+    public static boolean isNotValidTransaction(Transaction t) {
+        return t == null ||
+                t.getTransactionName() == null ||
+                t.getTransactionName().isEmpty() ||
+                (t.getAmount() <= 0) ||
+                t.getUserId() <= 0 ||
+                t.getCategoryId() <= 0 ||
+                t.getAccountId() <= 0 ||
+                t.getExecutionDate()==null;
+
+    }
+
+    public static User getLoggedUserWithIdFromSession(HttpSession sess)
+            throws
+            NotLoggedInException,
+            IOException,
+            InvalidRequestDataException {
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+        if(!UserController.isLoggedIn(sess)){
+            throw new NotLoggedInException();
+        }
+        User u = mapper.readValue(sess.getAttribute("User").toString(), User.class);
+
+        if (u == null || u.getUserId() <=0) {
+            throw new InvalidRequestDataException();
+        }
+        return u;
+    }
+
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(u);
     }
+
+    //---------------------< /Methods >----------------------//
 
     //--------------Exception Handlers---------------------//
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)

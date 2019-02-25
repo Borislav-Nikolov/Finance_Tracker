@@ -96,31 +96,31 @@ public class CategoryDao {
     }
 
     public void addAllPredefined() {
-        addCategory(new Category("Clothes", false, 1,
+        addCategory(new Category("Clothes", false, 0,
                 imageDao.getImageByFileName("shirt_icon.png")));
-        addCategory(new Category("Kids", false, 1,
+        addCategory(new Category("Kids", false, 0,
                 imageDao.getImageByFileName("child_icon.png")));
-        addCategory(new Category("Toys", false, 1,
+        addCategory(new Category("Toys", false, 0,
                 imageDao.getImageByFileName("toy_icon.png")));
-        addCategory(new Category("Work", true, 1,
+        addCategory(new Category("Work", true, 0,
                 imageDao.getImageByFileName("computer_icon.png")));
-        addCategory(new Category("Electronics", false, 1,
+        addCategory(new Category("Electronics", false, 0,
                 imageDao.getImageByFileName("smartphone_icon.png")));
-        addCategory(new Category("Pets", false, 1,
+        addCategory(new Category("Pets", false, 0,
                 imageDao.getImageByFileName("pawprint_icon.png")));
-        addCategory(new Category("Child support", true, 1,
+        addCategory(new Category("Child support", true, 0,
                 imageDao.getImageByFileName("child_icon.png")));
-        addCategory(new Category("Scholarship", true, 1,
+        addCategory(new Category("Scholarship", true, 0,
                 imageDao.getImageByFileName("book_icon.png")));
-        addCategory(new Category("Bonus", true, 1,
+        addCategory(new Category("Bonus", true, 0,
                 imageDao.getImageByFileName("laptop_icon.png")));
-        addCategory(new Category("Gift", true, 1,
+        addCategory(new Category("Gift", true, 0,
                 imageDao.getImageByFileName("baloons_icon.png")));
-        addCategory(new Category("Investment income", true, 1,
+        addCategory(new Category("Investment income", true, 0,
                 imageDao.getImageByFileName("watch_icon.png")));
-        addCategory(new Category("Entertainment", false, 1,
+        addCategory(new Category("Entertainment", false, 0,
                 imageDao.getImageByFileName("controller_icon.png")));
-        addCategory(new Category("Car", false, 1,
+        addCategory(new Category("Car", false, 0,
                 imageDao.getImageByFileName("car_icon.png")));
     }
 

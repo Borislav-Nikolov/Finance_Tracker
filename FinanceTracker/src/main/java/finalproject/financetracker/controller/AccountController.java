@@ -33,6 +33,8 @@ public class AccountController extends AbstractController{
         this.dao = dao;
     }
 
+    //-----------------------< Web Services >----------------------//
+
     //--------------add account for given user---------------------//
     @RequestMapping(value = "/add",
             method = RequestMethod.POST,
@@ -89,7 +91,7 @@ public class AccountController extends AbstractController{
     }
 
     //--------------update account---------------------//
-    @RequestMapping(value = "/update", method = RequestMethod.POST)
+    @RequestMapping(value = "/update", method = RequestMethod.PUT)
     @ResponseBody
     public Account updateAcc(@RequestBody Account a,
                              HttpSession sess)
@@ -192,32 +194,7 @@ public class AccountController extends AbstractController{
         jn.put("accounts", accounts);
         return jn;
     }
+    //-----------------------< /Web Services >----------------------//
 
-    public static boolean isValidAccount(Account a) {
-        return a != null &&
-                a.getAccountName() != null &&
-                !a.getAccountName().isEmpty() &&
-                !(a.getAmount() <= 0) &&
-                a.getUserId() > 0;
-    }
 
-    public static User getLoggedUserWithIdFromSession(HttpSession sess)
-            throws
-            NotLoggedInException,
-            IOException,
-            InvalidRequestDataException {
-
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-        if(!UserController.isLoggedIn(sess)){
-            throw new NotLoggedInException();
-        }
-        User u = mapper.readValue(sess.getAttribute("User").toString(), User.class);
-
-        if (u == null || u.getUserId() <=0) {
-            throw new InvalidRequestDataException();
-        }
-        return u;
-    }
 }

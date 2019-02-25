@@ -68,7 +68,7 @@ public class UserController extends AbstractController {
                     !user.getPassword().equals(password)) {
                 throw new InvalidLoginInfoException();
             } else {
-//                session.setAttribute("User", AccountController.toJson(user)); // TODO return this when account controller is OK
+                session.setAttribute("User", AccountController.toJson(user));
                 session.setAttribute("Username", user.getUsername());
                 session.setMaxInactiveInterval(-1);
                 return user;
@@ -106,7 +106,7 @@ public class UserController extends AbstractController {
         }
         /* --- MAYBE (probably not) --- */
         // fill accounts
-        // TODO user.setAccounts(AccountDao.getAll());
+        // TODO user.setAccounts(Accoun);
         // fill categories
         // TODO user.setCategories(CategoryDao.getAllCategories());
         /* --- MAYBE (probably not) --- */
