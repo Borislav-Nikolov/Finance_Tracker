@@ -6,12 +6,21 @@ import finalproject.financetracker.model.exceptions.MyException;
 import finalproject.financetracker.model.exceptions.ServerErrorException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
+<<<<<<< Updated upstream
 import java.io.IOException;
 import java.sql.SQLException;
 
+=======
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@RestController
+>>>>>>> Stashed changes
 public abstract class AbstractController {
 
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {
@@ -24,6 +33,12 @@ public abstract class AbstractController {
     @ExceptionHandler({UserController.EmailAlreadyUsedException.class})
     public String EmailAlreadyUsedException(UserController.EmailAlreadyUsedException ex) {
         return ex.getMessage();
+    }
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+    @ExceptionHandler({UserController.InvalidPasswordAtRegistrationException.class})
+    public void InvalidPasswordAtRegistrationException(UserController.InvalidPasswordAtRegistrationException ex,
+                                                         HttpServletResponse response) throws IOException {
+        response.sendRedirect("registration_errors/invalidPassword.html");
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
     @ExceptionHandler({UserController.InvalidEmailException.class})

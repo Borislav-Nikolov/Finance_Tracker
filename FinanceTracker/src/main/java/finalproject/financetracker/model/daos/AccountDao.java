@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import java.sql.*;
 import java.util.ArrayList;
 
-
 @Component
 public class AccountDao extends AbstractDao {
 
@@ -171,4 +170,5 @@ public class AccountDao extends AbstractDao {
         closeResultSet(rs);
         throw new NotFoundException("account " + id + " not found");
     }
+
 }

@@ -3,6 +3,7 @@ package finalproject.financetracker.controller;
 import finalproject.financetracker.model.User;
 import finalproject.financetracker.model.daos.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.mail.internet.AddressException;
@@ -13,7 +14,7 @@ import java.io.IOException;
 import java.util.Map;
 
 @RestController
-public class UserController {
+public class UserController extends AbstractController {
 
     @Autowired
     UserDao userDao;
@@ -21,7 +22,7 @@ public class UserController {
     @GetMapping(value = "/")
     public void goToIndex(HttpServletResponse resp, HttpSession session) throws IOException {
         if (!isLoggedIn(session)) {
-            resp.sendRedirect("/login.html");
+            resp.sendRedirect("/index.html");
         } else {
             String username = session.getAttribute("Username").toString();
             resp.getWriter().append("Hello, " + username + ".");
@@ -32,15 +33,12 @@ public class UserController {
 
     @PostMapping(value = "/register")
     public User registerUser(@RequestBody RegistrationInfo pass2,
-                             HttpServletResponse resp) throws IOException {
+                             HttpServletResponse resp) throws Exception {
         User user = pass2.user;
         String password2 = pass2.password2;
         if ((user.getPassword() == null || password2 == null) ||
                 (user.getPassword().isEmpty() || password2.isEmpty())) {
-            resp.setStatus(400);
-            resp.getWriter().append("Input valid passwords.");
-            resp.sendRedirect("/register.html");
-            return null;
+            throw new InvalidPasswordAtRegistrationException();
         }
         try {
             if (!this.checkIfUserOrEmailExist(user) &&
@@ -142,13 +140,13 @@ public class UserController {
             if (newPass.oldPass.equals(user.getPassword()) &&
                     newPass.newPass.equals(newPass.newPass2)) {
                 user.setPassword(newPass.newPass);
-                userDao.updatePassword(user, newPass.newPass);
+                userDao.updateUser(user);
             }
         }
         return user;
     }
 
-    @PostMapping(value = "/profile/edit/email")
+    @PutMapping(value = "/profile/edit/email")
     public User changeEmail(@RequestBody NewEmail newEmail, HttpSession session, HttpServletResponse resp) throws IOException {
         User user;
         if (!isLoggedIn(session)) {
@@ -160,13 +158,13 @@ public class UserController {
             user = userDao.getUserByUsername(session.getAttribute("Username").toString());
             if (newEmail.password.equals(user.getPassword())) {
                 user.setEmail(newEmail.newEmail);
-                userDao.updateEmail(user, newEmail.newEmail);
+                userDao.updateUser(user);
             }
         }
         return user;
     }
 
-    @PostMapping(value = "/profile/edit/deleteProfile")
+    @PutMapping(value = "/profile/edit/deleteProfile")
     public void deleteProfile(@RequestBody Map<String, String> password, HttpSession session, HttpServletResponse resp)
             throws IOException {
         if (!isLoggedIn(session)) {
@@ -188,7 +186,7 @@ public class UserController {
         /* ----- VALIDATIONS ----- */
 
         public static boolean isLoggedIn (HttpSession session){
-            return !(session.isNew() || session.getAttribute("User") == null);
+            return !(session.isNew() || session.getAttribute("Username") == null);
         }
 
         private boolean checkIfUserOrEmailExist (User user) throws RegistrationCheckException {
@@ -258,7 +256,6 @@ public class UserController {
         }
 
         /* ----- UserController specific exceptions ----- */
-
         static class EmailAlreadyUsedException extends RegistrationCheckException {
             private EmailAlreadyUsedException() {
                 super("This email is already being used.");
@@ -272,6 +269,11 @@ public class UserController {
         static class UserAlreadyExistsException extends RegistrationCheckException {
             private UserAlreadyExistsException() {
                 super("Username already taken.");
+            }
+        }
+        static class InvalidPasswordAtRegistrationException extends RegistrationCheckException {
+            private InvalidPasswordAtRegistrationException() {
+                super("Passwords must match and not be empty.");
             }
         }
         static class RegistrationCheckException extends Exception {

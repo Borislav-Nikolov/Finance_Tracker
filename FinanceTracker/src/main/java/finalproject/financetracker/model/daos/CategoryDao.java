@@ -96,7 +96,6 @@ public class CategoryDao {
     }
 
     public void addAllPredefined() {
-        userDao.insertAdmin();
         addCategory(new Category("Clothes", false, 1,
                 imageDao.getImageByFileName("shirt_icon.png")));
         addCategory(new Category("Kids", false, 1,
