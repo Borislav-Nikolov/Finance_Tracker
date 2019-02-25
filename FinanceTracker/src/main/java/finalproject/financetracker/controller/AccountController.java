@@ -1,6 +1,7 @@
 package finalproject.financetracker.controller;
 
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,6 +12,8 @@ import finalproject.financetracker.model.User;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +25,7 @@ import java.sql.SQLException;
 
 @Controller
 @RequestMapping(value = "/profile/account")
-@ResponseBody
-public class AccountController {
+public class AccountController extends AbstractController{
     private final AccountDao dao;
 
     @Autowired
@@ -167,9 +169,9 @@ public class AccountController {
     }
 
     //--------------get total account number for a given userId---------------------//
-    @RequestMapping(value = "/all/count", method = RequestMethod.POST)
+    @RequestMapping(value = "/all", method = RequestMethod.GET)
     @ResponseBody
-    public JsonNode allAccCount(@RequestBody User u,
+    public JsonNode allAccCount(@RequestParam(value = "id", required = true) long id,
                                 HttpSession sess)
             throws
             InvalidRequestDataException,
@@ -177,17 +179,17 @@ public class AccountController {
             NotLoggedInException,
             IOException {
 
-        if (u == null || u.getUserId() <= 0) {
+        if (id <= 0) {
             throw new InvalidRequestDataException();
         }
-        if (getLoggedUserWithIdFromSession(sess).getUserId() != u.getUserId()){
+        if (getLoggedUserWithIdFromSession(sess).getUserId() != id){
             throw new NotLoggedInException();
         }
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode jn = mapper.createObjectNode();
-        long accounts = dao.getAllCount(u.getUserId());
-        ((ObjectNode) jn).put("userId", u.getUserId());
-        ((ObjectNode) jn).put("accounts", accounts);
+        ObjectNode jn = mapper.createObjectNode();
+        long accounts = dao.getAllCount(id);
+        jn.put("userId", id);
+        jn.put("accounts", accounts);
         return jn;
     }
 
@@ -217,33 +219,5 @@ public class AccountController {
             throw new InvalidRequestDataException();
         }
         return u;
-    }
-
-    public static <T extends Object> String toJson(T u) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.writeValueAsString(u);
-    }
-
-    //--------------Exception Handlers---------------------//
-    //todo change msgs ---------------------------------/
-    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler(IOException.class)
-    public String IOExceptionHandler(IOException e) {
-        return e.getMessage();
-    }
-
-    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler(SQLException.class)
-    public String SQLExceptionHandler(IOException e) {
-        return e.getMessage();
-    }
-
-    @ExceptionHandler(Exception.class)
-    public String ExceptionHandler(Exception e) throws Exception {
-        if (e instanceof MyException || e instanceof JsonProcessingException) {
-            throw e;
-        } else {
-            throw new ServerErrorException();
-        }
     }
 }

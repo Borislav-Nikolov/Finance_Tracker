@@ -3,25 +3,25 @@ package finalproject.financetracker.model.daos;
 import finalproject.financetracker.controller.SpringJdbcConfig;
 import finalproject.financetracker.model.Account;
 import finalproject.financetracker.model.exceptions.NotFoundException;
-import org.springframework.stereotype.Repository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 
 
-@Repository
-public class AccountDao {
+@Component
+public class AccountDao extends AbstractDao {
 
     public static final int QUERY_RETURN_MAX_LIMIT = 1000;
     public static final int QUERY_RETURN_LIMIT_DEFAULT = 20;
     public static final int QUERY_RETURN_OFFSET_DEFAULT = 0;
-    private final SpringJdbcConfig mySQL;
+    private final Connection mySQLCon;
 
-    AccountDao(SpringJdbcConfig mySQL) {
-        this.mySQL = mySQL;
+    @Autowired
+    AccountDao(JdbcTemplate jdbcTemplate) throws SQLException {
+        this.mySQLCon = jdbcTemplate.getDataSource().getConnection();
     }
 
     public enum SQLCompareOperator {
@@ -49,12 +49,12 @@ public class AccountDao {
 
     public void updateAcc(Account acc) throws SQLException {
         String sql = "UPDATE final_project.accounts SET account_name = ?, amount = ? WHERE account_id = ?;";
-        PreparedStatement ps = SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+        PreparedStatement ps = mySQLCon.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
         ps.setString(1, acc.getAccountName());
         ps.setDouble(2, acc.getAmount());
         ps.setLong(3, acc.getAccountId());
         ps.executeUpdate();
-        mySQL.closeStatement(ps);
+        closeStatement(ps);
     }
 
     public int getAllCount(long userId) throws SQLException {
@@ -62,7 +62,7 @@ public class AccountDao {
                 "FROM final_project.accounts AS a " +
                 "WHERE a.user_id  = ?;";
 
-        PreparedStatement ps = SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sql);
+        PreparedStatement ps = mySQLCon.prepareStatement(sql);
         ps.setLong(1, userId);
         ResultSet rs = ps.executeQuery();
         int result =-1;
@@ -70,8 +70,8 @@ public class AccountDao {
         if (rs.next()) {
             result = rs.getInt(1);
         }
-        mySQL.closeResultSet(rs);
-        mySQL.closeStatement(ps);
+        closeResultSet(rs);
+        closeStatement(ps);
         if (result<0) throw new SQLException("error retrieving ResultSet");
         return result;
     }
@@ -95,7 +95,7 @@ public class AccountDao {
                         "FROM final_project.accounts AS a " +
                         "WHERE a." + param.toString() + " " + operator.getValue() + " ? ORDER BY a.account_name " + order + " LIMIT ? OFFSET ?;";
 
-        PreparedStatement ps = SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sql);
+        PreparedStatement ps = mySQLCon.prepareStatement(sql);
 
         ps.setLong(1, idColumnValueLong);
         ps.setInt(2, limit);
@@ -111,14 +111,14 @@ public class AccountDao {
                     rs.getLong("user_id"))
             );
         }
-        mySQL.closeStatement(ps);
-        mySQL.closeResultSet(rs);
+        closeStatement(ps);
+        closeResultSet(rs);
         return arr.toArray(new Account[0]);
     }
 
     public long addAcc(Account acc) throws SQLException {
         String sql = "INSERT INTO final_project.accounts(account_name, user_id, amount) VALUES (?, ?, ?);";
-        PreparedStatement ps = SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+        PreparedStatement ps = mySQLCon.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
         ps.setString(1, acc.getAccountName());
         ps.setLong(2, acc.getUserId());
         ps.setDouble(3, acc.getAmount());
@@ -129,8 +129,8 @@ public class AccountDao {
         if (rs.next()){
             accId = rs.getLong(1);
         }
-        mySQL.closeResultSet(rs);
-        mySQL.closeStatement(ps);
+        closeResultSet(rs);
+        closeStatement(ps);
 
         if (accId<=0) {
             throw new SQLException("error retrieving data from data base");
@@ -143,10 +143,10 @@ public class AccountDao {
                 "DELETE a FROM final_project.accounts AS a " +
                         "WHERE a." + param.toString() + " " + operator.getValue() + " ?;";
 
-        PreparedStatement ps = SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sql);
+        PreparedStatement ps = mySQLCon.prepareStatement(sql);
         ps.setLong(1, idColumn);
         int affectedRows = ps.executeUpdate();
-        mySQL.closeStatement(ps);
+        closeStatement(ps);
         return affectedRows;
     }
 
@@ -156,7 +156,7 @@ public class AccountDao {
                         "FROM final_project.accounts AS a " +
                         "WHERE a.account_id = ?;";
 
-        PreparedStatement ps = SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sql);
+        PreparedStatement ps = mySQLCon.prepareStatement(sql);
         ps.setLong(1, id);
         ResultSet rs = ps.executeQuery();
 
@@ -167,8 +167,8 @@ public class AccountDao {
                     rs.getDouble("amount"),
                     rs.getLong("user_id"));
         }
-        mySQL.closeStatement(ps);
-        mySQL.closeResultSet(rs);
+        closeStatement(ps);
+        closeResultSet(rs);
         throw new NotFoundException("account " + id + " not found");
     }
 }
