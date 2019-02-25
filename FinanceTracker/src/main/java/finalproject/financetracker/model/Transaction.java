@@ -1,19 +1,16 @@
 package finalproject.financetracker.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.Date;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "transactions")
+@Entity(name = "transactions")
 @NoArgsConstructor
 @AllArgsConstructor
+@Inheritance(strategy = InheritanceType.JOINED)
 public class Transaction implements ITransaction {
 
     @Id

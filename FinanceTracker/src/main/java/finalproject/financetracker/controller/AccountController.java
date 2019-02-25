@@ -90,6 +90,26 @@ public class AccountController extends AbstractController{
         dao.deleteAcc(AccountDao.SQLColumnName.ACCOUNT_ID, AccountDao.SQLCompareOperator.EQUALS, accId);
     }
 
+    //--------------get account---------------------//
+    @RequestMapping(value = "/{accId}", method = RequestMethod.GET)
+    @ResponseBody
+    public Account getAccById(@PathVariable(name = "accId") long accId,
+                          HttpSession sess)
+            throws
+            SQLException,
+            IOException,
+            NotLoggedInException,
+            NotFoundException, InvalidRequestDataException {
+
+        User u = getLoggedUserWithIdFromSession(sess);
+        Account account = dao.getById(accId);
+
+        if (account.getUserId() != u.getUserId()) {
+            throw new NotLoggedInException("not logged in a.userId!=u.userId");
+        }
+        return account;
+    }
+
     //--------------update account---------------------//
     @RequestMapping(value = "/update", method = RequestMethod.PUT)
     @ResponseBody

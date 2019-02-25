@@ -1,5 +1,6 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.model.Account;
 import finalproject.financetracker.model.Transaction;
 import finalproject.financetracker.model.User;
 import finalproject.financetracker.model.daos.AccountDao;
@@ -28,12 +29,14 @@ public class TransactionController extends AbstractController {
     private final TransactionDao dao;
     private final UserRepository userRepo;
     private final AccountDao accountDao;
+    private final AccountController accountController;
 
     @Autowired
-    TransactionController(TransactionDao dao, UserRepository userRepo, AccountDao accountDao){
+    TransactionController(TransactionDao dao, UserRepository userRepo, AccountDao accountDao, AccountController accountController){
         this.dao = dao;
         this.userRepo = userRepo;
         this.accountDao = accountDao;
+        this.accountController =accountController;
     }
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
@@ -58,13 +61,16 @@ public class TransactionController extends AbstractController {
 
         for (Transaction transaction : transactions) {
             if (t.getTransactionName().equalsIgnoreCase(transaction.getTransactionName())) {
-                throw new ForbiddenRequestException("account with such name exists");
+                throw new ForbiddenRequestException("transaction with such name exists");
             }
         }
+        User user =userRepo.getByUserId(t.getUserId());
+        Account account = accountController.getAccById(t.getAccountId(),sess);
+
         t = dao.add(t);
-        t.setUser(userRepo.getByUserId(t.getUserId()));
+        t.setUser(user);
 //        t.setCategory(); //TODO
-        t.setAccount(accountDao.getById(t.getAccountId()));
+        t.setAccount(account);
         return dao.add(t);
     }
 
