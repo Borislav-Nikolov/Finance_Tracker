@@ -13,13 +13,36 @@ public abstract class AbstractDao {
     @Autowired
     protected JdbcTemplate jdbcTemplate;
 
-    public void closeStatement(Statement s) throws SQLException {
+    protected enum SQLCompareOperator {
+
+        SMALLER_OR_EQUAL("<="), EQUALS("="), BIGGER_OR_EQUAL(">=");
+
+        private String value;
+
+        SQLCompareOperator(String value) {
+            this.value = value;
+        }
+
+        protected String getValue() {
+            return this.value;
+        }
+    }
+
+    protected enum SQLColumnName {
+        ACCOUNT_ID, ACCOUNT_NAME, AMOUNT, USER_ID
+    }
+
+    protected enum SQLOderBy {
+        ASC, DESC
+    }
+
+    protected void closeStatement(Statement s) throws SQLException {
         if (s!=null){
             s.close();
         }
     }
 
-    public void closeResultSet(ResultSet rs) throws SQLException{
+    protected void closeResultSet(ResultSet rs) throws SQLException{
         if (rs!= null){
             rs.close();
         }

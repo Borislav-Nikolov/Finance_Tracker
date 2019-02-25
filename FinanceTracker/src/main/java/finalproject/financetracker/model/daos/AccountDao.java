@@ -23,29 +23,6 @@ public class AccountDao extends AbstractDao {
         this.mySQLCon = jdbcTemplate.getDataSource().getConnection();
     }
 
-    public enum SQLCompareOperator {
-
-        SMALLER_OR_EQUAL("<="), EQUALS("="), BIGGER_OR_EQUAL(">=");
-
-        private String value;
-
-        SQLCompareOperator(String value) {
-            this.value = value;
-        }
-
-        private String getValue() {
-            return this.value;
-        }
-    }
-
-    public enum SQLColumnName {
-        ACCOUNT_ID, ACCOUNT_NAME, AMOUNT, USER_ID
-    }
-
-    public enum SQLOderBy {
-        ASC, DESC
-    }
-
     public void updateAcc(Account acc) throws SQLException {
         PreparedStatement ps = null;
         try {
@@ -59,7 +36,6 @@ public class AccountDao extends AbstractDao {
         finally {
             closeStatement(ps);
         }
-
     }
 
     public int getAllCount(long userId) throws SQLException {

@@ -27,7 +27,7 @@ public abstract class AbstractController {
 
     //---------------------< Methods >----------------------//
 
-    public static boolean isValidAccount(Account a) {
+    protected boolean isValidAccount(Account a) {
         return a != null &&
                 a.getAccountName() != null &&
                 !a.getAccountName().isEmpty() &&
@@ -35,7 +35,7 @@ public abstract class AbstractController {
                 a.getUserId() > 0;
     }
 
-    public static boolean isNotValidTransaction(Transaction t) {
+    protected boolean isNotValidTransaction(Transaction t) {
         return t == null ||
                 t.getTransactionName() == null ||
                 t.getTransactionName().isEmpty() ||
@@ -44,10 +44,9 @@ public abstract class AbstractController {
                 t.getCategoryId() <= 0 ||
                 t.getAccountId() <= 0 ||
                 t.getExecutionDate()==null;
-
     }
 
-    public static User getLoggedUserWithIdFromSession(HttpSession sess)
+    protected User getLoggedUserWithIdFromSession(HttpSession sess)
             throws
             NotLoggedInException,
             IOException,
