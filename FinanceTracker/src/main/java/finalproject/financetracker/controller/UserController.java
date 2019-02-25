@@ -1,8 +1,8 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.controller.security.SecSecurityConfig;
 import finalproject.financetracker.model.User;
 import finalproject.financetracker.model.daos.UserDao;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.mail.internet.AddressException;
@@ -14,6 +14,9 @@ import java.util.Map;
 
 @RestController
 public class UserController {
+
+    @Autowired
+    UserDao userDao;
 
     @GetMapping(value = "/")
     public void goToIndex(HttpServletResponse resp, HttpSession session) throws IOException {
@@ -50,8 +53,8 @@ public class UserController {
                     user.setLastName(null);
                 }
 //                user.setPassword(SecSecurityConfig.getEncodedPassword(user.getPassword())); TODO connected to the SecSecurityConfig class
-                UserDao.registerUser(user);
-                resp.sendRedirect("/login.html");
+                userDao.registerUser(user);
+//                resp.sendRedirect("/login.html"); // TODO return after testing (maybe)
             } else {
                 resp.setStatus(400);
                 resp.getWriter().append("Input matching passwords.");
@@ -70,15 +73,15 @@ public class UserController {
     public User loginUser(@RequestBody LoginInfo loginInfo, HttpServletResponse resp, HttpSession session) throws IOException {
         String username = loginInfo.username;
         String password = loginInfo.password;
-        User user = UserDao.getUserByUsername(username);
+        User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
-            if (UserDao.getUserByUsername(username) == null ||
+            if (userDao.getUserByUsername(username) == null ||
                     !user.getPassword().equals(password)) {
                 resp.setStatus(400);
                 resp.getWriter().append("Wrong user or password.");
                 return null;
             } else {
-                session.setAttribute("User", AccountController.toJson(user));
+//                session.setAttribute("User", AccountController.toJson(user)); // TODO return this when account controller is OK
                 session.setAttribute("Username", user.getUsername());
                 session.setMaxInactiveInterval(-1);
                 return user;
@@ -107,7 +110,7 @@ public class UserController {
     @GetMapping(value = "/profile/{username}")
     public User viewProfile(@PathVariable("username") String username, HttpSession session, HttpServletResponse resp)
             throws IOException {
-        User user = UserDao.getUserByUsername(username);
+        User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
             resp.setStatus(401);
             resp.getWriter().append("You are not logged in.");
@@ -123,7 +126,8 @@ public class UserController {
         return user;
     }
 
-    @PostMapping(value = "/profile/edit/password")
+    // TODO make all editing methods with @PutMapping
+    @PutMapping(value = "/profile/edit/password")
     public User changePassword(@RequestBody NewPassword newPass,
                                HttpSession session,
                                HttpServletResponse resp) throws IOException {
@@ -134,11 +138,11 @@ public class UserController {
             resp.sendRedirect("/login.html");
             return null;
         } else {
-            user = UserDao.getUserByUsername(session.getAttribute("Username").toString());
+            user = userDao.getUserByUsername(session.getAttribute("Username").toString());
             if (newPass.oldPass.equals(user.getPassword()) &&
                     newPass.newPass.equals(newPass.newPass2)) {
                 user.setPassword(newPass.newPass);
-                UserDao.updatePassword(user, newPass.newPass);
+                userDao.updatePassword(user, newPass.newPass);
             }
         }
         return user;
@@ -153,10 +157,10 @@ public class UserController {
             resp.sendRedirect("/login.html");
             return null;
         } else {
-            user = UserDao.getUserByUsername(session.getAttribute("Username").toString());
+            user = userDao.getUserByUsername(session.getAttribute("Username").toString());
             if (newEmail.password.equals(user.getPassword())) {
                 user.setEmail(newEmail.newEmail);
-                UserDao.updateEmail(user, newEmail.newEmail);
+                userDao.updateEmail(user, newEmail.newEmail);
             }
         }
         return user;
@@ -172,9 +176,9 @@ public class UserController {
             return;
         } else {
             String username = session.getAttribute("Username").toString();
-            User user = UserDao.getUserByUsername(username);
+            User user = userDao.getUserByUsername(username);
             if (password.get("password").equals(user.getPassword())) {
-                UserDao.deleteUser(user);
+                userDao.deleteUser(user);
                 resp.sendRedirect("/index.html");
             }
 
@@ -188,10 +192,10 @@ public class UserController {
         }
 
         private boolean checkIfUserOrEmailExist (User user) throws RegistrationCheckException {
-            if (UserDao.getUserByUsername(user.getUsername()) != null) {
-                throw new UserAlreadyExistsException("User already exists.");
-            } else if (UserDao.getUserByEmail(user.getEmail()) != null) {
-                throw new EmailAlreadyUsedException("Email already used.");
+            if (userDao.getUserByUsername(user.getUsername()) != null) {
+                throw new UserAlreadyExistsException();
+            } else if (userDao.getUserByEmail(user.getEmail()) != null) {
+                throw new EmailAlreadyUsedException();
             }
             return false;
         }
@@ -202,7 +206,7 @@ public class UserController {
                 InternetAddress emailAddr = new InternetAddress(email);
                 emailAddr.validate();
             } catch (AddressException ex) {
-                throw new InvalidEmailException("Invalid email address.");
+                throw new InvalidEmailException();
             }
             return result;
         }
@@ -255,22 +259,22 @@ public class UserController {
 
         /* ----- UserController specific exceptions ----- */
 
-        private static class EmailAlreadyUsedException extends RegistrationCheckException {
-            private EmailAlreadyUsedException(String message) {
-                super(message);
+        static class EmailAlreadyUsedException extends RegistrationCheckException {
+            private EmailAlreadyUsedException() {
+                super("This email is already being used.");
             }
         }
-        private static class InvalidEmailException extends RegistrationCheckException {
-            private InvalidEmailException(String message) {
-                super(message);
+        static class InvalidEmailException extends RegistrationCheckException {
+            private InvalidEmailException() {
+                super("Invalid email input.");
             }
         }
-        private static class UserAlreadyExistsException extends RegistrationCheckException {
-            private UserAlreadyExistsException(String message) {
-                super(message);
+        static class UserAlreadyExistsException extends RegistrationCheckException {
+            private UserAlreadyExistsException() {
+                super("Username already taken.");
             }
         }
-        private static class RegistrationCheckException extends Exception {
+        static class RegistrationCheckException extends Exception {
             private RegistrationCheckException(String message) {
                 super(message);
             }

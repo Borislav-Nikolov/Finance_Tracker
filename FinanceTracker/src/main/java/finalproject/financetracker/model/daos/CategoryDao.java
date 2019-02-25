@@ -3,23 +3,30 @@ package finalproject.financetracker.model.daos;
 import finalproject.financetracker.controller.SpringJdbcConfig;
 import finalproject.financetracker.model.Category;
 import finalproject.financetracker.model.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Component;
 
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public final class CategoryDao {
-    private static JdbcTemplate jdbcTemplate = new JdbcTemplate(SpringJdbcConfig.mysqlDataSource());
-    private CategoryDao() {}
+@Component
+public class CategoryDao {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private UserDao userDao;
+    @Autowired
+    private ImageDao imageDao;
 
-    public static Category addCategory(Category category) {
+    public Category addCategory(Category category) {
         String sql = "INSERT INTO final_project.categories(category_name, is_income, user_id, image_id) " +
                 "VALUES (?, ?, ?, ?);";
         String categoryName = category.getCategoryName();
@@ -29,18 +36,19 @@ public final class CategoryDao {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection
-                    .prepareStatement(sql);
+                    .prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             ps.setString(1, categoryName);
             ps.setBoolean(2, isIncome);
             ps.setLong(3, userId);
             ps.setLong(4, imageId);
             return ps;
         }, keyHolder);
-        category.setCategoryId((long) keyHolder.getKey());
+
+        category.setCategoryId(keyHolder.getKey().longValue());
         return category;
     }
 
-    public static void  deleteCategory(Category category) {
+    public void  deleteCategory(Category category) {
         String sql = "DELETE FROM final_project.categories WHERE category_id = ?;";
         long categoryId = category.getCategoryId();
         // TODO check at mapping deletion method if exists to avoid error if repeated tries with URL
@@ -48,7 +56,7 @@ public final class CategoryDao {
     }
 
 
-    public static Category getCategoryByNameAndUserId(String categoryName, long userId) {
+    public Category getCategoryByNameAndUserId(String categoryName, long userId) {
         String sql = "SELECT * FROM final_project.categories WHERE category_name LIKE ? AND user_id = ?;";
         Category category;
         try {
@@ -59,9 +67,9 @@ public final class CategoryDao {
         }
         return category;
     }
-    public static List<Category> getCategoriesByUser(User user) {
+    public List<Category> getCategoriesByUser(User user) {
         String sql = "SELECT * FROM final_project.categories WHERE user_id = ?;";
-        long userId = UserDao.getUserId(user);
+        long userId = userDao.getUserId(user);
         List<Category> categories = new ArrayList<>();
         List<Map<String, Object>> rows = null;
         try {
@@ -81,41 +89,40 @@ public final class CategoryDao {
             category.setIncome((boolean) row.get("is_income"));
             category.setUserId((long) row.get("user_id"));
             long imageId = (long) row.get("image_id");
-            category.setImage(ImageDao.getImageById(imageId));
+            category.setImage(imageDao.getImageById(imageId));
             categories.add(category);
         }
         return categories;
     }
 
-    // TODO not working - problem with image id
-    public static void addAllPredefined() {
-        UserDao.insertAdmin();
+    public void addAllPredefined() {
+        userDao.insertAdmin();
         addCategory(new Category("Clothes", false, 1,
-                ImageDao.getImageByFileName("shirt_icon.png")));
+                imageDao.getImageByFileName("shirt_icon.png")));
         addCategory(new Category("Kids", false, 1,
-                ImageDao.getImageByFileName("child_icon.png")));
+                imageDao.getImageByFileName("child_icon.png")));
         addCategory(new Category("Toys", false, 1,
-                ImageDao.getImageByFileName("toy_icon.png")));
+                imageDao.getImageByFileName("toy_icon.png")));
         addCategory(new Category("Work", true, 1,
-                ImageDao.getImageByFileName("computer_icon.png")));
+                imageDao.getImageByFileName("computer_icon.png")));
         addCategory(new Category("Electronics", false, 1,
-                ImageDao.getImageByFileName("smartphone_icon.png")));
+                imageDao.getImageByFileName("smartphone_icon.png")));
         addCategory(new Category("Pets", false, 1,
-                ImageDao.getImageByFileName("pawprint_icon.png")));
+                imageDao.getImageByFileName("pawprint_icon.png")));
         addCategory(new Category("Child support", true, 1,
-                ImageDao.getImageByFileName("child_icon.png")));
+                imageDao.getImageByFileName("child_icon.png")));
         addCategory(new Category("Scholarship", true, 1,
-                ImageDao.getImageByFileName("book_icon.png")));
+                imageDao.getImageByFileName("book_icon.png")));
         addCategory(new Category("Bonus", true, 1,
-                ImageDao.getImageByFileName("laptop_icon.png")));
+                imageDao.getImageByFileName("laptop_icon.png")));
         addCategory(new Category("Gift", true, 1,
-                ImageDao.getImageByFileName("baloons_icon.png")));
+                imageDao.getImageByFileName("baloons_icon.png")));
         addCategory(new Category("Investment income", true, 1,
-                ImageDao.getImageByFileName("watch_icon.png")));
+                imageDao.getImageByFileName("watch_icon.png")));
         addCategory(new Category("Entertainment", false, 1,
-                ImageDao.getImageByFileName("controller_icon.png")));
+                imageDao.getImageByFileName("controller_icon.png")));
         addCategory(new Category("Car", false, 1,
-                ImageDao.getImageByFileName("car_icon.png")));
+                imageDao.getImageByFileName("car_icon.png")));
     }
 
 }

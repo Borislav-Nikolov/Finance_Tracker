@@ -15,4 +15,12 @@ public class Image {
         this.imageId = imageId;
         this.uri = imageUri;
     }
+
+    @Override
+    public String toString() {
+        return "Image{" +
+                "imageId=" + imageId +
+                ", uri='" + uri + '\'' +
+                '}';
+    }
 }

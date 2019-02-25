@@ -2,32 +2,42 @@ package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.controller.SpringJdbcConfig;
 import finalproject.financetracker.model.Image;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 
-public final class ImageDao {
-    private static JdbcTemplate jdbcTemplate = new JdbcTemplate(SpringJdbcConfig.mysqlDataSource());
+@Component
+public class ImageDao {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     private static String ICONS_RELATIVE_PATH = "src/main/resources/static/img/category_icons";
-    private ImageDao() {}
-    public static Image getImageById(long id) {
-        String sql = "SELECT uri FROM final_project.images WHERE image_id = ?;";
+    public  Image getImageById(long id) {
+        String sql = "SELECT * FROM final_project.images WHERE image_id = ?;";
         return jdbcTemplate.queryForObject(sql, new Object[] {id}, new BeanPropertyRowMapper<>(Image.class));
     }
-    public static Image getImageByFileName(String fileName) {
-        String sql = "SELECT uri FROM final_project.images WHERE uri = ?;";
+    public Image getImageByFileName(String fileName) {
+        String sql = "SELECT * FROM final_project.images WHERE uri LIKE ?;";
         String uri = ICONS_RELATIVE_PATH + "/" + fileName;
-        return jdbcTemplate.queryForObject(sql, new Object[] {uri}, new BeanPropertyRowMapper<>(Image.class));
+        Image image = null;
+        try {
+            image = jdbcTemplate.queryForObject(sql, new Object[] {uri}, new BeanPropertyRowMapper<>(Image.class));
+        } catch (DataAccessException ex) {
+            System.out.println("Image not found: " + ex.getMessage());
+        }
+        return image;
     }
-    public static void addImage(String fileName) {
+    public void addImage(String fileName) {
         String uri = ICONS_RELATIVE_PATH + "/" + fileName;
         String sql = "INSERT INTO final_project.images(uri) " +
                 "VALUES (?);";
         jdbcTemplate.update(sql, uri);
     }
 
-    public static void addAllIcons() {
+    public void addAllIcons() {
         File dir = new File(ICONS_RELATIVE_PATH);
         for (File file : dir.listFiles()) {
             addImage(file.getName());
