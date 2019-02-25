@@ -3,7 +3,6 @@ package finalproject.financetracker.controller;
 import finalproject.financetracker.model.User;
 import finalproject.financetracker.model.daos.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.mail.internet.AddressException;
@@ -24,8 +23,7 @@ public class UserController extends AbstractController {
         if (!isLoggedIn(session)) {
             resp.sendRedirect("/index.html");
         } else {
-            String username = session.getAttribute("Username").toString();
-            resp.getWriter().append("Hello, " + username + ".");
+            resp.sendRedirect("/logged.html");
         }
     }
 
@@ -40,44 +38,35 @@ public class UserController extends AbstractController {
                 (user.getPassword().isEmpty() || password2.isEmpty())) {
             throw new InvalidPasswordAtRegistrationException();
         }
-        try {
-            if (!this.checkIfUserOrEmailExist(user) &&
-                    password2.equals(user.getPassword()) &&
-                    this.validateEmail(user.getEmail())) {
-                if (user.getFirstName() != null && user.getFirstName().isEmpty()) {
-                    user.setFirstName(null);
-                }
-                if (user.getLastName() != null && user.getLastName().isEmpty()) {
-                    user.setLastName(null);
-                }
-//                user.setPassword(SecSecurityConfig.getEncodedPassword(user.getPassword())); TODO connected to the SecSecurityConfig class
-                userDao.registerUser(user);
-//                resp.sendRedirect("/login.html"); // TODO return after testing (maybe)
-            } else {
-                resp.setStatus(400);
-                resp.getWriter().append("Input matching passwords.");
-                return null;
+        if (!this.checkIfUserOrEmailExist(user) &&
+                password2.equals(user.getPassword()) &&
+                this.validateEmail(user.getEmail())) {
+            if (user.getFirstName() != null && user.getFirstName().isEmpty()) {
+                user.setFirstName(null);
             }
-        } catch (RegistrationCheckException ex) {
+            if (user.getLastName() != null && user.getLastName().isEmpty()) {
+                user.setLastName(null);
+            }
+//                user.setPassword(SecSecurityConfig.getEncodedPassword(user.getPassword())); TODO connected to the SecSecurityConfig class
+            userDao.registerUser(user);
+            resp.sendRedirect("/login.html");
+        } else {
             resp.setStatus(400);
-            resp.getWriter().append(ex.getMessage());
-            resp.sendRedirect("/register.html");
+            resp.getWriter().append("Input matching passwords.");
             return null;
         }
         return user;
     }
 
     @PostMapping(value = "/login")
-    public User loginUser(@RequestBody LoginInfo loginInfo, HttpServletResponse resp, HttpSession session) throws IOException {
+    public User loginUser(@RequestBody LoginInfo loginInfo, HttpServletResponse resp, HttpSession session) throws Exception {
         String username = loginInfo.username;
         String password = loginInfo.password;
         User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
             if (userDao.getUserByUsername(username) == null ||
                     !user.getPassword().equals(password)) {
-                resp.setStatus(400);
-                resp.getWriter().append("Wrong user or password.");
-                return null;
+                throw new InvalidLoginInfoException();
             } else {
 //                session.setAttribute("User", AccountController.toJson(user)); // TODO return this when account controller is OK
                 session.setAttribute("Username", user.getUsername());
@@ -128,7 +117,7 @@ public class UserController extends AbstractController {
     @PutMapping(value = "/profile/edit/password")
     public User changePassword(@RequestBody NewPassword newPass,
                                HttpSession session,
-                               HttpServletResponse resp) throws IOException {
+                               HttpServletResponse resp) throws Exception {
         User user;
         if (!isLoggedIn(session)) {
             resp.setStatus(401);
@@ -138,16 +127,19 @@ public class UserController extends AbstractController {
         } else {
             user = userDao.getUserByUsername(session.getAttribute("Username").toString());
             if (newPass.oldPass.equals(user.getPassword()) &&
-                    newPass.newPass.equals(newPass.newPass2)) {
+                    newPass.newPass.equals(newPass.newPass2) &&
+                    !newPass.newPass.isEmpty()) {
                 user.setPassword(newPass.newPass);
                 userDao.updateUser(user);
+            } else {
+                throw new InvalidPasswordAtRegistrationException();
             }
         }
         return user;
     }
 
     @PutMapping(value = "/profile/edit/email")
-    public User changeEmail(@RequestBody NewEmail newEmail, HttpSession session, HttpServletResponse resp) throws IOException {
+    public User changeEmail(@RequestBody NewEmail newEmail, HttpSession session, HttpServletResponse resp) throws Exception {
         User user;
         if (!isLoggedIn(session)) {
             resp.setStatus(401);
@@ -157,8 +149,15 @@ public class UserController extends AbstractController {
         } else {
             user = userDao.getUserByUsername(session.getAttribute("Username").toString());
             if (newEmail.password.equals(user.getPassword())) {
-                user.setEmail(newEmail.newEmail);
-                userDao.updateUser(user);
+                if (userDao.getUserByEmail(newEmail.newEmail) == null &&
+                    this.validateEmail(newEmail.newEmail)) {
+                    user.setEmail(newEmail.newEmail);
+                    userDao.updateUser(user);
+                } else {
+                    throw new EmailAlreadyUsedException();
+                }
+            } else {
+                throw new InvalidPasswordInputException();
             }
         }
         return user;
@@ -166,7 +165,7 @@ public class UserController extends AbstractController {
 
     @PutMapping(value = "/profile/edit/deleteProfile")
     public void deleteProfile(@RequestBody Map<String, String> password, HttpSession session, HttpServletResponse resp)
-            throws IOException {
+            throws Exception {
         if (!isLoggedIn(session)) {
             resp.setStatus(401);
             resp.getWriter().append("You are not logged in.");
@@ -177,9 +176,11 @@ public class UserController extends AbstractController {
             User user = userDao.getUserByUsername(username);
             if (password.get("password").equals(user.getPassword())) {
                 userDao.deleteUser(user);
+                session.invalidate();
                 resp.sendRedirect("/index.html");
+            } else {
+                throw new InvalidPasswordInputException();
             }
-
         }
     }
 
@@ -279,6 +280,16 @@ public class UserController extends AbstractController {
         static class RegistrationCheckException extends Exception {
             private RegistrationCheckException(String message) {
                 super(message);
+            }
+        }
+        static class InvalidLoginInfoException extends Exception {
+            private InvalidLoginInfoException() {
+                super("Invalid username or password.");
+            }
+        }
+        static class InvalidPasswordInputException extends Exception {
+            private InvalidPasswordInputException() {
+                super("Wrong password input.");
             }
         }
 

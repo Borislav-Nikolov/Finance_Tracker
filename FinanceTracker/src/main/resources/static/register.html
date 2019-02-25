@@ -1,20 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script
+            src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <title>REGISTER</title>
 </head>
 <body>
-    <!-- TODO make with ajax -->
-    <form method="post" action="/login">
-        <h2>Please, login, using your username and password.</h2>
-        USERNAME(*) <input value="" type="text"><br>
-        PASSWORD(*) <input value="" type="password"><br>
-        REPEAT PASSWORD(*) <input value="" type="password"><br>
-        FIRST NAME <input value="" type="text"><br>
-        LAST NAME <input value="" type="text"><br>
-        EMAIL(*) <input value="" type="text"><br>
-        <button type="submit">Register</button>
-    </form>
+    <h2>Input registration info.</h2>
+    USERNAME(*) <input id="username" value="" type="text"><br>
+    PASSWORD(*) <input id="password" value="" type="password"><br>
+    REPEAT PASSWORD(*) <input id="password2" value="" type="password"><br>
+    FIRST NAME <input id="firstName" value="" type="text"><br>
+    LAST NAME <input id="lastName" value="" type="text"><br>
+    EMAIL(*) <input id="email" value="" type="text"><br>
+    <button onclick="registerUser()">Register</button>
+    <script type="text/javascript">
+        function registerUser(){
+            var username = $("#username").val();
+            var password = $("#password").val();
+            var password2 = $("#password2").val();
+            var firstName = $("#firstName").val();
+            var lastName = $("#lastName").val();
+            var email = $("#email").val();
+            var dataToSend = {
+                username: username,
+                password: password,
+                password2: password2,
+                firstName: firstName,
+                lastName: lastName,
+                email: email
+            };
+            $.ajax({
+                    url: "/register",
+                    type: "POST",
+                    data: JSON.stringify(dataToSend),
+                    contentType:"application/json; charset=utf-8",
+                    dataType:"json",
+                    success: function(){
+                        location.href = "http://localhost:8888/logged.html";
+                    }
+                }
+            );
+        }
+    </script>
 </body>
 </html>
