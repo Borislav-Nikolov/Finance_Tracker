@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserDao {
+
     @Autowired
     UserRepository userRepository;
     @Autowired

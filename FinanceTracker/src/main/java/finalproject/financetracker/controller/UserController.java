@@ -2,6 +2,9 @@ package finalproject.financetracker.controller;
 
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.UserDao;
+import finalproject.financetracker.model.exceptions.MyException;
+import finalproject.financetracker.model.exceptions.user_exceptions.*;
+import finalproject.financetracker.model.exceptions.NotLoggedInException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,7 +78,7 @@ public class UserController extends AbstractController {
             }
         } else {
             resp.getWriter().append("You are already logged in.");
-//            resp.sendRedirect("/index.html");
+            resp.sendRedirect("/index.html");
             return null;
         }
     }
@@ -96,13 +99,10 @@ public class UserController extends AbstractController {
 
     @GetMapping(value = "/profile/{username}")
     public User viewProfile(@PathVariable("username") String username, HttpSession session, HttpServletResponse resp)
-            throws IOException {
+            throws Exception {
         User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
-            resp.setStatus(401);
-            resp.getWriter().append("You are not logged in.");
-            resp.sendRedirect("/login.html");
-            return null;
+            throw new NotLoggedInException();
         }
         /* --- MAYBE (probably not) --- */
         // fill accounts
@@ -113,17 +113,13 @@ public class UserController extends AbstractController {
         return user;
     }
 
-    // TODO make all editing methods with @PutMapping
     @PutMapping(value = "/profile/edit/password")
     public User changePassword(@RequestBody NewPassword newPass,
                                HttpSession session,
                                HttpServletResponse resp) throws Exception {
         User user;
         if (!isLoggedIn(session)) {
-            resp.setStatus(401);
-            resp.getWriter().append("You are not logged in.");
-            resp.sendRedirect("/login.html");
-            return null;
+            throw new NotLoggedInException();
         } else {
             user = userDao.getUserByUsername(session.getAttribute("Username").toString());
             if (newPass.oldPass.equals(user.getPassword()) &&
@@ -142,10 +138,7 @@ public class UserController extends AbstractController {
     public User changeEmail(@RequestBody NewEmail newEmail, HttpSession session, HttpServletResponse resp) throws Exception {
         User user;
         if (!isLoggedIn(session)) {
-            resp.setStatus(401);
-            resp.getWriter().append("You are not logged in.");
-            resp.sendRedirect("/login.html");
-            return null;
+            throw new NotLoggedInException();
         } else {
             user = userDao.getUserByUsername(session.getAttribute("Username").toString());
             if (newEmail.password.equals(user.getPassword())) {
@@ -163,14 +156,11 @@ public class UserController extends AbstractController {
         return user;
     }
 
-    @PutMapping(value = "/profile/edit/deleteProfile")
+    @DeleteMapping(value = "/profile/edit/deleteProfile")
     public void deleteProfile(@RequestBody Map<String, String> password, HttpSession session, HttpServletResponse resp)
             throws Exception {
         if (!isLoggedIn(session)) {
-            resp.setStatus(401);
-            resp.getWriter().append("You are not logged in.");
-            resp.sendRedirect("/login.html");
-            return;
+            throw new NotLoggedInException();
         } else {
             String username = session.getAttribute("Username").toString();
             User user = userDao.getUserByUsername(username);
@@ -227,7 +217,8 @@ public class UserController extends AbstractController {
         private static class LoginInfo {
             private String username;
             private String password;
-
+            // TODO make LoginResponseDTO
+            // TODO check if works without args constructor
             private LoginInfo(String username, String password) {
                 this.username = username;
                 this.password = password;
@@ -255,44 +246,5 @@ public class UserController extends AbstractController {
                 this.newEmail = newEmail;
             }
         }
-
-        /* ----- UserController specific exceptions ----- */
-        static class EmailAlreadyUsedException extends RegistrationCheckException {
-            private EmailAlreadyUsedException() {
-                super("This email is already being used.");
-            }
-        }
-        static class InvalidEmailException extends RegistrationCheckException {
-            private InvalidEmailException() {
-                super("Invalid email input.");
-            }
-        }
-        static class UserAlreadyExistsException extends RegistrationCheckException {
-            private UserAlreadyExistsException() {
-                super("Username already taken.");
-            }
-        }
-        static class InvalidPasswordAtRegistrationException extends RegistrationCheckException {
-            private InvalidPasswordAtRegistrationException() {
-                super("Passwords must match and not be empty.");
-            }
-        }
-        static class RegistrationCheckException extends Exception {
-            private RegistrationCheckException(String message) {
-                super(message);
-            }
-        }
-        static class InvalidLoginInfoException extends Exception {
-            private InvalidLoginInfoException() {
-                super("Invalid username or password.");
-            }
-        }
-        static class InvalidPasswordInputException extends Exception {
-            private InvalidPasswordInputException() {
-                super("Wrong password input.");
-            }
-        }
-
-
     }
 

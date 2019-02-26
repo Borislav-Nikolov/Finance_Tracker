@@ -10,6 +10,8 @@ import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.model.exceptions.MyException;
 import finalproject.financetracker.model.exceptions.NotLoggedInException;
+import finalproject.financetracker.model.exceptions.user_exceptions.*;
+import finalproject.financetracker.model.exceptions.ServerErrorException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,6 +29,12 @@ import javax.servlet.http.HttpServletResponse;
 public abstract class AbstractController {
 
     //---------------------< Methods >----------------------//
+
+    protected void validateLogin(HttpSession session) throws NotLoggedInException {
+        if (!UserController.isLoggedIn(session)) {
+            throw new NotLoggedInException();
+        }
+    }
 
     protected boolean isValidAccount(Account a) {
         return a != null &&
@@ -76,46 +84,40 @@ public abstract class AbstractController {
 
     //--------------Exception Handlers---------------------//
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({UserController.EmailAlreadyUsedException.class})
-    public void EmailAlreadyUsedExceptionHandler(UserController.EmailAlreadyUsedException ex,
+    @ExceptionHandler({EmailAlreadyUsedException.class})
+    public void EmailAlreadyUsedExceptionHandler(EmailAlreadyUsedException ex,
                                             HttpServletResponse response) throws IOException {
-        response.sendRedirect("registration_errors/usedEmail.html");
+
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({UserController.InvalidPasswordAtRegistrationException.class})
-    public void InvalidPasswordAtRegistrationExceptionHandler(UserController.InvalidPasswordAtRegistrationException ex,
+    @ExceptionHandler({InvalidPasswordAtRegistrationException.class})
+    public void InvalidPasswordAtRegistrationExceptionHandler(InvalidPasswordAtRegistrationException ex,
                                                          HttpServletResponse response) throws IOException {
-        response.sendRedirect("registration_errors/invalidPassword.html");
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({UserController.InvalidEmailException.class})
-    public void InvalidEmailExceptionHandler(UserController.InvalidEmailException ex,
+    @ExceptionHandler({InvalidEmailException.class})
+    public void InvalidEmailExceptionHandler(InvalidEmailException ex,
                                         HttpServletResponse response) throws IOException {
-        response.sendRedirect("registration_errors/invalidEmail.html");
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({UserController.UserAlreadyExistsException.class})
-    public void UserAlreadyExistsExceptionHandler(UserController.UserAlreadyExistsException ex,
+    @ExceptionHandler({UserAlreadyExistsException.class})
+    public void UserAlreadyExistsExceptionHandler(UserAlreadyExistsException ex,
                                              HttpServletResponse response) throws IOException {
-        response.sendRedirect("registration_errors/userExists.html");
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({UserController.RegistrationCheckException.class})
-    public void RegistrationCheckExceptionHandler(UserController.RegistrationCheckException ex,
+    @ExceptionHandler({RegistrationCheckException.class})
+    public void RegistrationCheckExceptionHandler(RegistrationCheckException ex,
                                              HttpServletResponse response) throws IOException {
-        response.sendRedirect("/register.html");
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({UserController.InvalidLoginInfoException.class})
-    public void InvalidLoginInfoExceptionHandler(UserController.InvalidLoginInfoException ex,
+    @ExceptionHandler({InvalidLoginInfoException.class})
+    public void InvalidLoginInfoExceptionHandler(InvalidLoginInfoException ex,
                                            HttpServletResponse response) throws IOException {
-        response.sendRedirect("error_pages/invalidLoginInfo.html");
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({UserController.InvalidPasswordInputException.class})
-    public void InvalidPasswordInputExceptionHandler(UserController.InvalidPasswordInputException ex,
+    @ExceptionHandler({InvalidPasswordInputException.class})
+    public void InvalidPasswordInputExceptionHandler(InvalidPasswordInputException ex,
                                                  HttpServletResponse response) throws IOException {
-        response.sendRedirect("error_pages/invalidPasswordInput.html");
     }
 
 
