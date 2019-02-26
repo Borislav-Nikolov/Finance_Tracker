@@ -34,13 +34,4 @@ public class Transaction implements ITransaction {
 
     @Column
     private long accountId;
-
-    @Transient
-    private User user;
-
-    @Transient
-    private Category category;
-
-    @Transient
-    private Account account;
 }

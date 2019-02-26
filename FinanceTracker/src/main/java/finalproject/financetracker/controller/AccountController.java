@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.websocket.server.PathParam;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -43,10 +44,10 @@ public class AccountController extends AbstractController{
             NotLoggedInException,
             IOException {
 
+        User u = getLoggedUserWithIdFromSession(sess);
         if (!isValidAccount(a)) {
             throw new InvalidRequestDataException();
         }
-        User u = getLoggedUserWithIdFromSession(sess);
 
         if (!(u.getUserId() == a.getUserId())) {
             //todo change msg
@@ -65,7 +66,9 @@ public class AccountController extends AbstractController{
     }
 
     //--------------delete account---------------------//
-    @RequestMapping(value = "/accounts/delete/{accId}", method = RequestMethod.DELETE)
+    @RequestMapping(
+            value = "/accounts/delete/{accId}",
+            method = RequestMethod.DELETE)
     @ResponseBody
     public void deleteAcc(@PathVariable(name = "accId") long accId,
                           HttpSession sess)
@@ -85,9 +88,11 @@ public class AccountController extends AbstractController{
     }
 
     //--------------get account---------------------//
-    @RequestMapping(value = "/accounts/{accId}", method = RequestMethod.GET)
+    @RequestMapping(
+            value = "/accounts/",
+            method = RequestMethod.GET)
     @ResponseBody
-    public Account getAccById(@PathVariable(name = "accId") String accId,
+    public Account getAccById(@RequestParam("accID") String accId,
                           HttpSession sess)
             throws
             SQLException,
@@ -95,14 +100,13 @@ public class AccountController extends AbstractController{
             NotLoggedInException,
             NotFoundException, InvalidRequestDataException {
         long longAccId = -1;
+        User u = getLoggedUserWithIdFromSession(sess);
 
         try {
            longAccId = Long.parseLong(accId);
         }catch (Exception e){
-            throw new InvalidRequestDataException("account id not found");
+            throw new InvalidRequestDataException("account id not provided");
         }
-
-        User u = getLoggedUserWithIdFromSession(sess);
         Account account = dao.getById(longAccId);
 
         if (account.getUserId() != u.getUserId()) {
@@ -111,8 +115,27 @@ public class AccountController extends AbstractController{
         return account;
     }
 
+
+    public Account getAccByIdLong(long accId, HttpSession sess)
+            throws
+            SQLException,
+            IOException,
+            NotLoggedInException,
+            NotFoundException, InvalidRequestDataException {
+
+        User u = getLoggedUserWithIdFromSession(sess);
+        Account account = dao.getById(accId);
+
+        if (account.getUserId() != u.getUserId()) {
+            throw new NotLoggedInException("not logged in a.userId!=u.userId");
+        }
+        return account;
+    }
+
     //--------------update account---------------------//
-    @RequestMapping(value = "/accounts/update", method = RequestMethod.PUT)
+    @RequestMapping(
+            value = "/accounts/update",
+            method = RequestMethod.PUT)
     @ResponseBody
     public Account updateAcc(@RequestBody Account a,
                              HttpSession sess)
@@ -124,10 +147,11 @@ public class AccountController extends AbstractController{
             ForbiddenRequestException,
             NotFoundException {
 
+        User u = getLoggedUserWithIdFromSession(sess);
         if (!isValidAccount(a)) {
             throw new InvalidRequestDataException();
         }
-        User u = getLoggedUserWithIdFromSession(sess);
+
         Account account = dao.getById(a.getAccountId());
 
         if (!(u.getUserId() == account.getUserId() && u.getUserId() == a.getUserId())) {
@@ -146,9 +170,11 @@ public class AccountController extends AbstractController{
     }
 
     //--------------show all accounts for a given userId ascending/descending---------------------//
-    @RequestMapping(value = "/accounts/{asc/desc}", method = RequestMethod.GET)
+    @RequestMapping(
+            value = "/accounts/all/{asc}",
+            method = RequestMethod.GET)
     @ResponseBody
-    public Account[] allAccOrdered(@PathVariable(name = "asc/desc") String order,
+    public Account[] allAccOrdered(@PathVariable("asc") String order,
                                    HttpSession sess)
             throws
             NotLoggedInException,
@@ -170,12 +196,14 @@ public class AccountController extends AbstractController{
     }
 
     //--------------get all accounts for a given userId---------------------//
-    @RequestMapping(value = "/accounts",method = RequestMethod.GET)
+    @RequestMapping(
+            value = "/accounts/all",
+            method = RequestMethod.GET)
     @ResponseBody
-    public void allAcc(HttpServletResponse resp) throws IOException, InvalidRequestDataException, NotLoggedInException {
+    public void allAcc(HttpServletResponse resp) throws IOException{
 
         resp.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-        resp.sendRedirect("/profile/accounts/asc");
+        resp.sendRedirect("/profile/accounts/all/asc");
     }
 
     //--------------get total account number for a given userId---------------------//

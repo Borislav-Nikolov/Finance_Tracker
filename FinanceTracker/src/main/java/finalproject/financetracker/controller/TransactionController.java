@@ -1,9 +1,10 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.model.dtos.account.AddTransactionRespDTO;
 import finalproject.financetracker.model.pojos.Account;
+import finalproject.financetracker.model.pojos.Category;
 import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.pojos.User;
-import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.daos.TransactionDao;
 import finalproject.financetracker.model.daos.UserRepository;
 import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
@@ -28,25 +29,31 @@ public class TransactionController extends AbstractController {
 
     private final TransactionDao dao;
     private final UserRepository userRepo;
-    private final AccountDao accountDao;
     private final AccountController accountController;
+    private final CategoryController categoryController;
 
     @Autowired
-    TransactionController(TransactionDao dao, UserRepository userRepo, AccountDao accountDao, AccountController accountController){
+    TransactionController(TransactionDao dao,
+                          UserRepository userRepo,
+                          AccountController accountController,
+                          CategoryController categoryController){
+
         this.dao = dao;
         this.userRepo = userRepo;
-        this.accountDao = accountDao;
         this.accountController =accountController;
+        this.categoryController = categoryController;
     }
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
     @ResponseBody
-    public Transaction addTransaction(@RequestBody Transaction t,
+    public AddTransactionRespDTO addTransaction(@RequestBody Transaction t,
                                       HttpSession sess)
             throws InvalidRequestDataException,
             NotLoggedInException,
             IOException,
-            ForbiddenRequestException, NotFoundException, SQLException {
+            ForbiddenRequestException,
+            NotFoundException,
+            SQLException {
 
         if (isNotValidTransaction(t)) {
             throw new InvalidRequestDataException();
@@ -65,18 +72,26 @@ public class TransactionController extends AbstractController {
             }
         }
         User user =userRepo.getByUserId(t.getUserId());
-        Account account = accountController.getAccById(Long.toString(t.getUserId()),sess);
-
+        Category category = categoryController.getCategoryById(t.getCategoryId(),sess);
+        Account account = accountController.getAccByIdLong(t.getUserId(),sess);
         t = dao.add(t);
-        t.setUser(user);
-//        t.setCategory(); //TODO
-        t.setAccount(account);
-        return dao.add(t);
+        AddTransactionRespDTO returnDto = new AddTransactionRespDTO(
+                t.getTransactionId(),
+                t.getTransactionName(),
+                t.getAmount(),
+                t.getExecutionDate(),
+                t.getUserId(),
+                t.getCategoryId(),
+                t.getAccountId(),
+                user.getUsername(),
+                account.getAccountName(),
+                category.getCategoryName());
+        return returnDto;
     }
 
     @RequestMapping(value = "/update", method = RequestMethod.PUT)
     @ResponseBody
-    public Transaction updateTransaction(@RequestBody Transaction transaction,
+    public AddTransactionRespDTO updateTransaction(@RequestBody Transaction transaction,
                                          HttpSession sess)
             throws NotLoggedInException,
             InvalidRequestDataException,

@@ -1,23 +1,31 @@
 package finalproject.financetracker.controller;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import finalproject.financetracker.model.exceptions.*;
 import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.pojos.ErrMsg;
 import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.pojos.User;
-import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
-import finalproject.financetracker.model.exceptions.MyException;
-import finalproject.financetracker.model.exceptions.NotLoggedInException;
 import finalproject.financetracker.model.exceptions.user_exceptions.*;
-import finalproject.financetracker.model.exceptions.ServerErrorException;
+import javassist.tools.web.BadHttpRequest;
+import netscape.security.ForbiddenTargetException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestHandler;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.handler.ResponseStatusExceptionHandler;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -121,26 +129,53 @@ public abstract class AbstractController {
     }
 
 
-    //---------------------AccountController---------------------//
+    //---------------------Global Exception Handlers---------------------//
     //todo change msgs ---------------------------------/
-    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler(IOException.class)
-    public ErrMsg IOExceptionHandler(IOException e) {
-        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
-    }
 
-    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler({SQLException.class, DataAccessException.class})
-    public ErrMsg SQLExceptionHandler(IOException e) {
-        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
-    }
-
-    @ExceptionHandler({MyException.class, JsonProcessingException.class})
-    public ErrMsg MyExceptionHandler(MyException e){
+    @ExceptionHandler({
+            MyException.class,
+            JsonProcessingException.class,
+            JsonParseException.class,
+            JsonEOFException.class,
+            HttpClientErrorException.BadRequest.class,
+            BadHttpRequest.class,
+            ServletException.class,
+            HttpClientErrorException.class,
+            HttpMessageNotReadableException.class})  //400
+    public ErrMsg MyExceptionHandler(Exception e){
         return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(),new Date());
     }
 
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler({
+            NotLoggedInException.class,
+            HttpClientErrorException.Unauthorized.class, })  // 401
+    public ErrMsg MyLoginExceptionHandler(Exception e){
+        return new ErrMsg(HttpStatus.UNAUTHORIZED.value(), e.getMessage(),new Date());
+    }
+
+    @ExceptionHandler({
+            ForbiddenRequestException.class,
+            HttpClientErrorException.Forbidden.class})  //403
+    public ErrMsg MyForbiddenExceptionHandler(Exception e){
+        return new ErrMsg(HttpStatus.FORBIDDEN.value(), e.getMessage(),new Date());
+    }
+
+    @ExceptionHandler({NotFoundException.class})  //404
+    public ErrMsg MyNotFoundExceptionHandler(Exception e){
+        return new ErrMsg(HttpStatus.NOT_FOUND.value(), e.getMessage(),new Date());
+    }
+
+    @ExceptionHandler(IOException.class)  //500
+    public ErrMsg IOExceptionHandler(Exception e) {
+        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
+    }
+
+    @ExceptionHandler({SQLException.class, DataAccessException.class}) //500
+    public ErrMsg SQLExceptionHandler(Exception e) {
+        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
+    }
+
+    @ExceptionHandler(Exception.class) //500
     public ErrMsg ExceptionHandler(Exception e){
         return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }

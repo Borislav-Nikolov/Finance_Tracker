@@ -1,6 +1,8 @@
 package finalproject.financetracker.model.utils;
 
 import finalproject.financetracker.controller.SpringJdbcConfig;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,7 +12,11 @@ import java.sql.SQLException;
 import java.util.Scanner;
 
 public class Initialisation {
-    public static void createSchemaIfNotExists() throws SQLException {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    public void createSchemaIfNotExists() throws SQLException {
         StringBuilder sql = new StringBuilder();
         File file = new File("schemaSQL.txt");
 
@@ -29,11 +35,8 @@ public class Initialisation {
                 sql.append(sc.nextLine());
             }
             String sqlString = sql.toString();
-            PreparedStatement ps = SpringJdbcConfig.mysqlDataSource().getConnection().prepareStatement(sqlString);
-            ps.executeUpdate();
-            if (ps != null) {
-                ps.close();
-            }
+            jdbcTemplate.update(sqlString);
+
         } else {
             try {
                 file.createNewFile();
