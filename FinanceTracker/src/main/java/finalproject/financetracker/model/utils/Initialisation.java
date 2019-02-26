@@ -73,11 +73,6 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
                 jdbcTemplate.execute(sqlString);
             }
         } else {
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             System.out.println("File with schema create query not found!");
         }
     }
