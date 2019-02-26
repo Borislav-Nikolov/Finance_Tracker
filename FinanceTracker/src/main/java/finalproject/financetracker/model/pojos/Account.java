@@ -1,4 +1,4 @@
-package finalproject.financetracker.model;
+package finalproject.financetracker.model.pojos;
 
 import lombok.*;
 import org.springframework.stereotype.Component;

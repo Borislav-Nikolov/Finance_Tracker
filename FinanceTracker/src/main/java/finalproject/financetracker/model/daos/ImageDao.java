@@ -1,7 +1,6 @@
 package finalproject.financetracker.model.daos;
 
-import finalproject.financetracker.controller.SpringJdbcConfig;
-import finalproject.financetracker.model.Image;
+import finalproject.financetracker.model.pojos.Image;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;

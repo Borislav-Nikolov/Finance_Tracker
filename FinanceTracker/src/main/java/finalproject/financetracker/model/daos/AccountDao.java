@@ -1,7 +1,6 @@
 package finalproject.financetracker.model.daos;
 
-import finalproject.financetracker.controller.SpringJdbcConfig;
-import finalproject.financetracker.model.Account;
+import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;

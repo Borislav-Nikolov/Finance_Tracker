@@ -1,6 +1,6 @@
 package finalproject.financetracker.model.daos;
 
-import finalproject.financetracker.model.Transaction;
+import finalproject.financetracker.model.pojos.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

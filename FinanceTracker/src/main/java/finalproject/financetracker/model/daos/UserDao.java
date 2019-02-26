@@ -1,7 +1,6 @@
 package finalproject.financetracker.model.daos;
 
-import finalproject.financetracker.model.User;
-import org.hibernate.ReplicationMode;
+import finalproject.financetracker.model.pojos.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;

@@ -4,8 +4,8 @@ package finalproject.financetracker.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import finalproject.financetracker.model.Account;
-import finalproject.financetracker.model.User;
+import finalproject.financetracker.model.pojos.Account;
+import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 @Controller
-@RequestMapping(value = "/profile/accounts")
+@RequestMapping(value = "/profile")
 public class AccountController extends AbstractController{
     private final AccountDao dao;
 
@@ -30,7 +30,7 @@ public class AccountController extends AbstractController{
     //-----------------------< Web Services >----------------------//
 
     //--------------add account for given user---------------------//
-    @RequestMapping(value = "/add",
+    @RequestMapping(value = "/accounts/add",
             method = RequestMethod.POST,
             produces = "application/json")
     @ResponseBody
@@ -65,7 +65,7 @@ public class AccountController extends AbstractController{
     }
 
     //--------------delete account---------------------//
-    @RequestMapping(value = "/delete/{accId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/accounts/delete/{accId}", method = RequestMethod.DELETE)
     @ResponseBody
     public void deleteAcc(@PathVariable(name = "accId") long accId,
                           HttpSession sess)
@@ -85,18 +85,25 @@ public class AccountController extends AbstractController{
     }
 
     //--------------get account---------------------//
-    @RequestMapping(value = "/{accId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/accounts/{accId}", method = RequestMethod.GET)
     @ResponseBody
-    public Account getAccById(@PathVariable(name = "accId") long accId,
+    public Account getAccById(@PathVariable(name = "accId") String accId,
                           HttpSession sess)
             throws
             SQLException,
             IOException,
             NotLoggedInException,
             NotFoundException, InvalidRequestDataException {
+        long longAccId = -1;
+
+        try {
+           longAccId = Long.parseLong(accId);
+        }catch (Exception e){
+            throw new InvalidRequestDataException("account id not found");
+        }
 
         User u = getLoggedUserWithIdFromSession(sess);
-        Account account = dao.getById(accId);
+        Account account = dao.getById(longAccId);
 
         if (account.getUserId() != u.getUserId()) {
             throw new NotLoggedInException("not logged in a.userId!=u.userId");
@@ -105,7 +112,7 @@ public class AccountController extends AbstractController{
     }
 
     //--------------update account---------------------//
-    @RequestMapping(value = "/update", method = RequestMethod.PUT)
+    @RequestMapping(value = "/accounts/update", method = RequestMethod.PUT)
     @ResponseBody
     public Account updateAcc(@RequestBody Account a,
                              HttpSession sess)
@@ -139,7 +146,7 @@ public class AccountController extends AbstractController{
     }
 
     //--------------show all accounts for a given userId ascending/descending---------------------//
-    @RequestMapping(value = "/all/{asc/desc}", method = RequestMethod.GET)
+    @RequestMapping(value = "/accounts/{asc/desc}", method = RequestMethod.GET)
     @ResponseBody
     public Account[] allAccOrdered(@PathVariable(name = "asc/desc") String order,
                                    HttpSession sess)
@@ -163,17 +170,16 @@ public class AccountController extends AbstractController{
     }
 
     //--------------get all accounts for a given userId---------------------//
-    @RequestMapping(value = "/all", method = RequestMethod.GET)
+    @RequestMapping(value = "/accounts",method = RequestMethod.GET)
     @ResponseBody
-    public void allAcc(HttpServletResponse resp,
-                       HttpSession sess) throws IOException, InvalidRequestDataException, NotLoggedInException {
+    public void allAcc(HttpServletResponse resp) throws IOException, InvalidRequestDataException, NotLoggedInException {
 
         resp.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-        resp.sendRedirect("/profile/accounts/all/asc");
+        resp.sendRedirect("/profile/accounts/asc");
     }
 
     //--------------get total account number for a given userId---------------------//
-    @RequestMapping(value = "/all/count", method = RequestMethod.GET)
+    @RequestMapping(value = "/accounts/all/count", method = RequestMethod.GET)
     @ResponseBody
     public JsonNode allAccCount(HttpSession sess)
             throws

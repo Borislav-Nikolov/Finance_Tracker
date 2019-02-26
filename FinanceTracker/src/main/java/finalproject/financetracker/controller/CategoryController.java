@@ -1,8 +1,8 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.model.Category;
-import finalproject.financetracker.model.Image;
-import finalproject.financetracker.model.User;
+import finalproject.financetracker.model.pojos.Category;
+import finalproject.financetracker.model.pojos.Image;
+import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.CategoryDao;
 import finalproject.financetracker.model.daos.ImageDao;
 import finalproject.financetracker.model.daos.UserDao;

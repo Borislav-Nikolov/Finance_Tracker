@@ -1,8 +1,8 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.model.Account;
-import finalproject.financetracker.model.Transaction;
-import finalproject.financetracker.model.User;
+import finalproject.financetracker.model.pojos.Account;
+import finalproject.financetracker.model.pojos.Transaction;
+import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.daos.TransactionDao;
 import finalproject.financetracker.model.daos.UserRepository;
@@ -65,7 +65,7 @@ public class TransactionController extends AbstractController {
             }
         }
         User user =userRepo.getByUserId(t.getUserId());
-        Account account = accountController.getAccById(t.getAccountId(),sess);
+        Account account = accountController.getAccById(Long.toString(t.getUserId()),sess);
 
         t = dao.add(t);
         t.setUser(user);

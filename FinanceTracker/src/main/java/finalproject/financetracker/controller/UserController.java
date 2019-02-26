@@ -1,6 +1,6 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.model.User;
+import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

@@ -1,7 +1,6 @@
 package finalproject.financetracker.model.daos;
 
-import finalproject.financetracker.model.Account;
-import finalproject.financetracker.model.Transaction;
+import finalproject.financetracker.model.pojos.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
