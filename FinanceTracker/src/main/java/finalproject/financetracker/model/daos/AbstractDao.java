@@ -13,7 +13,7 @@ public abstract class AbstractDao {
     @Autowired
     protected JdbcTemplate jdbcTemplate;
 
-    protected enum SQLCompareOperator {
+    public enum SQLCompareOperator {
 
         SMALLER_OR_EQUAL("<="), EQUALS("="), BIGGER_OR_EQUAL(">=");
 
@@ -28,15 +28,15 @@ public abstract class AbstractDao {
         }
     }
 
-    protected enum SQLColumnName {
+    public enum SQLColumnName {
         ACCOUNT_ID, ACCOUNT_NAME, AMOUNT, USER_ID
     }
 
-    protected enum SQLOderBy {
+    public enum SQLOderBy {
         ASC, DESC
     }
 
-    protected void closeStatement(Statement s) throws SQLException {
+    public void closeStatement(Statement s) throws SQLException {
         if (s!=null){
             s.close();
         }

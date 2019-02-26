@@ -1,9 +1,6 @@
 package finalproject.financetracker.controller;
 
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -12,9 +9,6 @@ import finalproject.financetracker.model.User;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DataAccessException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +18,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 @Controller
-@RequestMapping(value = "/profile/account")
+@RequestMapping(value = "/profile/accounts")
 public class AccountController extends AbstractController{
     private final AccountDao dao;
 
@@ -145,10 +139,9 @@ public class AccountController extends AbstractController{
     }
 
     //--------------show all accounts for a given userId ascending/descending---------------------//
-    @RequestMapping(value = "/all/{userId}/{desc}", method = RequestMethod.GET)
+    @RequestMapping(value = "/all/{asc/desc}", method = RequestMethod.GET)
     @ResponseBody
-    public Account[] allAccOrdered(@PathVariable(name = "userId") long userId,
-                                   @PathVariable(name = "desc") String order,
+    public Account[] allAccOrdered(@PathVariable(name = "asc/desc") String order,
                                    HttpSession sess)
             throws
             NotLoggedInException,
@@ -157,60 +150,44 @@ public class AccountController extends AbstractController{
             NotFoundException,
             InvalidRequestDataException {
 
-        if (userId <= 0) {
-            throw new InvalidRequestDataException();
-        }
         User sessUser = getLoggedUserWithIdFromSession(sess);
 
-        if (sessUser.getUserId() != userId) {
-            throw new NotLoggedInException();
-        }
         if (order != null && order.equalsIgnoreCase("desc")) {
-            return dao.getAllDesc(userId);
+            return dao.getAllDesc(sessUser.getUserId());
         }
         if (order != null && order.equalsIgnoreCase("asc")) {
-            return dao.getAllAsc(userId);
+            return dao.getAllAsc(sessUser.getUserId());
         }
         //TODO remove msg
         throw new NotFoundException("st: not found");
     }
 
     //--------------get all accounts for a given userId---------------------//
-    @RequestMapping(value = "/all/{userId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/all", method = RequestMethod.GET)
     @ResponseBody
-    public void allAcc(@PathVariable(name = "userId") long userId,
-                       HttpServletResponse resp,
+    public void allAcc(HttpServletResponse resp,
                        HttpSession sess) throws IOException, InvalidRequestDataException, NotLoggedInException {
 
-        if (userId <= 0) {
-            throw new InvalidRequestDataException();
-        }
-
         resp.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-        resp.sendRedirect("/profile/account/all/" + userId + "/asc");
+        resp.sendRedirect("/profile/accounts/all/asc");
     }
 
     //--------------get total account number for a given userId---------------------//
-    @RequestMapping(value = "/all", method = RequestMethod.GET)
+    @RequestMapping(value = "/all/count", method = RequestMethod.GET)
     @ResponseBody
-    public JsonNode allAccCount(@RequestParam(value = "id", required = true) long id,
-                                HttpSession sess)
+    public JsonNode allAccCount(HttpSession sess)
             throws
             InvalidRequestDataException,
             SQLException,
             NotLoggedInException,
             IOException {
 
-        if (id <= 0) {
-            throw new InvalidRequestDataException();
-        }
-        if (getLoggedUserWithIdFromSession(sess).getUserId() != id){
-            throw new NotLoggedInException();
-        }
+        User u = getLoggedUserWithIdFromSession(sess);
+
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode jn = mapper.createObjectNode();
-        long accounts = dao.getAllCount(id);
-        jn.put("userId", id);
+        long accounts = dao.getAllCount(u.getUserId());
+        jn.put("userId", u.getUserId());
         jn.put("accounts", accounts);
         return jn;
     }

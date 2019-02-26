@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import finalproject.financetracker.model.Account;
+import finalproject.financetracker.model.ErrMsg;
 import finalproject.financetracker.model.Transaction;
 import finalproject.financetracker.model.User;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Date;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -122,23 +124,23 @@ public abstract class AbstractController {
     //todo change msgs ---------------------------------/
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(IOException.class)
-    public String IOExceptionHandler(IOException e) {
-        return e.getMessage();
+    public ErrMsg IOExceptionHandler(IOException e) {
+        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }
 
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler({SQLException.class, DataAccessException.class})
-    public String SQLExceptionHandler(IOException e) {
-        return e.getMessage();
+    public ErrMsg SQLExceptionHandler(IOException e) {
+        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler({MyException.class, JsonProcessingException.class})
-    public String MyExceptionHandler(MyException e) throws MyException {
-        throw e;
+    public ErrMsg MyExceptionHandler(MyException e){
+        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler(Exception.class)
-    public String ExceptionHandler(Exception e) throws Exception {
-        throw new ServerErrorException();
+    public ErrMsg ExceptionHandler(Exception e){
+        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }
 }
