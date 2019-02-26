@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserDao {
 
+    static long DEFAULT_USER_ID = 1;
+
     @Autowired
     UserRepository userRepository;
     @Autowired
@@ -17,7 +19,6 @@ public class UserDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     public void registerUser(User user) {
-        this.insertAdminIfNotExist();
         userRepository.save(user);
     }
 
@@ -26,11 +27,11 @@ public class UserDao {
         userRepository.delete(user);
     }
 
-    public void insertAdminIfNotExist() {
-        User admin = new User("Admin", "adminpass123",
-                "Big", "Boss", "admin@fintrack.ft");
-        if (this.getUserByUsername(admin.getUsername()) != null) return;
-        userRepository.save(admin);
+    public void insertDefaultUserIfNotExists() {
+        User defaultUser = new User("Default", "Default",
+                "Default", "Default", "def@au.lt");
+        if (this.getUserByUsername(defaultUser.getUsername()) != null) return;
+        userRepository.save(defaultUser);
     }
 
     /* ----- UPDATE QUERIES ----- */

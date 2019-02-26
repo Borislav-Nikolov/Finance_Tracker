@@ -19,14 +19,11 @@ public class Category {
     private boolean isIncome;
     private long userId;
     private long imageId;
-    @Transient
-    private Image image;
 
-    public Category(String categoryName, boolean isIncome, long userId, long imageId, Image image) {
+    public Category(String categoryName, boolean isIncome, long userId, long imageId) {
         this.categoryName = categoryName;
         this.isIncome = isIncome;
         this.userId = userId;
         this.imageId = imageId;
-        this.image = image;
     }
 }

@@ -1,5 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS final_project;
+
 USE final_project;
+
 CREATE TABLE IF NOT EXISTS users (
 	user_id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(45) NOT NULL UNIQUE,
@@ -9,10 +11,12 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(60) NOT NULL UNIQUE,
     INDEX username_idx (username ASC)
 );
+
 CREATE TABLE IF NOT EXISTS images (
 	image_id INT PRIMARY KEY AUTO_INCREMENT,
     uri VARCHAR(200) NOT NULL
 );
+
 CREATE TABLE IF NOT EXISTS categories (
 	category_id INT PRIMARY KEY AUTO_INCREMENT,
     category_name VARCHAR(45) NOT NULL,
@@ -26,6 +30,7 @@ CREATE TABLE IF NOT EXISTS categories (
     CONSTRAINT image_fk FOREIGN KEY (image_id)
     REFERENCES images(image_id)
 );
+
 CREATE TABLE IF NOT EXISTS accounts (
 	account_id INT PRIMARY KEY AUTO_INCREMENT,
     account_name VARCHAR(45) NOT NULL,
@@ -35,6 +40,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     CONSTRAINT acc_user_fk FOREIGN KEY (user_id)
     REFERENCES users(user_id)
 );
+
 CREATE TABLE IF NOT EXISTS transactions (
 	transaction_id INT PRIMARY KEY AUTO_INCREMENT,
     transaction_name VARCHAR(45) NOT NULL,
@@ -49,6 +55,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     CONSTRAINT trans_category_fk FOREIGN KEY (category_id)
     REFERENCES categories(category_id)
 );
+
 CREATE TABLE IF NOT EXISTS planned_transactions (
 	pt_id INT PRIMARY KEY AUTO_INCREMENT,
     pt_name VARCHAR(45) NOT NULL,
@@ -63,6 +70,7 @@ CREATE TABLE IF NOT EXISTS planned_transactions (
     CONSTRAINT pt_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id),
     CONSTRAINT pt_category_fk FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
+
 CREATE TABLE IF NOT EXISTS budgets (
 	budget_id INT PRIMARY KEY AUTO_INCREMENT,
     budget_name VARCHAR(45) NOT NULL,

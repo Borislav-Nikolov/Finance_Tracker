@@ -51,7 +51,7 @@ public class CategoryController extends AbstractController {
             Image image = imageDao.getImageById(imageId);
             List<Category> categories = categoryDao.getPredefinedAndUserCategories(userId);
             if (!isRepeating(categories, categoryName)) {
-                Category newCategory = new Category(categoryName, isIncome, userId, imageId, image);
+                Category newCategory = new Category(categoryName, isIncome, userId, imageId);
                 return categoryDao.addCategory(newCategory);
             }
         } else {

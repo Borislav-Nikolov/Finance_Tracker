@@ -13,27 +13,22 @@ import java.io.File;
 public class ImageDao {
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private ImageRepository imageRepository;
+
     private static String ICONS_RELATIVE_PATH = "src/main/resources/static/img/category_icons";
     public  Image getImageById(long id) {
-        String sql = "SELECT * FROM final_project.images WHERE image_id = ?;";
-        return jdbcTemplate.queryForObject(sql, new Object[] {id}, new BeanPropertyRowMapper<>(Image.class));
+        return imageRepository.findByImageId(id);
     }
     public Image getImageByFileName(String fileName) {
-        String sql = "SELECT * FROM final_project.images WHERE uri LIKE ?;";
         String uri = ICONS_RELATIVE_PATH + "/" + fileName;
-        Image image = null;
-        try {
-            image = jdbcTemplate.queryForObject(sql, new Object[] {uri}, new BeanPropertyRowMapper<>(Image.class));
-        } catch (DataAccessException ex) {
-            System.out.println("Image not found: " + ex.getMessage());
-        }
-        return image;
+        return imageRepository.findByUri(uri);
     }
     public void addImage(String fileName) {
         String uri = ICONS_RELATIVE_PATH + "/" + fileName;
-        String sql = "INSERT INTO final_project.images(uri) " +
-                "VALUES (?);";
-        jdbcTemplate.update(sql, uri);
+        Image image = new Image();
+        image.setUri(uri);
+        imageRepository.save(image);
     }
 
     public void addAllIcons() {

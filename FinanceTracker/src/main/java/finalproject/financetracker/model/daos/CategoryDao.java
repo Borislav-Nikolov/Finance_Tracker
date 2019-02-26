@@ -49,34 +49,33 @@ public class CategoryDao {
         return categoryRepository.findAllByUserId(1);
     }
 
-    // TODO fix this (constructor needs more parameters + adjust Admin ID)
-//    public void addAllPredefined() {
-//        addCategory(new Category("Clothes", false, 0,
-//                imageDao.getImageByFileName("shirt_icon.png")));
-//        addCategory(new Category("Kids", false, -1,
-//                imageDao.getImageByFileName("child_icon.png")));
-//        addCategory(new Category("Toys", false, 0,
-//                imageDao.getImageByFileName("toy_icon.png")));
-//        addCategory(new Category("Work", true, 0,
-//                imageDao.getImageByFileName("computer_icon.png")));
-//        addCategory(new Category("Electronics", false, 0,
-//                imageDao.getImageByFileName("smartphone_icon.png")));
-//        addCategory(new Category("Pets", false, 0,
-//                imageDao.getImageByFileName("pawprint_icon.png")));
-//        addCategory(new Category("Child support", true, 0,
-//                imageDao.getImageByFileName("child_icon.png")));
-//        addCategory(new Category("Scholarship", true, 0,
-//                imageDao.getImageByFileName("book_icon.png")));
-//        addCategory(new Category("Bonus", true, 0,
-//                imageDao.getImageByFileName("laptop_icon.png")));
-//        addCategory(new Category("Gift", true, 0,
-//                imageDao.getImageByFileName("baloons_icon.png")));
-//        addCategory(new Category("Investment income", true, 0,
-//                imageDao.getImageByFileName("watch_icon.png")));
-//        addCategory(new Category("Entertainment", false, 0,
-//                imageDao.getImageByFileName("controller_icon.png")));
-//        addCategory(new Category("Car", false, 0,
-//                imageDao.getImageByFileName("car_icon.png")));
-//    }
+    public void addAllPredefinedCategories() {
+        addCategory(new Category("Clothes", false, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("shirt_icon.png").getImageId()));
+        addCategory(new Category("Kids", false, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("child_icon.png").getImageId()));
+        addCategory(new Category("Toys", false, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("toy_icon.png").getImageId()));
+        addCategory(new Category("Work", true, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("computer_icon.png").getImageId()));
+        addCategory(new Category("Electronics", false, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("smartphone_icon.png").getImageId()));
+        addCategory(new Category("Pets", false, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("pawprint_icon.png").getImageId()));
+        addCategory(new Category("Child support", true, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("child_icon.png").getImageId()));
+        addCategory(new Category("Scholarship", true, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("book_icon.png").getImageId()));
+        addCategory(new Category("Bonus", true, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("laptop_icon.png").getImageId()));
+        addCategory(new Category("Gift", true, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("baloons_icon.png").getImageId()));
+        addCategory(new Category("Investment income", true, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("watch_icon.png").getImageId()));
+        addCategory(new Category("Entertainment", false, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("controller_icon.png").getImageId()));
+        addCategory(new Category("Car", false, UserDao.DEFAULT_USER_ID,
+                imageDao.getImageByFileName("car_icon.png").getImageId()));
+    }
 
 }
