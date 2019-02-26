@@ -1,8 +1,8 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.model.exceptions.AlreadyLoggedInException;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.UserDao;
-import finalproject.financetracker.model.exceptions.MyException;
 import finalproject.financetracker.model.exceptions.user_exceptions.*;
 import finalproject.financetracker.model.exceptions.NotLoggedInException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,66 +33,45 @@ public class UserController extends AbstractController {
     /* ----- STATUS CHANGES ----- */
 
     @PostMapping(value = "/register")
-    public User registerUser(@RequestBody RegistrationInfo pass2,
-                             HttpServletResponse resp) throws Exception {
-        User user = pass2.user;
-        String password2 = pass2.password2;
-        if ((user.getPassword() == null || password2 == null) ||
-                (user.getPassword().isEmpty() || password2.isEmpty())) {
-            throw new InvalidPasswordAtRegistrationException();
+    public User registerUser(@RequestBody RegistrationDTO regInfo) throws RegistrationValidationException {
+        User user = regInfo.user;
+        String password2 = regInfo.password2;
+        this.validateUsername(user.getUsername());
+        this.validateEmail(user.getEmail());
+        this.validatePasswordsAtRegistration(user, password2);
+        if (user.getFirstName() != null && user.getFirstName().isEmpty()) {
+            user.setFirstName(null);
         }
-        if (!this.checkIfUserOrEmailExist(user) &&
-                password2.equals(user.getPassword()) &&
-                this.validateEmail(user.getEmail())) {
-            if (user.getFirstName() != null && user.getFirstName().isEmpty()) {
-                user.setFirstName(null);
-            }
-            if (user.getLastName() != null && user.getLastName().isEmpty()) {
-                user.setLastName(null);
-            }
-//                user.setPassword(SecSecurityConfig.getEncodedPassword(user.getPassword())); TODO connected to the SecSecurityConfig class
-            userDao.registerUser(user);
-            resp.sendRedirect("/login.html");
-        } else {
-            resp.setStatus(400);
-            resp.getWriter().append("Input matching passwords.");
-            return null;
+        if (user.getLastName() != null && user.getLastName().isEmpty()) {
+            user.setLastName(null);
         }
+        userDao.registerUser(user);
         return user;
     }
 
     @PostMapping(value = "/login")
-    public User loginUser(@RequestBody LoginInfo loginInfo, HttpServletResponse resp, HttpSession session) throws Exception {
+    public User loginUser(@RequestBody LoginDTO loginInfo, HttpSession session) throws Exception {
         String username = loginInfo.username;
         String password = loginInfo.password;
         User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
-            if (userDao.getUserByUsername(username) == null ||
-                    !user.getPassword().equals(password)) {
-                throw new InvalidLoginInfoException();
-            } else {
-                session.setAttribute("User", AccountController.toJson(user));
-                session.setAttribute("Username", user.getUsername());
-                session.setMaxInactiveInterval(-1);
-                return user;
-            }
+            validateLoginAttempt(username, password);
+            session.setAttribute("User", AccountController.toJson(user));
+            session.setAttribute("Username", user.getUsername());
+            session.setMaxInactiveInterval(-1);
+            return user;
         } else {
-            resp.getWriter().append("You are already logged in.");
-            resp.sendRedirect("/index.html");
-            return null;
+            throw new AlreadyLoggedInException();
         }
     }
 
     @PostMapping(value = "/logout")
-    public void logoutUser(HttpSession session, HttpServletResponse resp) throws IOException {
-        if (isLoggedIn(session)) {
-            session.invalidate();
-            resp.getWriter().append("You've logged out successfully.");
-            resp.sendRedirect("/index.html");
-        } else {
-            resp.getWriter().append("You're already logged out.");
-            resp.sendRedirect("/index.html");
+    public String logoutUser(HttpSession session) throws AlreadyLoggedOutException {
+        if (!isLoggedIn(session)) {
+            throw new AlreadyLoggedOutException();
         }
+        session.invalidate();
+        return "Logout successful.";
     }
 
     /* ----- PROFILE ACTIONS ----- */
@@ -142,8 +121,8 @@ public class UserController extends AbstractController {
         } else {
             user = userDao.getUserByUsername(session.getAttribute("Username").toString());
             if (newEmail.password.equals(user.getPassword())) {
-                if (userDao.getUserByEmail(newEmail.newEmail) == null &&
-                    this.validateEmail(newEmail.newEmail)) {
+                if (userDao.getUserByEmail(newEmail.newEmail) == null) {
+                    this.validateEmail(newEmail.newEmail);
                     user.setEmail(newEmail.newEmail);
                     userDao.updateUser(user);
                 } else {
@@ -180,46 +159,67 @@ public class UserController extends AbstractController {
             return !(session.isNew() || session.getAttribute("Username") == null);
         }
 
-        private boolean checkIfUserOrEmailExist (User user) throws RegistrationCheckException {
-            if (userDao.getUserByUsername(user.getUsername()) != null) {
-                throw new UserAlreadyExistsException();
-            } else if (userDao.getUserByEmail(user.getEmail()) != null) {
-                throw new EmailAlreadyUsedException();
-            }
-            return false;
-        }
-
-        private boolean validateEmail (String email) throws InvalidEmailException {
-            boolean result = true;
+        private void validateEmail (String email) throws RegistrationValidationException {
             try {
                 InternetAddress emailAddr = new InternetAddress(email);
                 emailAddr.validate();
             } catch (AddressException ex) {
                 throw new InvalidEmailException();
             }
-            return result;
+            if (userDao.getUserByEmail(email) != null) {
+                throw new EmailAlreadyUsedException();
+            }
+        }
+
+        private void validatePasswordsAtRegistration(User user, String password2)
+                throws RegistrationValidationException {
+            if ((user.getPassword() == null || password2 == null) ||
+                    (user.getPassword().length() < 3  || password2.length() < 3)) {
+                throw new InvalidPasswordAtRegistrationException();
+            }
+            if (!user.getPassword().equals(password2)) {
+                throw new PasswordMismatchException();
+            }
+        }
+
+        private void validateUsername(String username) throws RegistrationValidationException {
+            // TODO make a more intricate validation (concerning abusive language, etc.)
+            if (username.isEmpty() || username.equals(UserDao.DEFAULT_USER_USERNAME)) {
+                throw new InvalidUsernameException();
+            }
+            if (userDao.getUserByUsername(username) != null) {
+                throw new UserAlreadyExistsException();
+            }
+        }
+
+        private void validateLoginAttempt(String username, String password) throws InvalidLoginInfoException {
+            User user = userDao.getUserByUsername(username);
+            if (user == null || !user.getPassword().equals(password)) {
+                throw new InvalidLoginInfoException();
+            }
         }
 
         /* ----- INNER CLASSES ----- */
 
         /* ----- DTO classes ----- */
 
-        private static class RegistrationInfo {
+        private static class RegistrationDTO {
             private String password2;
+            // TODO think about separating user into different fields
             private User user;
 
-            private RegistrationInfo(String username, String password, String firstName, String lastName, String email, String password2) {
+            private RegistrationDTO(String username, String password, String firstName, String lastName, String email, String password2) {
                 this.user = new User(username, password, firstName, lastName, email);
                 this.password2 = password2;
             }
         }
 
-        private static class LoginInfo {
+        private static class LoginDTO {
             private String username;
             private String password;
             // TODO make LoginResponseDTO
             // TODO check if works without args constructor
-            private LoginInfo(String username, String password) {
+            private LoginDTO(String username, String password) {
                 this.username = username;
                 this.password = password;
             }
@@ -245,6 +245,9 @@ public class UserController extends AbstractController {
                 this.password = password;
                 this.newEmail = newEmail;
             }
+        }
+        private static class SuccessfulLogoutDTO {
+            private String msg = "Logout successful";
         }
     }
 

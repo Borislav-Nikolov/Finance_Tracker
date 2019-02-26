@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Date;
 
-import javax.servlet.http.HttpServletResponse;
 
 @RestController
 public abstract class AbstractController {
@@ -87,40 +86,19 @@ public abstract class AbstractController {
 
     //--------------Exception Handlers---------------------//
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({EmailAlreadyUsedException.class})
-    public void EmailAlreadyUsedExceptionHandler(EmailAlreadyUsedException ex,
-                                            HttpServletResponse response) throws IOException {
-
-    }
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({InvalidPasswordAtRegistrationException.class})
-    public void InvalidPasswordAtRegistrationExceptionHandler(InvalidPasswordAtRegistrationException ex,
-                                                         HttpServletResponse response) throws IOException {
-    }
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({InvalidEmailException.class})
-    public void InvalidEmailExceptionHandler(InvalidEmailException ex,
-                                        HttpServletResponse response) throws IOException {
-    }
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({UserAlreadyExistsException.class})
-    public void UserAlreadyExistsExceptionHandler(UserAlreadyExistsException ex,
-                                             HttpServletResponse response) throws IOException {
-    }
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({RegistrationCheckException.class})
-    public void RegistrationCheckExceptionHandler(RegistrationCheckException ex,
-                                             HttpServletResponse response) throws IOException {
+    @ExceptionHandler({RegistrationValidationException.class})
+    public ErrMsg EmailAlreadyUsedExceptionHandler(RegistrationValidationException ex) {
+        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), new Date());
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
     @ExceptionHandler({InvalidLoginInfoException.class})
-    public void InvalidLoginInfoExceptionHandler(InvalidLoginInfoException ex,
-                                           HttpServletResponse response) throws IOException {
+    public ErrMsg InvalidLoginInfoExceptionHandler(InvalidLoginInfoException ex) {
+        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), new Date());
     }
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
     @ExceptionHandler({InvalidPasswordInputException.class})
-    public void InvalidPasswordInputExceptionHandler(InvalidPasswordInputException ex,
-                                                 HttpServletResponse response) throws IOException {
+    public ErrMsg InvalidPasswordInputExceptionHandler(InvalidPasswordInputException ex) {
+        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), new Date());
     }
 
 

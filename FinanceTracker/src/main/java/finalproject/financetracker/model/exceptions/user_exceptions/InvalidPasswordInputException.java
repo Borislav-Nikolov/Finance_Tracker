@@ -2,8 +2,8 @@ package finalproject.financetracker.model.exceptions.user_exceptions;
 
 import finalproject.financetracker.model.exceptions.MyException;
 
-public class InvalidPasswordInputException extends RegistrationCheckException {
+public class InvalidPasswordInputException extends MyException {
     public InvalidPasswordInputException() {
-        super("Passwords must match and not be empty.");
+        super("Wrong password.");
     }
 }

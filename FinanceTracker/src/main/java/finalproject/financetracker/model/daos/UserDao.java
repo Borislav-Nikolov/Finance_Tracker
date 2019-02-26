@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 public class UserDao {
 
     static long DEFAULT_USER_ID = 1;
+    public static String DEFAULT_USER_USERNAME = "Default";
 
     @Autowired
     UserRepository userRepository;
