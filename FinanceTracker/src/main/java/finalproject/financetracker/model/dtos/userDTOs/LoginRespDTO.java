@@ -10,6 +10,7 @@ import java.util.Date;
 @Setter
 @AllArgsConstructor
 public class LoginRespDTO {
+    private long userId;
     private String username;
     private String firstName;
     private String lastName;

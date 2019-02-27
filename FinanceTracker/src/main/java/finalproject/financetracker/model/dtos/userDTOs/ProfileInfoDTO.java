@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class ProfileInfoDTO {
+    private long userId;
     private String username;
     private String firstName;
     private String lastName;

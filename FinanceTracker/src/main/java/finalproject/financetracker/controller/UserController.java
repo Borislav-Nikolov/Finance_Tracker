@@ -68,7 +68,7 @@ public class UserController extends AbstractController {
             session.setAttribute("User", AccountController.toJson(user));
             session.setAttribute("Username", user.getUsername());
             session.setMaxInactiveInterval(-1);
-            return new LoginRespDTO(user.getUsername(), user.getFirstName(),
+            return new LoginRespDTO(user.getUserId(), user.getUsername(), user.getFirstName(),
                     user.getLastName(), user.getEmail(), new Date());
         } else {
             throw new AlreadyLoggedInException();
@@ -90,13 +90,15 @@ public class UserController extends AbstractController {
     public ProfileInfoDTO viewProfile(HttpSession session)
             throws IOException, MyException {
         User user = this.getLoggedUserWithIdFromSession(session);
-        return new ProfileInfoDTO(user.getUsername(), user.getFirstName(), user.getLastName(), user.getEmail());
+        return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
+                user.getFirstName(), user.getLastName(), user.getEmail());
     }
     @GetMapping(value = "/profile/edit")
     public ProfileInfoDTO editProfile(HttpSession session)
             throws IOException, MyException {
         User user = this.getLoggedUserWithIdFromSession(session);
-        return new ProfileInfoDTO(user.getUsername(), user.getFirstName(), user.getLastName(), user.getEmail());
+        return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
+                user.getFirstName(), user.getLastName(), user.getEmail());
     }
     @PutMapping(value = "/profile/edit/password")
     public CommonMsgDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session)
