@@ -1,5 +1,7 @@
 package finalproject.financetracker.model.daos;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -9,6 +11,8 @@ import java.sql.Statement;
 
 @Component
 public abstract class AbstractDao {
+
+    protected Logger logger = LogManager.getLogger(Logger.class);
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;

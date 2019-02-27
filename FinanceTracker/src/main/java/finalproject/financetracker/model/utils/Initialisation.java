@@ -1,5 +1,7 @@
 package finalproject.financetracker.model.utils;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -29,6 +31,8 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
     @Autowired
     private UserDao userDao;
 
+    private Logger logger = LogManager.getLogger(Logger.class);
+
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
@@ -41,7 +45,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
                 categoryDao.addAllPredefinedCategories();
             }
         } catch (SQLException | IOException ex) {
-            System.out.println("Couldn't initialize DB: " + ex.getMessage());
+            logger.error("Couldn't initialize DB: " + ex.getMessage());
         }
     }
     private void createSchemaIfNotExists() throws SQLException, IOException {
@@ -49,7 +53,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
         List<StringBuilder> allQueriesSB = new ArrayList<>();
         File file = new File("schemaSQL.txt");
         if (file.exists()) {
-            System.out.println("SQL schema query file - found!");
+            logger.info("SQL schema query file - found!");
             try (FileInputStream fis = new FileInputStream(file)) {
                 int symbol = fis.read();
                 while (symbol != -1) {
@@ -62,7 +66,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
                     symbol = fis.read();
                 }
             } catch (FileNotFoundException e) {
-                System.out.println("Error creating DB schema! File " + file.getName() + " read error! " + e.getMessage());
+                logger.error("Error creating DB schema! File " + file.getName() + " read error! " + e.getMessage());
                 return;
             }
             for (StringBuilder sql : allQueriesSB) {
@@ -73,7 +77,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
                 jdbcTemplate.execute(sqlString);
             }
         } else {
-            System.out.println("File with schema create query not found!");
+            logger.error("File with schema create query not found!");
         }
     }
 }

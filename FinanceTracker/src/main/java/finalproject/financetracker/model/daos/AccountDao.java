@@ -21,7 +21,7 @@ public class AccountDao extends AbstractDao {
 
     @Autowired
     AccountDao(JdbcTemplate jdbcTemplate) throws SQLException {
-        System.out.println("MySQLCon in AccountDao is created.");
+        logger.info("MySQLCon in AccountDao is created.");
         this.mySQLCon = jdbcTemplate.getDataSource().getConnection();
     }
 
@@ -29,11 +29,11 @@ public class AccountDao extends AbstractDao {
     void closeMySQLCon() throws SQLException {
         try {
             this.mySQLCon.close();
-            System.out.println("MySQLCon in AccountDao is closed.");
+            logger.info("MySQLCon in AccountDao is closed.");
         } catch (SQLException e) {
-            System.out.println("Error closing mySQLCon in AccountDao. Trying again...");
+            logger.error("Error closing mySQLCon in AccountDao. Trying again...");
             this.mySQLCon.close();
-            System.out.println("MySQLCon in AccountDao is closed.");
+            logger.info("MySQLCon in AccountDao is closed.");
         }
     }
 

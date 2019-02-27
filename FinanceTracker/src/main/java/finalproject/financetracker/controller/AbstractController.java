@@ -12,6 +12,9 @@ import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.exceptions.user_exceptions.*;
 import javassist.tools.web.BadHttpRequest;
+import lombok.NoArgsConstructor;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -26,11 +29,25 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Date;
 
-
+@NoArgsConstructor
 @RestController
 public abstract class AbstractController {
 
     //---------------------< Methods >----------------------//
+
+    private Logger logger = LogManager.getLogger(Logger.class);
+
+    private void logInfo(HttpStatus httpStatusCode, Exception e) {
+        logger.info(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + e.getMessage());
+    }
+
+    private void logWarn(HttpStatus httpStatusCode, Exception e) {
+        logger.warn(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + e.getMessage());
+    }
+
+    private void logError(HttpStatus httpStatusCode, Exception e) {
+        logger.error(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + e.getMessage());
+    }
 
     protected void validateLogin(HttpSession session) throws NotLoggedInException {
         if (!UserController.isLoggedIn(session)) {
@@ -81,6 +98,7 @@ public abstract class AbstractController {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(u);
     }
+
 
     //---------------------< /Methods >----------------------//
 
@@ -140,16 +158,19 @@ public abstract class AbstractController {
 
     @ExceptionHandler(IOException.class)  //500
     public ErrMsg IOExceptionHandler(Exception e) {
+        logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
         return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler({SQLException.class, DataAccessException.class}) //500
     public ErrMsg SQLExceptionHandler(Exception e) {
+        logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
         return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler(Exception.class) //500
     public ErrMsg ExceptionHandler(Exception e){
+        logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
         return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }
 }
