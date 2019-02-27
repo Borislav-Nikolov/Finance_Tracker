@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import finalproject.financetracker.model.exceptions.*;
+import finalproject.financetracker.model.exceptions.category_exceptions.CategoryException;
+import finalproject.financetracker.model.exceptions.image_exceptions.ImageNotFoundException;
 import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.pojos.ErrMsg;
 import finalproject.financetracker.model.pojos.Transaction;
@@ -103,19 +105,17 @@ public abstract class AbstractController {
     //---------------------< /Methods >----------------------//
 
     //--------------Exception Handlers---------------------//
+    // TODO transfer to below method
     @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({RegistrationValidationException.class})
-    public ErrMsg EmailAlreadyUsedExceptionHandler(RegistrationValidationException ex) {
-        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), new Date());
-    }
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({InvalidLoginInfoException.class})
-    public ErrMsg InvalidLoginInfoExceptionHandler(InvalidLoginInfoException ex) {
-        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), new Date());
-    }
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({InvalidPasswordInputException.class})
-    public ErrMsg InvalidPasswordInputExceptionHandler(InvalidPasswordInputException ex) {
+    @ExceptionHandler({
+            RegistrationValidationException.class,
+            InvalidLoginInfoException.class,
+            PasswordValidationException.class,
+            RegistrationValidationException.class,
+            CategoryException.class,
+            ImageNotFoundException.class
+    })
+    public ErrMsg handleBadRequestExceptions(MyException ex) {
         return new ErrMsg(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), new Date());
     }
 

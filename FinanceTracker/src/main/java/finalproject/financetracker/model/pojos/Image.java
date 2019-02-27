@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @NoArgsConstructor
 @Getter
@@ -28,5 +29,18 @@ public class Image {
                 "imageId=" + imageId +
                 ", uri='" + uri + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Image image = (Image) o;
+        return imageId == image.imageId;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(imageId);
     }
 }
