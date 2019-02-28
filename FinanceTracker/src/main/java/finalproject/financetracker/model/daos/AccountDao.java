@@ -1,9 +1,9 @@
 package finalproject.financetracker.model.daos;
 
+import finalproject.financetracker.model.dtos.account.EditAccountDTO;
 import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -28,8 +28,10 @@ public class AccountDao extends AbstractDao {
     @PreDestroy
     void closeMySQLCon() throws SQLException {
         try {
-            this.mySQLCon.close();
-            logger.info("MySQLCon in AccountDao is closed.");
+            if (this.mySQLCon!= null) {
+                this.mySQLCon.close();
+                logger.info("MySQLCon in AccountDao is closed.");
+            }
         } catch (SQLException e) {
             logger.error("Error closing mySQLCon in AccountDao. Trying again...");
             this.mySQLCon.close();
@@ -37,14 +39,13 @@ public class AccountDao extends AbstractDao {
         }
     }
 
-    public void updateAcc(Account acc) throws SQLException {
+    public void updateAcc(EditAccountDTO acc, long userId) throws SQLException {
         PreparedStatement ps = null;
         try {
-            String sql = "UPDATE final_project.accounts SET account_name = ?, amount = ? WHERE account_id = ?;";
+            String sql = "UPDATE final_project.accounts SET account_name = ? WHERE account_id = ?;";
             ps = mySQLCon.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, acc.getAccountName());
-            ps.setDouble(2, acc.getAmount());
-            ps.setLong(3, acc.getAccountId());
+            ps.setString(1, acc.getAccountName().trim());
+            ps.setLong(2, acc.getAccountId());
             ps.executeUpdate();
         }
         finally {
@@ -130,7 +131,7 @@ public class AccountDao extends AbstractDao {
         try {
             String sql = "INSERT INTO final_project.accounts(account_name, user_id, amount) VALUES (?, ?, ?);";
             ps = mySQLCon.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, acc.getAccountName());
+            ps.setString(1, acc.getAccountName().trim());
             ps.setLong(2, acc.getUserId());
             ps.setDouble(3, acc.getAmount());
             ps.executeUpdate();
@@ -195,4 +196,22 @@ public class AccountDao extends AbstractDao {
         }
         throw new NotFoundException("account " + id + " not found");
     }
+
+    public double getUserBalanceByUserId(long userId) throws SQLException {
+        String sql = "SELECT SUM(a.amount) AS sum FROM final_project.accounts AS a WHERE a.user_id = ?";
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = mySQLCon.prepareStatement(sql);
+            ps.setLong(1, userId);
+            rs = ps.executeQuery();
+            if (rs.next()){
+                return rs.getDouble("sum");
+            }else return 0;
+        } finally {
+            closeResultSet(rs);
+            closeStatement(ps);
+        }
+    }
+
 }

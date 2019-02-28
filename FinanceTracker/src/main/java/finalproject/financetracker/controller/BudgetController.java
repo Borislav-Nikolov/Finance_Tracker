@@ -33,7 +33,7 @@ public class BudgetController extends AbstractController {
 
     @GetMapping(value = "/budgets")
     public BudgetsViewDTO viewBudgets(HttpSession session) throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         List<Budget> budgets = budgetRepository.findAllByUserId(user.getUserId());
         List<BudgetInfoDTO> budgetsInfo = new ArrayList<>();
         for (Budget budget : budgets) {
@@ -48,7 +48,7 @@ public class BudgetController extends AbstractController {
 
     @GetMapping(value = "/budgets/{budgetId}")
     public BudgetInfoDTO viewBudget(@PathVariable long budgetId, HttpSession session) throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         Budget budget = budgetRepository.findByBudgetId(budgetId);
         this.validateBudgetOwnership(budget, user.getUserId());
         return this.getBudgetInfoDTO(budget);
@@ -57,7 +57,7 @@ public class BudgetController extends AbstractController {
     @PostMapping(value = "/budgets/createBudget")
     public BudgetInfoDTO createBudget(@RequestBody BudgetCreationDTO budgetCreationDTO, HttpSession session)
                                     throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         String budgetName = budgetCreationDTO.getBudgetName();
         double amount = budgetCreationDTO.getAmount();
         LocalDate startingDate = budgetCreationDTO.getStartingDate();
@@ -83,7 +83,7 @@ public class BudgetController extends AbstractController {
             @RequestParam(value = "categoryId", required = false) Long categoryId,
             HttpSession session)
                                 throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         Budget budget = budgetRepository.findByBudgetId(budgetId);
         this.validateBudgetOwnership(budget, user.getUserId());
         this.validateDates(budget.getStartingDate(), endDate);
@@ -105,7 +105,7 @@ public class BudgetController extends AbstractController {
 
     @DeleteMapping(value = "/budgets/deleteBudget/{budgetId}")
     public BudgetInfoDTO deleteBudget(@PathVariable long budgetId, HttpSession session) throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         Budget budget = budgetRepository.findByBudgetId(budgetId);
         this.validateBudgetOwnership(budget, user.getUserId());
         budgetRepository.delete(budget);

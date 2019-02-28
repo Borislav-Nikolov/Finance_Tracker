@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 
+import javax.jws.soap.SOAPBinding;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -57,30 +58,12 @@ public abstract class AbstractController {
         }
     }
 
-    protected boolean isValidAccount(Account a) {
-        return a != null &&
-                a.getAccountName() != null &&
-                !a.getAccountName().isEmpty() &&
-                !(a.getAmount() <= 0) &&
-                a.getUserId() > 0;
-    }
 
-    protected boolean isNotValidTransaction(Transaction t) {
-        return t == null ||
-                t.getTransactionName() == null ||
-                t.getTransactionName().isEmpty() ||
-                (t.getAmount() <= 0) ||
-                t.getUserId() <= 0 ||
-                t.getCategoryId() <= 0 ||
-                t.getAccountId() <= 0 ||
-                t.getExecutionDate()==null;
-    }
 
-    protected User getLoggedUserWithIdFromSession(HttpSession sess)
+    protected User getLoggedValidUserFromSession(HttpSession sess)
             throws
             NotLoggedInException,
-            IOException,
-            InvalidRequestDataException {
+            IOException{
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -90,10 +73,30 @@ public abstract class AbstractController {
         }
         User u = mapper.readValue(sess.getAttribute("User").toString(), User.class);
 
-        if (u == null || u.getUserId() <=0) {
-            throw new InvalidRequestDataException();
+        if (u == null ||
+            u.getUserId() <=0 ||
+            u.getUsername() == null ||
+            u.getUsername().isEmpty() ||
+            u.getEmail()==null ||
+            u.getEmail().isEmpty() ||
+            u.getFirstName() == null ||
+            u.getFirstName().isEmpty() ||
+            u.getLastName()==null ||
+            u.getLastName().isEmpty()) {
+            throw new NotLoggedInException();
         }
         return u;
+    }
+
+    protected void checkIfBelongsToLoggedUser(long resourceUserId, User u)
+            throws
+            NotLoggedInException,
+            IOException,
+            InvalidRequestDataException {
+
+        if (resourceUserId != u.getUserId()) {
+            throw new NotLoggedInException("not logged in a.userId!=u.userId");
+        }
     }
 
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {

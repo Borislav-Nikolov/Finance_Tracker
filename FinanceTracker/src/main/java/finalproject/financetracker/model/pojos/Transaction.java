@@ -32,6 +32,11 @@ public class Transaction implements ITransaction {
     @Column
     private long categoryId;
 
-    @Column
-    private long accountId;
+    public Transaction(String transactionName, double amount, Date executionDate, long userId, long categoryId) {
+        this.transactionName = transactionName;
+        this.amount = amount;
+        this.executionDate = executionDate;
+        this.userId = userId;
+        this.categoryId = categoryId;
+    }
 }

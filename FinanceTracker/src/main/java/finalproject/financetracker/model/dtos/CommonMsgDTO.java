@@ -1,4 +1,4 @@
-package finalproject.financetracker.model.dtos.account;
+package finalproject.financetracker.model.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

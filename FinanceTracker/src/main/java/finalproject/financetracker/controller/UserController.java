@@ -1,7 +1,7 @@
 package finalproject.financetracker.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import finalproject.financetracker.model.dtos.account.CommonMsgDTO;
+import finalproject.financetracker.model.dtos.CommonMsgDTO;
 import finalproject.financetracker.model.exceptions.AlreadyLoggedInException;
 import finalproject.financetracker.model.exceptions.MyException;
 import finalproject.financetracker.model.pojos.User;
@@ -65,7 +65,7 @@ public class UserController extends AbstractController {
         User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
             validateLoginAttempt(username, password);
-            session.setAttribute("User", AccountController.toJson(user));
+            session.setAttribute("User", AbstractController.toJson(user));
             session.setAttribute("Username", user.getUsername());
             session.setMaxInactiveInterval(-1);
             return new LoginRespDTO(user.getUserId(), user.getUsername(), user.getFirstName(),
@@ -89,21 +89,21 @@ public class UserController extends AbstractController {
     @GetMapping(value = "/profile")
     public ProfileInfoDTO viewProfile(HttpSession session)
             throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
                 user.getFirstName(), user.getLastName(), user.getEmail());
     }
     @GetMapping(value = "/profile/edit")
     public ProfileInfoDTO editProfile(HttpSession session)
             throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
                 user.getFirstName(), user.getLastName(), user.getEmail());
     }
     @PutMapping(value = "/profile/edit/password")
     public CommonMsgDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session)
             throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         if (passChange.getOldPass().equals(user.getPassword())) {
             validateNewPassword(passChange.getNewPass(), passChange.getNewPass2());
             user.setPassword(passChange.getNewPass());
@@ -116,7 +116,7 @@ public class UserController extends AbstractController {
     @PutMapping(value = "/profile/edit/email")
     public CommonMsgDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session)
             throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         if (emailChange.getPassword().equals(user.getPassword())) {
             this.validateEmail(emailChange.getNewEmail());
             user.setEmail(emailChange.getNewEmail());
@@ -129,7 +129,7 @@ public class UserController extends AbstractController {
     @DeleteMapping(value = "/profile/edit/deleteProfile")
     public CommonMsgDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session)
             throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         if (password.get("password").equals(user.getPassword())) {
             userDao.deleteUser(user);
             session.invalidate();

@@ -14,6 +14,12 @@ public class Account {
     private double amount;
     private long userId;
 
+    public Account(String accountName, double amount, long userId) {
+        this.accountName = accountName;
+        this.amount = amount;
+        this.userId = userId;
+    }
+
     public long getAccountId() {
         return accountId;
     }

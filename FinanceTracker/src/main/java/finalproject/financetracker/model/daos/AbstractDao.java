@@ -17,6 +17,7 @@ public abstract class AbstractDao {
     @Autowired
     protected JdbcTemplate jdbcTemplate;
 
+
     public enum SQLCompareOperator {
 
         SMALLER_OR_EQUAL("<="), EQUALS("="), BIGGER_OR_EQUAL(">=");

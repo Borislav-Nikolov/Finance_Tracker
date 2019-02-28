@@ -1,7 +1,7 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.model.dtos.account.CommonMsgDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetsViewDTO;
+import finalproject.financetracker.model.dtos.CommonMsgDTO;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
 import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
@@ -37,7 +37,7 @@ public class CategoryController extends AbstractController {
 
     @GetMapping(value = "/categories")
     public CategoriesViewDTO viewCategories(HttpSession session) throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         List<Category> categories = categoryDao.getPredefinedAndUserCategories(user.getUserId());
         CategoriesViewDTO categoriesViewDTO = new CategoriesViewDTO(new ArrayList<>());
         for (Category category : categories) {
@@ -70,7 +70,7 @@ public class CategoryController extends AbstractController {
                                        @RequestParam("imageId") long imageId,
                                        HttpSession session)
                         throws Exception {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         this.validateCategoryName(user.getUserId(), categoryName);
         this.validateImage(imageId);
         Category category = new Category(categoryName, isIncome, user.getUserId(), imageId);
@@ -81,7 +81,7 @@ public class CategoryController extends AbstractController {
     @DeleteMapping(value = "categories/deleteCategory")
     public CommonMsgDTO deleteCategory(@RequestParam("categoryName") String categoryName, HttpSession session)
             throws IOException, MyException {
-        User user = this.getLoggedUserWithIdFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session);
         Category category = categoryDao.getCategoryByNameAndUserId(categoryName, user.getUserId());
         if (category == null) {
             throw new CategoryNotFoundException();
@@ -93,7 +93,7 @@ public class CategoryController extends AbstractController {
     public Category getCategoryById(long categoryId, HttpSession session)
             throws IOException, NotLoggedInException, InvalidRequestDataException, ForbiddenRequestException {
         Category category = categoryDao.getCategoryById(categoryId);
-        User user = getLoggedUserWithIdFromSession(session);
+        User user = getLoggedValidUserFromSession(session);
         if (category.getUserId() == user.getUserId()) {
             return category;
         }
