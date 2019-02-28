@@ -20,5 +20,15 @@ public class Budget {
     private double amount;
     private LocalDate startingDate;
     private LocalDate endDate;
+    private long userId;
     private long categoryId;
+
+    public Budget(String budgetName, double amount, LocalDate startingDate, LocalDate endDate, long userId, long categoryId) {
+        this.budgetName = budgetName;
+        this.amount = amount;
+        this.startingDate = startingDate;
+        this.endDate = endDate;
+        this.userId = userId;
+        this.categoryId = categoryId;
+    }
 }

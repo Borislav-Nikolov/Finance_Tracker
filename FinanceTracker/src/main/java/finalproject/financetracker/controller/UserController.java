@@ -39,8 +39,8 @@ public class UserController extends AbstractController {
     @PostMapping(value = "/register")
     public User registerUser(@RequestBody RegistrationDTO regInfo) throws RegistrationValidationException {
         String username = regInfo.getUsername();
-        String password = regInfo.getPassword();
-        String password2 = regInfo.getPassword2();
+        String password = regInfo.getPassword().trim();
+        String password2 = regInfo.getPassword2().trim();
         String firstName = regInfo.getFirstName();
         String lastName = regInfo.getLastName();
         String email = regInfo.getEmail();
@@ -61,7 +61,7 @@ public class UserController extends AbstractController {
     public LoginRespDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session)
                                     throws MyException, JsonProcessingException {
         String username = loginInfo.getUsername();
-        String password = loginInfo.getPassword();
+        String password = loginInfo.getPassword().trim();
         User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
             validateLoginAttempt(username, password);

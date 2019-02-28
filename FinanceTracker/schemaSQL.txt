@@ -89,7 +89,11 @@ CREATE TABLE IF NOT EXISTS final_project.budgets (
     amount DOUBLE NOT NULL,
     starting_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     end_date TIMESTAMP,
+    user_id INT NOT NULL,
     category_id INT NOT NULL,
+    INDEX user_fk_idx (user_id ASC),
+    CONSTRAINT budget_user_fk FOREIGN KEY (user_id)
+    REFERENCES users(user_id),
     INDEX category_fk_idx (category_id ASC) ,
     CONSTRAINT budget_category_fk FOREIGN KEY (category_id)
     REFERENCES categories(category_id)

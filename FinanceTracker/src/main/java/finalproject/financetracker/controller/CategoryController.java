@@ -1,6 +1,7 @@
 package finalproject.financetracker.controller;
 
 import finalproject.financetracker.model.dtos.account.CommonMsgDTO;
+import finalproject.financetracker.model.dtos.budgetDTOs.BudgetsViewDTO;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
 import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
@@ -16,10 +17,7 @@ import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.exceptions.MyException;
 import finalproject.financetracker.model.exceptions.NotLoggedInException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -56,6 +54,13 @@ public class CategoryController extends AbstractController {
             categoriesViewDTO.getCategories().add(categoryInfoDTO);
         }
         return categoriesViewDTO;
+    }
+
+    @GetMapping(value = "/budgets/{categoryId}")
+    public CategoryInfoDTO viewBudgets(@PathVariable long categoryId, HttpSession session)
+            throws IOException, MyException {
+        // TODO
+        return null;
     }
 
     @GetMapping(value = "/categories/createCategory")
