@@ -35,6 +35,7 @@ public class ReturnTransactionDTO implements IDTO {
         this.amount = t.getAmount();
         this.userId = t.getUserId();
         this.categoryId = t.getCategoryId();
+        this.accountId = t.getAccountId();
     }
 
     public ReturnTransactionDTO withUsername(String username){
@@ -44,6 +45,11 @@ public class ReturnTransactionDTO implements IDTO {
 
     public ReturnTransactionDTO withCategoryName(String categoryName){
         this.categoryName = categoryName;
+        return this;
+    }
+
+    public ReturnTransactionDTO withAccountName(String accountName){
+        this.accountName = accountName;
         return this;
     }
 

@@ -3,6 +3,8 @@ package finalproject.financetracker.model.dtos.account;
 import finalproject.financetracker.model.dtos.IDTO;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.model.pojos.Account;
+import finalproject.financetracker.model.pojos.IPlannedTransaction;
+import finalproject.financetracker.model.pojos.ITransaction;
 import finalproject.financetracker.model.pojos.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,6 +23,8 @@ public class ReturnAccountDTO implements IDTO {
     private double amount;
     private long userId;
     private String username;
+    private List<ITransaction> transactions;
+    private List<IPlannedTransaction> plannedTransactions;
 
     public ReturnAccountDTO(Account a){
         this.accountId = a.getAccountId();
@@ -31,6 +35,11 @@ public class ReturnAccountDTO implements IDTO {
 
     public ReturnAccountDTO withUsername(String username){
         this.username = username;
+        return this;
+    }
+
+    public ReturnAccountDTO withTransactions(List<ITransaction> transactions){
+        this.transactions = transactions;
         return this;
     }
 

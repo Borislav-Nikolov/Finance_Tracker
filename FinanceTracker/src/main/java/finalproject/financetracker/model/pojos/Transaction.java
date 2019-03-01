@@ -10,7 +10,7 @@ import java.util.Date;
 @Entity(name = "transactions")
 @NoArgsConstructor
 @AllArgsConstructor
-@Inheritance(strategy = InheritanceType.JOINED)
+//@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class Transaction implements ITransaction {
 
     @Id
@@ -27,15 +27,19 @@ public class Transaction implements ITransaction {
     private Date executionDate;
 
     @Column
+    private long accountId;
+
+    @Column
     private long userId;
 
     @Column
     private long categoryId;
 
-    public Transaction(String transactionName, double amount, Date executionDate, long userId, long categoryId) {
+    public Transaction(String transactionName, double amount, Date executionDate,long accountId, long userId, long categoryId) {
         this.transactionName = transactionName;
         this.amount = amount;
         this.executionDate = executionDate;
+        this.accountId = accountId;
         this.userId = userId;
         this.categoryId = categoryId;
     }

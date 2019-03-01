@@ -50,31 +50,31 @@ public class CategoryDao {
     }
 
     public void addAllPredefinedCategories() {
-        addCategory(new Category("Clothes", false, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Clothes", false, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("shirt_icon.png").getImageId()));
-        addCategory(new Category("Kids", false, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Kids", false, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("child_icon.png").getImageId()));
-        addCategory(new Category("Toys", false, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Toys", false, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("toy_icon.png").getImageId()));
-        addCategory(new Category("Work", true, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Work", true, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("computer_icon.png").getImageId()));
-        addCategory(new Category("Electronics", false, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Electronics", false, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("smartphone_icon.png").getImageId()));
-        addCategory(new Category("Pets", false, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Pets", false, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("pawprint_icon.png").getImageId()));
-        addCategory(new Category("Child support", true, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Child support", true, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("child_icon.png").getImageId()));
-        addCategory(new Category("Scholarship", true, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Scholarship", true, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("book_icon.png").getImageId()));
-        addCategory(new Category("Bonus", true, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Bonus", true, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("laptop_icon.png").getImageId()));
-        addCategory(new Category("Gift", true, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Gift", true, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("baloons_icon.png").getImageId()));
-        addCategory(new Category("Investment income", true, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Investment income", true, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("watch_icon.png").getImageId()));
-        addCategory(new Category("Entertainment", false, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Entertainment", false, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("controller_icon.png").getImageId()));
-        addCategory(new Category("Car", false, UserDao.DEFAULT_USER_ID,
+        addCategory(new Category("Car", false, UserDao.DEFAULT_CATEGORY_USER_ID,
                 imageDao.getImageByFileName("car_icon.png").getImageId()));
     }
 

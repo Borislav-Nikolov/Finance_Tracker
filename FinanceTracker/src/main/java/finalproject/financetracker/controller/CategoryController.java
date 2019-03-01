@@ -1,6 +1,5 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.model.dtos.budgetDTOs.BudgetsViewDTO;
 import finalproject.financetracker.model.dtos.CommonMsgDTO;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
 import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
@@ -91,10 +90,12 @@ public class CategoryController extends AbstractController {
     }
 
     public Category getCategoryById(long categoryId, HttpSession session)
-            throws IOException, NotLoggedInException, InvalidRequestDataException, ForbiddenRequestException {
+            throws IOException, NotLoggedInException, ForbiddenRequestException {
         Category category = categoryDao.getCategoryById(categoryId);
         User user = getLoggedValidUserFromSession(session);
-        if (category.getUserId() == user.getUserId() || category.getUserId() == UserDao.DEFAULT_USER_ID) {
+        System.out.println(user);
+        System.out.println(category);
+        if (category.getUserId() == UserDao.DEFAULT_CATEGORY_USER_ID || user.getUserId() == category.getUserId()) {
             return category;
         }
         throw new ForbiddenRequestException("Category does not belong to this user.");

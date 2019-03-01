@@ -14,20 +14,13 @@ import lombok.Setter;
 public class UpdateTransactionDTO implements IDTO {
 
     private long transactionId;
-
     private String transactionName;
-
-    private double amount;
-
-    private long categoryId;
 
     @Override
     public void checkValid() throws InvalidRequestDataException {
-        if (!(transactionId > 0 &&
+        if (!(transactionId>0 &&
             transactionName != null &&
-            !transactionName.isEmpty() &&
-            amount > 0 &&
-            categoryId > 0)){
+            !transactionName.isEmpty())){
             throw new InvalidRequestDataException();
         };
     }

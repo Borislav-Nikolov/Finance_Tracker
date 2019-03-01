@@ -11,9 +11,9 @@ import javax.persistence.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-public class PlannedTransaction extends Transaction implements IPlannedTransaction{
+//@Entity(name = "planned_transactions")
+public class PlannedTransaction{
 
-    @Column
+//    @Column
     private long repeatPeriod;
 }

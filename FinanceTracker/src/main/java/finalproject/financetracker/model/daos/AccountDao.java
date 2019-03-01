@@ -79,11 +79,11 @@ public class AccountDao extends AbstractDao {
         return result;
     }
 
-    public Account[] getAllAsc(long userId) throws SQLException {
+    public Account[] getAllAccountsAsc(long userId) throws SQLException {
         return getAll(userId, QUERY_RETURN_MAX_LIMIT, QUERY_RETURN_OFFSET_DEFAULT, SQLOderBy.ASC);
     }
 
-    public Account[] getAllDesc(long userId) throws SQLException {
+    public Account[] getAllAccountsDesc(long userId) throws SQLException {
         return getAll(userId, QUERY_RETURN_MAX_LIMIT, QUERY_RETURN_OFFSET_DEFAULT, SQLOderBy.DESC);
     }
 
@@ -191,10 +191,10 @@ public class AccountDao extends AbstractDao {
             }
         }
         finally {
-            closeStatement(ps);
             closeResultSet(rs);
+            closeStatement(ps);
         }
-        throw new NotFoundException("account " + id + " not found");
+        return null;
     }
 
     public double getUserBalanceByUserId(long userId) throws SQLException {

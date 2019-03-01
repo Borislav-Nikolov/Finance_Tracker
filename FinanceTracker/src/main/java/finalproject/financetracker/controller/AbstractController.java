@@ -41,15 +41,24 @@ public abstract class AbstractController {
     private Logger logger = LogManager.getLogger(Logger.class);
 
     private void logInfo(HttpStatus httpStatusCode, Exception e) {
-        logger.info(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + e.getMessage());
+        logger.info(httpStatusCode
+                + "\n\tOccurred in class = " + this.getClass()
+                + ",\n\tException class = " + e.getClass()
+                + "\n\tmsg = " + e.getMessage());
     }
 
     private void logWarn(HttpStatus httpStatusCode, Exception e) {
-        logger.warn(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + e.getMessage());
+        logger.warn(httpStatusCode
+                + "\n\tOccurred in class = " + this.getClass()
+                + ",\n\tException class = " + e.getClass()
+                + "\n\tmsg = " + e.getMessage());
     }
 
     private void logError(HttpStatus httpStatusCode, Exception e) {
-        logger.error(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + e.getMessage());
+        logger.error(httpStatusCode
+                + "\n\tOccurred in class = " + this.getClass()
+                + ",\n\tException class = " + e.getClass()
+                + "\n\tmsg = " + e.getMessage(),e) ;
     }
 
     protected void validateLogin(HttpSession session) throws NotLoggedInException {
@@ -79,6 +88,14 @@ public abstract class AbstractController {
         if (resourceUserId != u.getUserId() ) {
             throw new NotLoggedInException("not logged in a.userId!=u.userId");
         }
+    }
+
+    protected void checkIfNotNull(Object o) throws NotFoundException {
+        if (o == null) throw new NotFoundException("resource not found");
+    }
+
+    protected void checkValidId(long resourceId) throws InvalidRequestDataException {
+        if (resourceId<=0) throw new InvalidRequestDataException("invalid id provided");
     }
 
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {

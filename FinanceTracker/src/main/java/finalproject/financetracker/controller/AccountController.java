@@ -10,6 +10,7 @@ import finalproject.financetracker.model.dtos.account.EditAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnUserBalanceDTO;
 import finalproject.financetracker.model.pojos.Account;
+import finalproject.financetracker.model.pojos.ITransaction;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.exceptions.*;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
 @Controller
 @RequestMapping(value = "/profile", produces = "application/json")
@@ -34,6 +36,25 @@ public class AccountController extends AbstractController{
         this.dao = dao;
     }
 
+    private void checkIfAccountWithSuchNameExists(Account[] accounts, String accName)
+            throws ForbiddenRequestException {
+
+        for (Account account : accounts) {
+            if (accName.trim().equalsIgnoreCase(account.getAccountName().trim())) {
+                throw new ForbiddenRequestException("account with such name exists");
+            }
+        }
+    }
+
+    private void checkIfAccountWithSuchNameAndDiffIdExists(Account[] accounts, String accName, long accId)
+            throws ForbiddenRequestException {
+
+        for (Account account : accounts) {
+            if (accName.trim().equalsIgnoreCase(account.getAccountName().trim()) && accId != account.getUserId()) {
+                throw new ForbiddenRequestException("account with such name exists");
+            }
+        }
+    }
     //-----------------------< Web Services >----------------------//
 
     //--------------add account for given user---------------------//
@@ -50,13 +71,8 @@ public class AccountController extends AbstractController{
 
         User u = getLoggedValidUserFromSession(sess);
         a.checkValid();
-        Account[] checkAcc = dao.getAllAsc(u.getUserId());
-
-        for (Account account : checkAcc) {
-            if (a.getAccountName().equalsIgnoreCase(account.getAccountName())) {
-                throw new ForbiddenRequestException("account with such name exists");
-            }
-        }
+        Account[] checkAcc = dao.getAllAccountsAsc(u.getUserId());
+        checkIfAccountWithSuchNameExists(checkAcc,a.getAccountName());
         Account returnAcc = new Account(
                 a.getAccountName(),
                 a.getAmount(),
@@ -64,6 +80,28 @@ public class AccountController extends AbstractController{
         long accId = dao.addAcc(returnAcc);
         returnAcc.setAccountId(accId);
         return new ReturnAccountDTO(returnAcc).withUsername(u.getUsername());
+    }
+
+    //--------------get account---------------------//
+    @RequestMapping(
+            value = "/accounts/{accId}",
+            method = RequestMethod.GET)
+    public ReturnAccountDTO getAccById(@PathVariable(value = "accId") Long accId,
+                                       HttpSession sess)
+            throws
+            SQLException,
+            IOException,
+            NotLoggedInException,
+            NotFoundException,
+            InvalidRequestDataException {
+
+        checkValidId(accId);
+        User u = getLoggedValidUserFromSession(sess);
+        Account account = dao.getById(accId);
+        checkIfNotNull(account);
+        checkIfBelongsToLoggedUser(account.getUserId(),u);
+        return new ReturnAccountDTO(account)
+                .withUsername(u.getUsername());
     }
 
     //--------------delete account---------------------//
@@ -76,30 +114,12 @@ public class AccountController extends AbstractController{
             SQLException,
             IOException,
             NotLoggedInException,
-            NotFoundException{
+            NotFoundException,
+            InvalidRequestDataException {
 
         ReturnAccountDTO a = getAccById(accId,sess);  //   "/accounts/{accId}  Web Service
         dao.deleteAcc(AccountDao.SQLColumnName.ACCOUNT_ID, AccountDao.SQLCompareOperator.EQUALS, accId);   // WHERE account_id = accId
         return a;
-    }
-
-    //--------------get account---------------------//
-    @RequestMapping(
-            value = "/accounts/{accId}",
-            method = RequestMethod.GET)
-    public ReturnAccountDTO getAccById(@PathVariable(value = "accId") Long accId,
-                          HttpSession sess)
-            throws
-            SQLException,
-            IOException,
-            NotLoggedInException,
-            NotFoundException{
-
-        User u = getLoggedValidUserFromSession(sess);
-        Account account = dao.getById(accId);
-        checkIfBelongsToLoggedUser(account.getUserId(),u);
-        return new ReturnAccountDTO(account)
-                .withUsername(u.getUsername());
     }
 
     //--------------update account---------------------//
@@ -118,18 +138,13 @@ public class AccountController extends AbstractController{
 
         User u = getLoggedValidUserFromSession(sess);
         a.checkValid();
-        Account account = dao.getById(a.getAccountId());
-        checkIfBelongsToLoggedUser(account.getUserId(),u);
-        Account[] allUserAccounts = dao.getAllAsc(account.getUserId());
-
-        for (Account userAccount : allUserAccounts) {
-            if (a.getAccountName().trim().equalsIgnoreCase(userAccount.getAccountName().trim()) && a.getAccountId() != userAccount.getAccountId()) {
-                throw new ForbiddenRequestException("account with such name exists");
-            }
-        }
+        ReturnAccountDTO account = getAccById(a.getAccountId(),sess);
+        Account[] allUserAccounts = dao.getAllAccountsAsc(u.getUserId());
+        List<ITransaction> transactions = tRepo.findAllByAccountId(a.getAccountId());
+        checkIfAccountWithSuchNameAndDiffIdExists(allUserAccounts,a.getAccountName(),a.getAccountId());
         dao.updateAcc(a, u.getUserId());
-        return new ReturnAccountDTO(dao.getById(a.getAccountId()))
-                .withUsername(u.getUsername());
+        account.setAccountName(a.getAccountName());
+        return account.withUsername(u.getUsername()).withTransactions(transactions);
     }
 
     //--------------show all accounts for a given userId ascending/descending---------------------//
@@ -146,9 +161,9 @@ public class AccountController extends AbstractController{
         User u = getLoggedValidUserFromSession(sess);
 
         if (order) {
-            return dao.getAllDesc(u.getUserId());
+            return dao.getAllAccountsDesc(u.getUserId());
         }else {
-            return dao.getAllAsc(u.getUserId());
+            return dao.getAllAccountsAsc(u.getUserId());
         }
     }
 
