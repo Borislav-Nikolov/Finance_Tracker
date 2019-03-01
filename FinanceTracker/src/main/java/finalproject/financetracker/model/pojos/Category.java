@@ -17,10 +17,10 @@ public class Category {
     private long categoryId;
     private String categoryName;
     private boolean isIncome;
-    private long userId;
+    private Long userId;
     private long imageId;
 
-    public Category(String categoryName, boolean isIncome, long userId, long imageId) {
+    public Category(String categoryName, boolean isIncome, Long userId, long imageId) {
         this.categoryName = categoryName;
         this.isIncome = isIncome;
         this.userId = userId;

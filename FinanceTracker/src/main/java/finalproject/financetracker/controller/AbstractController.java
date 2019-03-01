@@ -58,8 +58,6 @@ public abstract class AbstractController {
         }
     }
 
-
-
     protected User getLoggedValidUserFromSession(HttpSession sess)
             throws
             NotLoggedInException,
@@ -71,30 +69,14 @@ public abstract class AbstractController {
         if(!UserController.isLoggedIn(sess)){
             throw new NotLoggedInException();
         }
-        User u = mapper.readValue(sess.getAttribute("User").toString(), User.class);
-
-        if (u == null ||
-            u.getUserId() <=0 ||
-            u.getUsername() == null ||
-            u.getUsername().isEmpty() ||
-            u.getEmail()==null ||
-            u.getEmail().isEmpty() ||
-            u.getFirstName() == null ||
-            u.getFirstName().isEmpty() ||
-            u.getLastName()==null ||
-            u.getLastName().isEmpty()) {
-            throw new NotLoggedInException();
-        }
-        return u;
+        return mapper.readValue(sess.getAttribute("User").toString(), User.class);
     }
 
     protected void checkIfBelongsToLoggedUser(long resourceUserId, User u)
             throws
-            NotLoggedInException,
-            IOException,
-            InvalidRequestDataException {
+            NotLoggedInException{
 
-        if (resourceUserId != u.getUserId()) {
+        if (resourceUserId != u.getUserId() ) {
             throw new NotLoggedInException("not logged in a.userId!=u.userId");
         }
     }

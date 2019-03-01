@@ -7,9 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.omg.CORBA.DynAnyPackage.Invalid;
 
-import java.util.Date;
 
 @Getter
 @Setter
@@ -20,8 +18,6 @@ public class AddTransactionDTO implements IDTO {
     private String transactionName;
 
     private double amount;
-
-    private long userId;
 
     private long categoryId;
 

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserDao {
 
-    static long DEFAULT_USER_ID = 1;
+    public static Long DEFAULT_USER_ID = null;
     public static String DEFAULT_USER_USERNAME = "Default";
 
     @Autowired

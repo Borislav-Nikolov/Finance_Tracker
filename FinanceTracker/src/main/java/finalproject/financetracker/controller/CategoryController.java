@@ -94,7 +94,7 @@ public class CategoryController extends AbstractController {
             throws IOException, NotLoggedInException, InvalidRequestDataException, ForbiddenRequestException {
         Category category = categoryDao.getCategoryById(categoryId);
         User user = getLoggedValidUserFromSession(session);
-        if (category.getUserId() == user.getUserId()) {
+        if (category.getUserId() == user.getUserId() || category.getUserId() == UserDao.DEFAULT_USER_ID) {
             return category;
         }
         throw new ForbiddenRequestException("Category does not belong to this user.");

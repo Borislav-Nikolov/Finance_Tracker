@@ -37,7 +37,6 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
             createSchemaIfNotExists();
-            userDao.insertDefaultUserIfNotExists();
             if (imageDao.getImageById(1) == null) {
                 imageDao.addAllIcons();
             }

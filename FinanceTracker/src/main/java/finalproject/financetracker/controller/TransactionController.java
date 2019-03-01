@@ -2,7 +2,6 @@ package finalproject.financetracker.controller;
 
 import finalproject.financetracker.model.daos.TransactionRepo;
 import finalproject.financetracker.model.daos.UserRepository;
-import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.transaction.AddTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.UpdateTransactionDTO;
@@ -61,21 +60,18 @@ public class TransactionController extends AbstractController {
             throws InvalidRequestDataException,
             NotLoggedInException,
             IOException,
-            ForbiddenRequestException,
-            NotFoundException,
-            SQLException {
+            ForbiddenRequestException {
 
-        addTransactionDTO.checkValid();
         User u = getLoggedValidUserFromSession(sess);
-        List<Transaction> transactions = repo.findAllByUserId(addTransactionDTO.getUserId());
+        addTransactionDTO.checkValid();
+        List<Transaction> transactions = repo.findAllByUserId(u.getUserId());
 
         for (Transaction transaction : transactions) {
             if (addTransactionDTO.getTransactionName().equalsIgnoreCase(transaction.getTransactionName())) {
                 throw new ForbiddenRequestException("transaction with such name exists");
             }
         }
-        Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess);
-        ReturnAccountDTO a = accountController.getAccById(addTransactionDTO.getUserId(), sess);
+        Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess);  // WebSercvice
         Transaction t = new Transaction(
                 addTransactionDTO.getTransactionName(),
                 addTransactionDTO.getAmount(),
@@ -93,7 +89,7 @@ public class TransactionController extends AbstractController {
     public ReturnTransactionDTO updateTransaction(@RequestBody UpdateTransactionDTO transactionDTO,
                                                    HttpSession sess)
             throws
-            InvalidRequestDataException, NotLoggedInException, IOException, NotFoundException, SQLException, ForbiddenRequestException {
+            InvalidRequestDataException, NotLoggedInException, IOException, ForbiddenRequestException {
 
         transactionDTO.checkValid();
         User u = getLoggedValidUserFromSession(sess);

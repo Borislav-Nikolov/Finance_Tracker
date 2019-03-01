@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS final_project.categories (
 	category_id INT PRIMARY KEY AUTO_INCREMENT,
     category_name VARCHAR(45) NOT NULL,
     is_income TINYINT(1) NOT NULL,
-    user_id INT,
+    user_id INT DEFAULT NULL,
     image_id INT NOT NULL,
     INDEX user_fk_idx (user_id ASC),
     INDEX image_fk_idx (image_id ASC),
@@ -58,14 +58,17 @@ CREATE TABLE IF NOT EXISTS final_project.transactions (
     transaction_name VARCHAR(45) NOT NULL,
     amount DOUBLE NOT NULL,
     execution_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    user_id INT,
+    account_id INT NOT NULL,
+    user_id INT NOT NULL,
     category_id INT NOT NULL,
-    INDEX user_fk_idx (user_id ASC) ,
+    INDEX acc_fk_idx (account_id ASC),
+    INDEX user_fk_idx (user_id ASC),
     INDEX category_fk_idx (category_id ASC) ,
     CONSTRAINT trans_user_fk FOREIGN KEY (user_id)
     REFERENCES users(user_id),
     CONSTRAINT trans_category_fk FOREIGN KEY (category_id)
-    REFERENCES categories(category_id)
+    REFERENCES categories(category_id),
+    CONSTRAINT trans_account_fk FOREIGN KEY (account_id) REFERENCES accounts(account_id)
 );
 
 CREATE TABLE IF NOT EXISTS final_project.planned_transactions (
@@ -73,14 +76,16 @@ CREATE TABLE IF NOT EXISTS final_project.planned_transactions (
     pt_name VARCHAR(45) NOT NULL,
     pt_amount DOUBLE NOT NULL,
     next_execution_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    day_period INT,
-    month_period INT,
-    user_id INT,
+    repeat_period LONG NOT NULL,
+    account_id INT NOT NULL,
+    user_id INT NOT NULL,
     category_id INT NOT NULL,
-    INDEX user_fk_idx (user_id ASC) ,
-    INDEX category_fk_idx (category_id ASC) ,
+    INDEX acc_fk_idx (account_id ASC),
+    INDEX user_fk_idx (user_id ASC),
+    INDEX category_fk_idx (category_id ASC),
     CONSTRAINT pt_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT pt_category_fk FOREIGN KEY (category_id) REFERENCES categories(category_id)
+    CONSTRAINT pt_category_fk FOREIGN KEY (category_id) REFERENCES categories(category_id),
+    CONSTRAINT pt_account_fk FOREIGN KEY (account_id) REFERENCES accounts(account_id)
 );
 
 CREATE TABLE IF NOT EXISTS final_project.budgets (
@@ -88,7 +93,7 @@ CREATE TABLE IF NOT EXISTS final_project.budgets (
     budget_name VARCHAR(45) NOT NULL,
     amount DOUBLE NOT NULL,
     starting_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    end_date TIMESTAMP,
+    end_date TIMESTAMP NOT NULL,
     user_id INT NOT NULL,
     category_id INT NOT NULL,
     INDEX user_fk_idx (user_id ASC),

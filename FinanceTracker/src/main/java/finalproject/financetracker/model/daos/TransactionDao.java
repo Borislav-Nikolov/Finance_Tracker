@@ -11,16 +11,4 @@ public class TransactionDao {
 
     @Autowired
     private TransactionRepo repo;
-
-    public List<Transaction> getAllTByUserId(long userId) {
-        return repo.findAllByUserId(userId);
-    }
-
-    public Transaction add(Transaction t) {
-        return repo.save(t);
-    }
-
-    public void deleteT(long transactionId) {
-        repo.deleteById(transactionId);
-    }
 }

@@ -47,11 +47,6 @@ public class ReturnTransactionDTO implements IDTO {
         return this;
     }
 
-   public ReturnTransactionDTO withAccountName(String accountName){
-        this.accountName = accountName;
-        return this;
-    }
-
     @Override
     public void checkValid() {
     }

@@ -18,7 +18,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
-import javax.websocket.server.PathParam;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -77,7 +76,7 @@ public class AccountController extends AbstractController{
             SQLException,
             IOException,
             NotLoggedInException,
-            NotFoundException, InvalidRequestDataException {
+            NotFoundException{
 
         ReturnAccountDTO a = getAccById(accId,sess);  //   "/accounts/{accId}  Web Service
         dao.deleteAcc(AccountDao.SQLColumnName.ACCOUNT_ID, AccountDao.SQLCompareOperator.EQUALS, accId);   // WHERE account_id = accId
@@ -94,8 +93,7 @@ public class AccountController extends AbstractController{
             SQLException,
             IOException,
             NotLoggedInException,
-            NotFoundException,
-            InvalidRequestDataException {
+            NotFoundException{
 
         User u = getLoggedValidUserFromSession(sess);
         Account account = dao.getById(accId);
@@ -125,7 +123,7 @@ public class AccountController extends AbstractController{
         Account[] allUserAccounts = dao.getAllAsc(account.getUserId());
 
         for (Account userAccount : allUserAccounts) {
-            if (a.getAccountName().equalsIgnoreCase(userAccount.getAccountName()) && a.getAccountId() != userAccount.getAccountId()) {
+            if (a.getAccountName().trim().equalsIgnoreCase(userAccount.getAccountName().trim()) && a.getAccountId() != userAccount.getAccountId()) {
                 throw new ForbiddenRequestException("account with such name exists");
             }
         }
