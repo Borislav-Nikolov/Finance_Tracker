@@ -1,10 +1,13 @@
 package finalproject.financetracker.controller;
 
 import finalproject.financetracker.model.dtos.CommonMsgDTO;
+import finalproject.financetracker.model.daos.CategoryRepository;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
 import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.model.exceptions.category_exceptions.CategoryAlreadyExistsException;
+import finalproject.financetracker.model.exceptions.category_exceptions.CategoryException;
+import finalproject.financetracker.model.exceptions.category_exceptions.CategoryMismatchException;
 import finalproject.financetracker.model.exceptions.category_exceptions.CategoryNotFoundException;
 import finalproject.financetracker.model.exceptions.image_exceptions.ImageNotFoundException;
 import finalproject.financetracker.model.pojos.Category;
@@ -21,18 +24,23 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @RestController
+@RequestMapping(value = "/profile", produces = "application/json")
 public class CategoryController extends AbstractController {
 
-    @Autowired
-    private UserDao userDao;
     @Autowired
     private ImageDao imageDao;
     @Autowired
     private CategoryDao categoryDao;
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    @GetMapping(value = "/testNull")
+    public void testIt(HttpSession session) throws Exception {
+        this.getCategoryById(3, session);
+    }
 
     @GetMapping(value = "/categories")
     public CategoriesViewDTO viewCategories(HttpSession session) throws IOException, MyException {
@@ -40,53 +48,57 @@ public class CategoryController extends AbstractController {
         List<Category> categories = categoryDao.getPredefinedAndUserCategories(user.getUserId());
         CategoriesViewDTO categoriesViewDTO = new CategoriesViewDTO(new ArrayList<>());
         for (Category category : categories) {
-            Image image = imageDao.getImageById(category.getImageId());
-            CategoryInfoDTO categoryInfoDTO =
-                    new CategoryInfoDTO(
-                            category.getCategoryId(),
-                            category.getCategoryName(),
-                            category.isIncome(),
-                            category.getUserId(),
-                            category.getImageId(),
-                            image
-                    );
+            CategoryInfoDTO categoryInfoDTO = this.getCategoryInfoDTO(category);
             categoriesViewDTO.getCategories().add(categoryInfoDTO);
         }
         return categoriesViewDTO;
     }
 
-    @GetMapping(value = "/budgets/{categoryId}")
-    public CategoryInfoDTO viewBudgets(@PathVariable long categoryId, HttpSession session)
+    @GetMapping(value = "/categories/{categoryId}")
+    public CategoryInfoDTO viewCategory(@PathVariable long categoryId, HttpSession session)
             throws IOException, MyException {
-        // TODO
-        return null;
+        User user = this.getLoggedValidUserFromSession(session);
+        Category category = categoryRepository.findByCategoryId(categoryId);
+        this.validateCategoryAndUserOwnership(user, category);
+        return this.getCategoryInfoDTO(category);
     }
 
-    @GetMapping(value = "/categories/createCategory")
-    public CommonMsgDTO createCategory(@RequestParam("categoryName") String categoryName,
-                                       @RequestParam("isIncome") boolean isIncome,
-                                       // TODO figure out how this'll be coming
-                                       @RequestParam("imageId") long imageId,
-                                       HttpSession session)
-                        throws Exception {
+    @PostMapping(value = "/categories")
+    public CategoryInfoDTO createCategory(@RequestBody CategoryCreationDTO categoryCreationDTO, HttpSession session)
+                                        throws IOException, MyException {
+        categoryCreationDTO.checkValid();
+        String categoryName = categoryCreationDTO.getCategoryName();
+        boolean isIncome = categoryCreationDTO.isIncome();
+        long imageId = categoryCreationDTO.getImageId();
         User user = this.getLoggedValidUserFromSession(session);
         this.validateCategoryName(user.getUserId(), categoryName);
         this.validateImage(imageId);
         Category category = new Category(categoryName, isIncome, user.getUserId(), imageId);
         categoryDao.addCategory(category);
-        return new CommonMsgDTO(categoryName + " category created successfully.", new Date());
+        return this.getCategoryInfoDTO(category);
     }
 
-    @DeleteMapping(value = "categories/deleteCategory")
-    public CommonMsgDTO deleteCategory(@RequestParam("categoryName") String categoryName, HttpSession session)
+    @PutMapping(value = "/categories/{categoryId}")
+    public CategoryInfoDTO editCategory(@PathVariable long categoryId,
+                                        @RequestParam(value = "categoryName", required = false) String categoryName,
+                                        @RequestParam(value = "imageId", required = false) Long imageId,
+                                        HttpSession session)
+                                throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session);
+        Category category = categoryRepository.findByCategoryId(categoryId);
+        this.validateCategoryAndUserOwnership(user, category);
+
+        return null;
+    }
+
+    @DeleteMapping(value = "/categories/{categoryId}")
+    public CategoryInfoDTO deleteCategory(@PathVariable("categoryId") long categoryId, HttpSession session)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session);
-        Category category = categoryDao.getCategoryByNameAndUserId(categoryName, user.getUserId());
-        if (category == null) {
-            throw new CategoryNotFoundException();
-        }
+        Category category = categoryRepository.findByCategoryId(categoryId);
+        this.validateCategoryAndUserOwnership(user, category);
         categoryDao.deleteCategory(category);
-        return new CommonMsgDTO(categoryName + " category deleted successfully.", new Date());
+        return this.getCategoryInfoDTO(category);
     }
 
     public Category getCategoryById(long categoryId, HttpSession session)
@@ -101,13 +113,35 @@ public class CategoryController extends AbstractController {
         throw new ForbiddenRequestException("Category does not belong to this user.");
     }
 
+    private CategoryInfoDTO getCategoryInfoDTO(Category category) {
+        Image image = imageDao.getImageById(category.getImageId());
+        return new CategoryInfoDTO(
+                        category.getCategoryId(),
+                        category.getCategoryName(),
+                        category.isIncome(),
+                        category.getUserId(),
+                        category.getImageId(),
+                        image.getUri()
+                );
+    }
+
     /* ----- VALIDATIONS ----- */
-    private void validateCategoryName(long userId, String categoryName) throws CategoryAlreadyExistsException {
+    private void validateCategoryName(long userId, String categoryName) throws MyException {
+        if (categoryName == null || categoryName.isEmpty()) {
+            throw new InvalidRequestDataException("No category name input.");
+        }
         List<Category> categories = categoryDao.getPredefinedAndUserCategories(userId);
         for (Category category : categories) {
             if (category.getCategoryName().equals(categoryName)) {
                 throw new CategoryAlreadyExistsException();
             }
+        }
+    }
+    private void validateCategoryAndUserOwnership(User user, Category category) throws CategoryException {
+        if (category == null) {
+            throw new CategoryNotFoundException();
+        } else if (user.getUserId() != category.getUserId()) {
+            throw new CategoryMismatchException();
         }
     }
     private void validateImage(long imageId) throws ImageNotFoundException {

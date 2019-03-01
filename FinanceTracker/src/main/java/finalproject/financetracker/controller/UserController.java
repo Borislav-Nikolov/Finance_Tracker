@@ -3,6 +3,7 @@ package finalproject.financetracker.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import finalproject.financetracker.model.dtos.CommonMsgDTO;
 import finalproject.financetracker.model.exceptions.AlreadyLoggedInException;
+import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.model.exceptions.MyException;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.UserDao;
@@ -37,7 +38,9 @@ public class UserController extends AbstractController {
     /* ----- STATUS CHANGES ----- */
 
     @PostMapping(value = "/register")
-    public User registerUser(@RequestBody RegistrationDTO regInfo) throws RegistrationValidationException {
+    public User registerUser(@RequestBody RegistrationDTO regInfo)
+            throws RegistrationValidationException, InvalidRequestDataException {
+        regInfo.checkValid();
         String username = regInfo.getUsername();
         String password = regInfo.getPassword().trim();
         String password2 = regInfo.getPassword2().trim();
@@ -100,6 +103,7 @@ public class UserController extends AbstractController {
         return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
                 user.getFirstName(), user.getLastName(), user.getEmail());
     }
+    // TODO maybe gather editing into one method
     @PutMapping(value = "/profile/edit/password")
     public CommonMsgDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session)
             throws IOException, MyException {
@@ -139,56 +143,56 @@ public class UserController extends AbstractController {
         return new CommonMsgDTO("Profile deleted successfully.", new Date());
     }
 
-        /* ----- VALIDATIONS ----- */
+    /* ----- VALIDATIONS ----- */
 
-        public static boolean isLoggedIn (HttpSession session){
-            return !(session.isNew() || session.getAttribute("Username") == null);
+    public static boolean isLoggedIn (HttpSession session){
+        return !(session.isNew() || session.getAttribute("Username") == null);
+    }
+    private void validateEmail (String email) throws RegistrationValidationException {
+        try {
+            InternetAddress emailAddr = new InternetAddress(email);
+            emailAddr.validate();
+        } catch (AddressException ex) {
+            throw new InvalidEmailException();
         }
-        private void validateEmail (String email) throws RegistrationValidationException {
-            try {
-                InternetAddress emailAddr = new InternetAddress(email);
-                emailAddr.validate();
-            } catch (AddressException ex) {
-                throw new InvalidEmailException();
-            }
-            if (userDao.getUserByEmail(email) != null) {
-                throw new EmailAlreadyUsedException();
-            }
-        }
-        private void validatePasswordsAtRegistration(User user, String password2)
-                throws RegistrationValidationException {
-            if ((user.getPassword() == null || password2 == null) ||
-                    (user.getPassword().length() < 3  || password2.length() < 3)) {
-                throw new InvalidPasswordException();
-            }
-            if (!user.getPassword().equals(password2)) {
-                throw new PasswordMismatchException();
-            }
-        }
-        private void validateNewPassword(String newPass, String newPass2)
-                throws PasswordValidationException {
-            if ((newPass == null || newPass2 == null) ||
-                    (newPass.length() < 3  || newPass2.length() < 3)) {
-                throw new InvalidPasswordException();
-            }
-            if (!newPass.equals(newPass2)) {
-                throw new PasswordMismatchException();
-            }
-        }
-        private void validateUsername(String username) throws RegistrationValidationException {
-            // TODO make a more intricate validation (concerning abusive language, etc.)
-            if (username.isEmpty() || username.equals(UserDao.DEFAULT_USER_USERNAME)) {
-                throw new InvalidUsernameException();
-            }
-            if (userDao.getUserByUsername(username) != null) {
-                throw new UserAlreadyExistsException();
-            }
-        }
-        private void validateLoginAttempt(String username, String password) throws InvalidLoginInfoException {
-            User user = userDao.getUserByUsername(username);
-            if (user == null || !user.getPassword().equals(password)) {
-                throw new InvalidLoginInfoException();
-            }
+        if (userDao.getUserByEmail(email) != null) {
+            throw new EmailAlreadyUsedException();
         }
     }
+    private void validatePasswordsAtRegistration(User user, String password2)
+            throws RegistrationValidationException {
+        if ((user.getPassword() == null || password2 == null) ||
+                (user.getPassword().length() < 3  || password2.length() < 3)) {
+            throw new InvalidPasswordException();
+        }
+        if (!user.getPassword().equals(password2)) {
+            throw new PasswordMismatchException();
+        }
+    }
+    private void validateNewPassword(String newPass, String newPass2)
+            throws PasswordValidationException {
+        if ((newPass == null || newPass2 == null) ||
+                (newPass.length() < 3  || newPass2.length() < 3)) {
+            throw new InvalidPasswordException();
+        }
+        if (!newPass.equals(newPass2)) {
+            throw new PasswordMismatchException();
+        }
+    }
+    private void validateUsername(String username) throws RegistrationValidationException {
+        // TODO make a more intricate validation (concerning abusive language, etc.)
+        if (username.isEmpty() || username.equals(UserDao.DEFAULT_USER_USERNAME)) {
+            throw new InvalidUsernameException();
+        }
+        if (userDao.getUserByUsername(username) != null) {
+            throw new UserAlreadyExistsException();
+        }
+    }
+    private void validateLoginAttempt(String username, String password) throws InvalidLoginInfoException {
+        User user = userDao.getUserByUsername(username);
+        if (user == null || !user.getPassword().equals(password)) {
+            throw new InvalidLoginInfoException();
+        }
+    }
+}
 

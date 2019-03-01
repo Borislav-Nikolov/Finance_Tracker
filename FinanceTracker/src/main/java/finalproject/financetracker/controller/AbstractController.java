@@ -8,9 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import finalproject.financetracker.model.exceptions.*;
 import finalproject.financetracker.model.exceptions.category_exceptions.CategoryException;
 import finalproject.financetracker.model.exceptions.image_exceptions.ImageNotFoundException;
-import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.pojos.ErrMsg;
-import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.exceptions.user_exceptions.*;
 import javassist.tools.web.BadHttpRequest;
@@ -21,15 +19,14 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 
-import javax.jws.soap.SOAPBinding;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Date;
 
 @NoArgsConstructor
@@ -59,6 +56,7 @@ public abstract class AbstractController {
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
                 + "\n\tmsg = " + e.getMessage(),e) ;
+        logger.error(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + Arrays.toString(e.getStackTrace()));
     }
 
     protected void validateLogin(HttpSession session) throws NotLoggedInException {
@@ -106,22 +104,6 @@ public abstract class AbstractController {
 
     //---------------------< /Methods >----------------------//
 
-    //--------------Exception Handlers---------------------//
-    // TODO transfer to below method
-    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
-    @ExceptionHandler({
-            RegistrationValidationException.class,
-            InvalidLoginInfoException.class,
-            PasswordValidationException.class,
-            RegistrationValidationException.class,
-            CategoryException.class,
-            ImageNotFoundException.class
-    })
-    public ErrMsg handleBadRequestExceptions(MyException ex) {
-        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), new Date());
-    }
-
-
     //---------------------Global Exception Handlers---------------------//
     //todo change msgs ---------------------------------/
 
@@ -133,8 +115,12 @@ public abstract class AbstractController {
             HttpClientErrorException.BadRequest.class,
             BadHttpRequest.class,
             ServletException.class,
-            HttpClientErrorException.class,
-            HttpMessageNotReadableException.class})  //400
+            HttpMessageNotReadableException.class,
+            RegistrationValidationException.class,
+            InvalidLoginInfoException.class,
+            PasswordValidationException.class,
+            CategoryException.class,
+            ImageNotFoundException.class})  //400
     public ErrMsg MyExceptionHandler(Exception e){
         return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(),new Date());
     }
@@ -147,8 +133,7 @@ public abstract class AbstractController {
     }
 
     @ExceptionHandler({
-            ForbiddenRequestException.class,
-            HttpClientErrorException.Forbidden.class})  //403
+            ForbiddenRequestException.class})  //403
     public ErrMsg MyForbiddenExceptionHandler(Exception e){
         return new ErrMsg(HttpStatus.FORBIDDEN.value(), e.getMessage(),new Date());
     }

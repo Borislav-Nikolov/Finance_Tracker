@@ -10,9 +10,6 @@ import finalproject.financetracker.model.exceptions.budget_exceptions.BudgetDate
 import finalproject.financetracker.model.exceptions.budget_exceptions.BudgetNotFoundException;
 import finalproject.financetracker.model.pojos.Budget;
 import finalproject.financetracker.model.pojos.User;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -54,9 +51,10 @@ public class BudgetController extends AbstractController {
         return this.getBudgetInfoDTO(budget);
     }
 
-    @PostMapping(value = "/budgets/createBudget")
+    @PostMapping(value = "/budgets")
     public BudgetInfoDTO createBudget(@RequestBody BudgetCreationDTO budgetCreationDTO, HttpSession session)
                                     throws IOException, MyException {
+        budgetCreationDTO.checkValid();
         User user = this.getLoggedValidUserFromSession(session);
         String budgetName = budgetCreationDTO.getBudgetName();
         double amount = budgetCreationDTO.getAmount();
@@ -68,12 +66,10 @@ public class BudgetController extends AbstractController {
         Budget budget = new Budget(budgetName, amount, startingDate, endDate, userId, categoryId);
         budgetRepository.save(budget);
         budget = budgetRepository.findByBudgetNameAndUserId(budgetName, userId);
-        return new BudgetInfoDTO(
-                budget.getBudgetId(), budgetName, amount,
-                startingDate, endDate, userId, categoryId);
+        return getBudgetInfoDTO(budget);
     }
 
-    @PutMapping(value = "/budgets/{budgetId}/edit")
+    @PutMapping(value = "/budgets/{budgetId}")
     public BudgetInfoDTO editBudget(
             @PathVariable long budgetId,
             @RequestParam(value = "budgetName", required = false) String budgetName,
@@ -86,7 +82,6 @@ public class BudgetController extends AbstractController {
         User user = this.getLoggedValidUserFromSession(session);
         Budget budget = budgetRepository.findByBudgetId(budgetId);
         this.validateBudgetOwnership(budget, user.getUserId());
-        this.validateDates(budget.getStartingDate(), endDate);
         if (budgetName != null) {
             budget.setBudgetName(budgetName);
         }
@@ -94,6 +89,7 @@ public class BudgetController extends AbstractController {
             budget.setAmount(amount);
         }
         if (endDate != null) {
+            this.validateDates(budget.getStartingDate(), endDate);
             budget.setEndDate(endDate);
         }
         if (categoryId != null) {
@@ -103,7 +99,7 @@ public class BudgetController extends AbstractController {
         return getBudgetInfoDTO(budget);
     }
 
-    @DeleteMapping(value = "/budgets/deleteBudget/{budgetId}")
+    @DeleteMapping(value = "/budgets/{budgetId}")
     public BudgetInfoDTO deleteBudget(@PathVariable long budgetId, HttpSession session) throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session);
         Budget budget = budgetRepository.findByBudgetId(budgetId);
@@ -115,7 +111,7 @@ public class BudgetController extends AbstractController {
     public void subtractFromBudgets(double amount, long userId, long categoryId) {
         List<Budget> budgets = budgetRepository.findAllByUserId(userId);
         for (Budget budget : budgets) {
-            if (budget.getCategoryId() == categoryId) {
+            if (budget.getCategoryId() == categoryId && !budget.getEndDate().isAfter(LocalDate.now())) {
                 budget.setAmount(budget.getAmount() - amount);
                 // TODO send email / message if budget is near 0
                 budgetRepository.save(budget);

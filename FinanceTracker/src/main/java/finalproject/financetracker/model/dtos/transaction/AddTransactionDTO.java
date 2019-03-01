@@ -1,19 +1,17 @@
 package finalproject.financetracker.model.dtos.transaction;
 
-import com.sun.mail.imap.protocol.ID;
-import finalproject.financetracker.model.dtos.IDTO;
+import finalproject.financetracker.model.dtos.IRequestDTO;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class AddTransactionDTO implements IDTO {
+public class AddTransactionDTO implements IRequestDTO {
 
     private String transactionName;
     private double amount;

@@ -48,12 +48,16 @@ CREATE TABLE IF NOT EXISTS transactions (
     execution_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id INT,
     category_id INT NOT NULL,
+    account_id INT NOT NULL,
     INDEX user_fk_idx (user_id ASC) ,
-    INDEX category_fk_idx (category_id ASC) ,
+    INDEX category_fk_idx (category_id ASC),
+    INDEX account_fk_idx(account_id ASC),
     CONSTRAINT trans_user_fk FOREIGN KEY (user_id)
     REFERENCES users(user_id),
     CONSTRAINT trans_category_fk FOREIGN KEY (category_id)
-    REFERENCES categories(category_id)
+    REFERENCES categories(category_id),
+    CONSTRAINT trans_account_fk FOREIGN KEY (account_id)
+    REFERENCES accounts(account_id)
 );
 
 CREATE TABLE IF NOT EXISTS planned_transactions (

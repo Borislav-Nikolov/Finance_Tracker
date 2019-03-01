@@ -1,21 +1,19 @@
 package finalproject.financetracker.model.dtos.transaction;
 
-import finalproject.financetracker.model.dtos.IDTO;
-import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.model.dtos.IRequestDTO;
 import finalproject.financetracker.model.pojos.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.Column;
 import java.util.Date;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReturnTransactionDTO implements IDTO {
+public class ReturnTransactionDTO implements IRequestDTO {
 
     private long transactionId;
     private String transactionName;

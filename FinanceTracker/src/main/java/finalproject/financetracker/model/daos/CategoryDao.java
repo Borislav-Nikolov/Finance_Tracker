@@ -5,7 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class CategoryDao {
@@ -46,7 +49,15 @@ public class CategoryDao {
     }
 
     public List<Category> getAllPredefinedCategories() {
-        return categoryRepository.findAllByUserId(1);
+        List<Map<String, Object>> predefinedList =
+                jdbcTemplate.queryForList("SELECT * FROM final_project.categories WHERE user_id IS NULL;");
+        List<Category> categories = new ArrayList<>();
+        for (Map<String, Object> categoryMap : predefinedList) {
+            int categoryId = (int) categoryMap.get("category_id");
+            Category category = categoryRepository.findByCategoryId((long) categoryId);
+            categories.add(category);
+        }
+        return categories;
     }
 
     public void addAllPredefinedCategories() {
