@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 public class UserDao {
 
     public static Long DEFAULT_CATEGORY_USER_ID = null;
-    public static Long DEFAULT_USER_ID = null;
     public static String DEFAULT_USER_USERNAME = "Default";
 
     @Autowired
@@ -27,13 +26,6 @@ public class UserDao {
     public void deleteUser(User user) {
         deletetUserRepository.save(user);
         userRepository.delete(user);
-    }
-
-    public void insertDefaultUserIfNotExists() {
-        User defaultUser = new User("Default", "Default",
-                "Default", "Default", "def@au.lt");
-        if (this.getUserByUsername(defaultUser.getUsername()) != null) return;
-        userRepository.save(defaultUser);
     }
 
     /* ----- UPDATE QUERIES ----- */

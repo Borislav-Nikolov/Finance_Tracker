@@ -15,5 +15,7 @@ public class LoginRespDTO {
     private String firstName;
     private String lastName;
     private String email;
+    private boolean isEmailConfirmed;
+    private boolean isSubscribed;
     private Date date;
 }

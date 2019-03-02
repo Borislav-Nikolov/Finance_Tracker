@@ -1,6 +1,7 @@
 package finalproject.financetracker.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import finalproject.financetracker.model.daos.TokenRepository;
 import finalproject.financetracker.model.dtos.CommonMsgDTO;
 import finalproject.financetracker.model.exceptions.AlreadyLoggedInException;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
@@ -9,8 +10,13 @@ import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.exceptions.user_exceptions.*;
 import finalproject.financetracker.model.dtos.userDTOs.*;
+import finalproject.financetracker.model.pojos.VerificationToken;
+import finalproject.financetracker.model.utils.MailUtil;
+import finalproject.financetracker.model.utils.OnRegistrationCompleteEvent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.WebRequest;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
@@ -21,10 +27,17 @@ import java.util.Date;
 import java.util.Map;
 
 @RestController
+@RequestMapping(produces = "application/json")
 public class UserController extends AbstractController {
 
     @Autowired
     UserDao userDao;
+    @Autowired
+    MailUtil mailUtil;
+    @Autowired
+    ApplicationEventPublisher applicationEventPublisher;
+    @Autowired
+    TokenRepository tokenRepository;
 
     @GetMapping(value = "/")
     public void goToIndex(HttpServletResponse resp, HttpSession session) throws IOException {
@@ -34,11 +47,18 @@ public class UserController extends AbstractController {
             resp.sendRedirect("/logged.html");
         }
     }
+    @GetMapping(value = "/experiment")
+    public void experiment() {
+        User user = new User("Testuser", "1234", "asd", "asd", "as@asd.asd", false, false);
+        userDao.registerUser(user);
+        VerificationToken verificationToken = new VerificationToken("asd", user.getUserId());
+        tokenRepository.save(verificationToken);
+    }
 
     /* ----- STATUS CHANGES ----- */
 
     @PostMapping(value = "/register")
-    public User registerUser(@RequestBody RegistrationDTO regInfo)
+    public ProfileInfoDTO registerUser(@RequestBody RegistrationDTO regInfo, WebRequest request)
             throws RegistrationValidationException, InvalidRequestDataException {
         regInfo.checkValid();
         String username = regInfo.getUsername();
@@ -47,18 +67,17 @@ public class UserController extends AbstractController {
         String firstName = regInfo.getFirstName();
         String lastName = regInfo.getLastName();
         String email = regInfo.getEmail();
-        User user = new User(username, password, firstName, lastName, email);
+        boolean isSubscribed = regInfo.isSubscribed();
+        User user = new User(username, password, firstName, lastName, email, false, isSubscribed);
         this.validateUsername(username);
         this.validateEmail(email);
         this.validatePasswordsAtRegistration(user, password2);
-        if (firstName != null && firstName.isEmpty()) {
-            user.setFirstName(null);
-        }
-        if (lastName != null && lastName.isEmpty()) {
-            user.setLastName(null);
-        }
+        this.formatNames(user);
         userDao.registerUser(user);
-        return user;
+//        this.sendConfirmationEmail(user);
+//        String appUrl = request.getContextPath();
+//        applicationEventPublisher.publishEvent(new OnRegistrationCompleteEvent(user, request.getLocale(), appUrl));
+        return getProfileInfoDTO(user);
     }
     @PostMapping(value = "/login")
     public LoginRespDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session)
@@ -72,7 +91,7 @@ public class UserController extends AbstractController {
             session.setAttribute("Username", user.getUsername());
             session.setMaxInactiveInterval(-1);
             return new LoginRespDTO(user.getUserId(), user.getUsername(), user.getFirstName(),
-                    user.getLastName(), user.getEmail(), new Date());
+                    user.getLastName(), user.getEmail(), user.isEmailConfirmed(), user.isSubscribed(), new Date());
         } else {
             throw new AlreadyLoggedInException();
         }
@@ -93,15 +112,13 @@ public class UserController extends AbstractController {
     public ProfileInfoDTO viewProfile(HttpSession session)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session);
-        return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
-                user.getFirstName(), user.getLastName(), user.getEmail());
+        return getProfileInfoDTO(user);
     }
     @GetMapping(value = "/profile/edit")
     public ProfileInfoDTO editProfile(HttpSession session)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session);
-        return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
-                user.getFirstName(), user.getLastName(), user.getEmail());
+        return getProfileInfoDTO(user);
     }
     // TODO maybe gather editing into one method
     @PutMapping(value = "/profile/edit/password")
@@ -130,8 +147,8 @@ public class UserController extends AbstractController {
         }
         return new CommonMsgDTO("Email changed successfully.", new Date());
     }
-    @DeleteMapping(value = "/profile/edit/deleteProfile")
-    public CommonMsgDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session)
+    @DeleteMapping(value = "/profile")
+    public ProfileInfoDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session);
         if (password.get("password").equals(user.getPassword())) {
@@ -140,9 +157,14 @@ public class UserController extends AbstractController {
         } else {
             throw new InvalidPasswordInputException();
         }
-        return new CommonMsgDTO("Profile deleted successfully.", new Date());
+        return getProfileInfoDTO(user);
     }
 
+    private ProfileInfoDTO getProfileInfoDTO(User user) {
+        return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
+                user.getFirstName(), user.getLastName(), user.getEmail(),
+                user.isEmailConfirmed(), user.isSubscribed());
+    }
     /* ----- VALIDATIONS ----- */
 
     public static boolean isLoggedIn (HttpSession session){
@@ -168,6 +190,7 @@ public class UserController extends AbstractController {
         if (!user.getPassword().equals(password2)) {
             throw new PasswordMismatchException();
         }
+        validatePasswordFormat(user.getPassword());
     }
     private void validateNewPassword(String newPass, String newPass2)
             throws PasswordValidationException {
@@ -177,6 +200,19 @@ public class UserController extends AbstractController {
         }
         if (!newPass.equals(newPass2)) {
             throw new PasswordMismatchException();
+        }
+        validatePasswordFormat(newPass);
+    }
+    private void validatePasswordFormat(String password) throws InvalidPasswordException {
+        // TODO remove after testing
+        // added for easier testing
+        if (password.charAt(0) == '1') {
+            return;
+        }
+        if (!password.matches("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$")) {
+            throw new InvalidPasswordException("Invalid password format: must contain at least 8 characters, " +
+                    "at least one upper case and one lower case letter, at least one number and at least one special " +
+                    "character");
         }
     }
     private void validateUsername(String username) throws RegistrationValidationException {
@@ -193,6 +229,19 @@ public class UserController extends AbstractController {
         if (user == null || !user.getPassword().equals(password)) {
             throw new InvalidLoginInfoException();
         }
+    }
+    private void formatNames(User user) {
+        String firstName = user.getFirstName();
+        String lastName = user.getLastName();
+        if (firstName != null && firstName.isEmpty()) {
+            user.setFirstName(null);
+        }
+        if (lastName != null && lastName.isEmpty()) {
+            user.setLastName(null);
+        }
+    }
+    private void sendConfirmationEmail(User user) {
+
     }
 }
 

@@ -21,13 +21,18 @@ public class User {
     private String firstName;
     private String lastName;
     private String email;
+    private boolean isEmailConfirmed;
+    private boolean isSubscribed;
 
-    public User(String username, String password, String firstName, String lastName, String email) {
+    public User(String username, String password, String firstName, String lastName,
+                String email, boolean isEmailConfirmed, boolean isSubscribed) {
         this.username = username;
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
+        this.isEmailConfirmed = isEmailConfirmed;
+        this.isSubscribed = isSubscribed;
     }
 
     @Override

@@ -1,6 +1,5 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.model.dtos.CommonMsgDTO;
 import finalproject.financetracker.model.daos.CategoryRepository;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
 import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
@@ -74,7 +73,10 @@ public class CategoryController extends AbstractController {
         this.validateCategoryName(user.getUserId(), categoryName);
         this.validateImage(imageId);
         Category category = new Category(categoryName, isIncome, user.getUserId(), imageId);
+        // TODO remove after showing to Stan
+        System.out.println("1 ------------------------ " + category.getCategoryId() + " ----------------------------- ");
         categoryDao.addCategory(category);
+        System.out.println("2 ------------------------ " + category.getCategoryId() + " ----------------------------- ");
         return this.getCategoryInfoDTO(category);
     }
 
@@ -87,8 +89,13 @@ public class CategoryController extends AbstractController {
         User user = this.getLoggedValidUserFromSession(session);
         Category category = categoryRepository.findByCategoryId(categoryId);
         this.validateCategoryAndUserOwnership(user, category);
-
-        return null;
+        if (categoryName != null) {
+            category.setCategoryName(categoryName);
+        }
+        if (imageId != null) {
+            category.setImageId(imageId);
+        }
+        return getCategoryInfoDTO(category);
     }
 
     @DeleteMapping(value = "/categories/{categoryId}")

@@ -16,6 +16,7 @@ public class RegistrationDTO implements IRequestDTO {
     private String firstName;
     private String lastName;
     private String email;
+    private boolean isSubscribed;
 
     @Override
     public void checkValid() throws InvalidRequestDataException {

@@ -13,4 +13,6 @@ public class ProfileInfoDTO {
     private String firstName;
     private String lastName;
     private String email;
+    private boolean isEmailConfirmed;
+    private boolean isSubscribed;
 }

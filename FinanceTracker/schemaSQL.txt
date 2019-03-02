@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS final_project.users (
     first_name VARCHAR(45),
     last_name VARCHAR(45),
     email VARCHAR(60) NOT NULL UNIQUE,
+    is_email_confirmed TINYINT(1) NOT NULL,
+    is_subscribed TINYINT(1) NOT NULL,
     INDEX username_idx (username ASC),
     INDEX email_idx (email ASC)
 );
@@ -20,8 +22,20 @@ CREATE TABLE IF NOT EXISTS final_project.deleted_users (
     first_name VARCHAR(45),
     last_name VARCHAR(45),
     email VARCHAR(60) NOT NULL UNIQUE,
+    is_email_confirmed TINYINT(1) NOT NULL,
+    is_subscribed TINYINT(1) NOT NULL,
     INDEX username_idx (username ASC),
     INDEX email_idx (email ASC)
+);
+
+CREATE TABLE IF NOT EXISTS final_project.validation_tokens (
+    token_id INT PRIMARY KEY AUTO_INCREMENT,
+    token VARCHAR(255) NOT NULL,
+    user_id INT NOT NULL,
+    expiry_date TIMESTAMP NOT NULL,
+    INDEX user_fk_idx (user_id),
+    CONSTRAINT token_user_fk FOREIGN KEY (user_id)
+    REFERENCES users(user_id)
 );
 
 CREATE TABLE IF NOT EXISTS final_project.images (

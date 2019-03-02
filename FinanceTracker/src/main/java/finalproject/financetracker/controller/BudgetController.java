@@ -1,6 +1,7 @@
 package finalproject.financetracker.controller;
 
 import finalproject.financetracker.model.daos.BudgetRepository;
+import finalproject.financetracker.model.daos.UserRepository;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetCreationDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetInfoDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetsViewDTO;
@@ -26,6 +27,8 @@ public class BudgetController extends AbstractController {
 
     @Autowired
     private BudgetRepository budgetRepository;
+    @Autowired
+    private UserRepository userRepository;
 
 
     @GetMapping(value = "/budgets")
@@ -110,12 +113,20 @@ public class BudgetController extends AbstractController {
 
     public void subtractFromBudgets(double amount, long userId, long categoryId) {
         List<Budget> budgets = budgetRepository.findAllByUserId(userId);
+        List<Budget> nearingLimit = new ArrayList<>();
         for (Budget budget : budgets) {
             if (budget.getCategoryId() == categoryId && !budget.getEndDate().isAfter(LocalDate.now())) {
                 budget.setAmount(budget.getAmount() - amount);
                 // TODO send email / message if budget is near 0
+                if (budget.getAmount() <= 50) {
+                    nearingLimit.add(budget);
+                }
+                //
                 budgetRepository.save(budget);
             }
+        }
+        if (nearingLimit.size() > 0) {
+            this.sendBudgetLimitEmail(userId, nearingLimit);
         }
     }
 
@@ -124,6 +135,15 @@ public class BudgetController extends AbstractController {
                 budget.getBudgetId(), budget.getBudgetName(),
                 budget.getAmount(), budget.getStartingDate(),
                 budget.getEndDate(), budget.getUserId(), budget.getCategoryId());
+    }
+
+    private void sendBudgetLimitEmail(long userId, List<Budget> budgets) {
+        User user = userRepository.getByUserId(userId);
+        if (user.isEmailConfirmed() && user.isSubscribed()) {
+            System.out.println("Email to " + user.getEmail() + " not sent: email not confirmed.");
+        }
+        String to = user.getEmail();
+//        , String from, String subject, String text
     }
 
     /* ----- VALIDATIONS ----- */
