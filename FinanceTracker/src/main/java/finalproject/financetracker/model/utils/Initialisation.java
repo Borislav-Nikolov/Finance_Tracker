@@ -1,5 +1,6 @@
 package finalproject.financetracker.model.utils;
 
+import finalproject.financetracker.model.utils.emailing.EmailSender;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +8,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import finalproject.financetracker.model.daos.CategoryDao;
 import finalproject.financetracker.model.daos.ImageDao;
-import finalproject.financetracker.model.daos.UserDao;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
@@ -29,7 +29,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
     @Autowired
     private CategoryDao categoryDao;
     @Autowired
-    private UserDao userDao;
+    private EmailSender emailSender;
 
     private Logger logger = LogManager.getLogger(Logger.class);
 
@@ -46,6 +46,8 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
         } catch (SQLException | IOException ex) {
             logger.error("Couldn't initialize DB: " + ex.getMessage());
         }
+        // TODO remains to be tested
+        emailSender.startReminder();
     }
     private void createSchemaIfNotExists() throws SQLException, IOException {
         StringBuilder oneQuerySB = new StringBuilder();

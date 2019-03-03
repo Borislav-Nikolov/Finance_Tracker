@@ -2,17 +2,19 @@ package finalproject.financetracker.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import finalproject.financetracker.model.daos.TokenRepository;
+import finalproject.financetracker.model.daos.UserRepository;
 import finalproject.financetracker.model.dtos.CommonMsgDTO;
 import finalproject.financetracker.model.exceptions.AlreadyLoggedInException;
 import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.model.exceptions.MyException;
+import finalproject.financetracker.model.exceptions.NotFoundException;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.exceptions.user_exceptions.*;
 import finalproject.financetracker.model.dtos.userDTOs.*;
 import finalproject.financetracker.model.pojos.VerificationToken;
-import finalproject.financetracker.model.utils.MailUtil;
-import finalproject.financetracker.model.utils.OnRegistrationCompleteEvent;
+import finalproject.financetracker.model.utils.emailing.MailUtil;
+import finalproject.financetracker.model.utils.emailing.OnRegistrationCompleteEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +22,6 @@ import org.springframework.web.context.request.WebRequest;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Date;
@@ -38,22 +39,8 @@ public class UserController extends AbstractController {
     ApplicationEventPublisher applicationEventPublisher;
     @Autowired
     TokenRepository tokenRepository;
-
-    @GetMapping(value = "/")
-    public void goToIndex(HttpServletResponse resp, HttpSession session) throws IOException {
-        if (!isLoggedIn(session)) {
-            resp.sendRedirect("/index.html");
-        } else {
-            resp.sendRedirect("/logged.html");
-        }
-    }
-    @GetMapping(value = "/experiment")
-    public void experiment() {
-        User user = new User("Testuser", "1234", "asd", "asd", "as@asd.asd", false, false);
-        userDao.registerUser(user);
-        VerificationToken verificationToken = new VerificationToken("asd", user.getUserId());
-        tokenRepository.save(verificationToken);
-    }
+    @Autowired
+    UserRepository userRepository;
 
     /* ----- STATUS CHANGES ----- */
 
@@ -74,9 +61,8 @@ public class UserController extends AbstractController {
         this.validatePasswordsAtRegistration(user, password2);
         this.formatNames(user);
         userDao.registerUser(user);
-//        this.sendConfirmationEmail(user);
-//        String appUrl = request.getContextPath();
-//        applicationEventPublisher.publishEvent(new OnRegistrationCompleteEvent(user, request.getLocale(), appUrl));
+        String appUrl = request.getContextPath();
+        applicationEventPublisher.publishEvent(new OnRegistrationCompleteEvent(user, request.getLocale(), appUrl));
         return getProfileInfoDTO(user);
     }
     @PostMapping(value = "/login")
@@ -102,8 +88,17 @@ public class UserController extends AbstractController {
             throw new AlreadyLoggedOutException();
         }
         session.invalidate();
-        // TODO research if this response is good practice
         return new CommonMsgDTO("Logout successful.", new Date());
+    }
+    @GetMapping(value = "/confirm")
+    public CommonMsgDTO confirmEmail(@RequestParam(value = "token") String token) throws MyException {
+        VerificationToken verToken = tokenRepository.findByToken(token);
+        this.validateToken(verToken);
+        User user = userRepository.getByUserId(verToken.getUserId());
+        user.setEmailConfirmed(true);
+        userRepository.save(user);
+        tokenRepository.delete(verToken);
+        return new CommonMsgDTO("Email " + user.getEmail() + " was confirmed.", new Date());
     }
 
     /* ----- PROFILE ACTIONS ----- */
@@ -230,6 +225,15 @@ public class UserController extends AbstractController {
             throw new InvalidLoginInfoException();
         }
     }
+    private void validateToken(VerificationToken token) throws MyException {
+        if (token == null) {
+            throw new NotFoundException("Token was not found.");
+        }
+        if (token.getExpiryDate().before(new Date())) {
+            tokenRepository.delete(token);
+            throw new InvalidRequestDataException("That token has already expired.");
+        }
+    }
     private void formatNames(User user) {
         String firstName = user.getFirstName();
         String lastName = user.getLastName();
@@ -239,9 +243,6 @@ public class UserController extends AbstractController {
         if (lastName != null && lastName.isEmpty()) {
             user.setLastName(null);
         }
-    }
-    private void sendConfirmationEmail(User user) {
-
     }
 }
 

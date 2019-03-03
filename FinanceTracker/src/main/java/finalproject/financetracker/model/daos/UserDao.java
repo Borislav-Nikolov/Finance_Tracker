@@ -7,6 +7,14 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Random;
+
 @Component
 public class UserDao {
 
@@ -14,9 +22,9 @@ public class UserDao {
     public static String DEFAULT_USER_USERNAME = "Default";
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
     @Autowired
-    DeletetUserRepository deletetUserRepository;
+    private TokenRepository tokenRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
     public void registerUser(User user) {
@@ -24,8 +32,19 @@ public class UserDao {
     }
 
     public void deleteUser(User user) {
-        deletetUserRepository.save(user);
-        userRepository.delete(user);
+        User deletedUser = userRepository.findByUsername(user.getUsername());
+        // TODO consider is_deleted column and validations
+        String deletedUserValues = "deleted" + (new Random().nextInt(90000) + 10000) + deletedUser.getUserId();
+        // TODO implement after password hashing is possible
+        String deletedUserPassword = "deleted" + (new Random().nextInt(90000) + 10000) + deletedUser.getUserId();
+        deletedUser.setUsername(deletedUserValues);
+        deletedUser.setFirstName(deletedUserValues);
+        deletedUser.setLastName(deletedUserValues);
+        deletedUser.setEmail(deletedUserValues);
+        deletedUser.setEmailConfirmed(false);
+        deletedUser.setSubscribed(false);
+        tokenRepository.delete(tokenRepository.findByUserId(deletedUser.getUserId()));
+        userRepository.save(deletedUser);
     }
 
     /* ----- UPDATE QUERIES ----- */
@@ -51,6 +70,39 @@ public class UserDao {
         return user;
     }
 
+    public ResultSet getAllEmailsToBeNotifiedByReminder() throws SQLException {
+        // TODO do not forget to test
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Timestamp(cal.getTime().getTime()));
+        cal.add(Calendar.MONTH, -1);
+        Date referenceDate = new Date(cal.getTime().getTime());
+        // desired result is all emails of users who:
+        //      1) haven't made transactions for over a month;
+        //      2) haven't been notified for over a month;
+        //      3) are subscribed for receiving emails
+        PreparedStatement ps = null;
+        try {
+            ps = jdbcTemplate.getDataSource().getConnection().prepareStatement(
+                "SELECT u.email AS email FROM final_project.users AS u " +
+                "JOIN final_project.transactions AS t " +
+                "ON (u.user_id = t.user_id AND MAX(t.execution_date) > ?) " +
+                "WHERE u.last_notified > ? AND u.is_subscribed = 1;"
+            );
+            ps.setTimestamp(1, new java.sql.Timestamp(referenceDate.getTime()));
+            ps.setTimestamp(2, new java.sql.Timestamp(referenceDate.getTime()));
+            return ps.executeQuery();
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+        }
+    }
+
+    public void updateUserLastNotified(String email) {
+        User user = userRepository.findByEmail(email);
+        user.setLastNotified(new Date());
+        userRepository.save(user);
+    }
 
     private User getUserByStringParam(String col, String param) {
         String sql = "SELECT * FROM final_project.users WHERE "+col+" LIKE ?;";

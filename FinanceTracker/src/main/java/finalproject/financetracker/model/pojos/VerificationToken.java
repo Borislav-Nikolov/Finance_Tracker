@@ -18,18 +18,15 @@ public class VerificationToken {
     private static final int EXPIRATION = 60 * 24;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long tokenId;
+    private Long userId;
 
     private String token;
 
-    private long userId;
-
     private Date expiryDate;
 
-    public VerificationToken(String token, long user) {
+    public VerificationToken(String token, long userId) {
         this.token = token;
-        this.userId = user;
+        this.userId = userId;
         this.expiryDate = this.calculateExpiryDate(EXPIRATION);
     }
 

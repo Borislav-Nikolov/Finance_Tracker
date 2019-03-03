@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @NoArgsConstructor
 @Getter
@@ -23,6 +24,7 @@ public class User {
     private String email;
     private boolean isEmailConfirmed;
     private boolean isSubscribed;
+    private Date lastNotified;
 
     public User(String username, String password, String firstName, String lastName,
                 String email, boolean isEmailConfirmed, boolean isSubscribed) {

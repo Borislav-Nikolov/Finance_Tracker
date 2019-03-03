@@ -1,4 +1,4 @@
-package finalproject.financetracker.model.utils;
+package finalproject.financetracker.model.utils.emailing;
 
 import finalproject.financetracker.model.pojos.User;
 import lombok.Getter;
