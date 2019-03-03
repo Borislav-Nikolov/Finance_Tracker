@@ -1,6 +1,8 @@
 package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.model.pojos.User;
+import finalproject.financetracker.model.utils.ClosableCloser;
+import finalproject.financetracker.model.utils.emailing.EmailSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -76,25 +78,23 @@ public class UserDao {
         cal.setTime(new Timestamp(cal.getTime().getTime()));
         cal.add(Calendar.MONTH, -1);
         Date referenceDate = new Date(cal.getTime().getTime());
-        // desired result is all emails of users who:
-        //      1) haven't made transactions for over a month;
-        //      2) haven't been notified for over a month;
-        //      3) are subscribed for receiving emails
         PreparedStatement ps = null;
         try {
             ps = jdbcTemplate.getDataSource().getConnection().prepareStatement(
                 "SELECT u.email AS email FROM final_project.users AS u " +
                 "JOIN final_project.transactions AS t " +
-                "ON (u.user_id = t.user_id AND MAX(t.execution_date) > ?) " +
-                "WHERE u.last_notified > ? AND u.is_subscribed = 1;"
+                "ON (u.user_id = t.user_id) " +
+                "WHERE u.last_notified < ? AND u.is_subscribed = 1 " +
+                "GROUP BY u.user_id " +
+                "HAVING MAX(t.execution_date) < ?;"
             );
             ps.setTimestamp(1, new java.sql.Timestamp(referenceDate.getTime()));
             ps.setTimestamp(2, new java.sql.Timestamp(referenceDate.getTime()));
             return ps.executeQuery();
         } finally {
-            if (ps != null) {
-                ps.close();
-            }
+            ClosableCloser closer = new ClosableCloser(ps, "Prepared statement at UserDao");
+            closer.setPriority(Thread.MAX_PRIORITY);
+            closer.start();
         }
     }
 

@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class EmailSender {
     private static final long REMINDER_INTERVAL = TimeUnit.DAYS.toMillis(1); // 24 hours
+    public static final Object reminderLock = new Object();
     @Autowired
     UserDao userDao;
     @Autowired
@@ -26,15 +27,21 @@ public class EmailSender {
                 try {
                     toBeNotified = userDao.getAllEmailsToBeNotifiedByReminder();
                     while (toBeNotified.next()) {
+                        System.out.println("----------------- 3 -----------------");
                         // TODO consider extracting the user here to validate once again dates and subscription status
                         String recipientEmail = toBeNotified.getString("email");
                         // TODO consider if new Thread is really better than doing it on current thread
+                        System.out.println(recipientEmail);
                         new Thread(() -> {
                             mailUtil.sendSimpleMessage(recipientEmail, "noreply@traxter.com", subject, message);
                             userDao.updateUserLastNotified(recipientEmail);
-                        });
+                        }).start();
                     }
-                } catch (SQLException ex) {
+                    Thread.sleep(100);
+                    synchronized (reminderLock) {
+                        reminderLock.notifyAll();
+                    }
+                } catch (SQLException | InterruptedException ex) {
                     System.out.println("Reminder failed: " + ex.getMessage());
                 } finally {
                     try {
