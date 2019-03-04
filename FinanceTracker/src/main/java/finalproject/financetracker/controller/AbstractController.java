@@ -152,6 +152,14 @@ public abstract class AbstractController {
         return mapper.writeValueAsString(u);
     }
 
+    public static Integer parseNumber(String num) throws InvalidRequestDataException {
+        try {
+            return Integer.parseInt(num);
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidRequestDataException("Non-numeric value given.");
+        }
+    }
+
 
     //---------------------< /Methods >----------------------//
 

@@ -54,10 +54,11 @@ public class CategoryController extends AbstractController {
     }
 
     @GetMapping(value = "/categories/{categoryId}")
-    public CategoryInfoDTO viewCategory(@PathVariable long categoryId, HttpSession session)
+    public CategoryInfoDTO viewCategory(@PathVariable String categoryId, HttpSession session)
             throws IOException, MyException {
+        long parsedId = parseNumber(categoryId);
         User user = this.getLoggedValidUserFromSession(session);
-        Category category = categoryRepository.findByCategoryId(categoryId);
+        Category category = categoryRepository.findByCategoryId(parsedId);
         this.validateCategoryAndUserOwnership(user, category);
         return this.getCategoryInfoDTO(category);
     }
@@ -73,10 +74,7 @@ public class CategoryController extends AbstractController {
         this.validateCategoryName(user.getUserId(), categoryName);
         this.validateImage(imageId);
         Category category = new Category(categoryName, isIncome, user.getUserId(), imageId);
-        // TODO remove after showing to Stan
-        System.out.println("1 ------------------------ " + category.getCategoryId() + " ----------------------------- ");
         categoryDao.addCategory(category);
-        System.out.println("2 ------------------------ " + category.getCategoryId() + " ----------------------------- ");
         return this.getCategoryInfoDTO(category);
     }
 
@@ -145,7 +143,7 @@ public class CategoryController extends AbstractController {
     private void validateCategoryAndUserOwnership(User user, Category category) throws CategoryException {
         if (category == null) {
             throw new CategoryNotFoundException();
-        } else if (category.getUserId()!=null && user.getUserId() != category.getUserId()) {
+        } else if (category.getUserId() != null && user.getUserId() != category.getUserId()) {
             throw new CategoryMismatchException();
         }
     }

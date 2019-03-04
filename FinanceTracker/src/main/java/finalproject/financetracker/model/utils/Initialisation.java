@@ -1,6 +1,6 @@
 package finalproject.financetracker.model.utils;
 
-import finalproject.financetracker.model.utils.emailing.EmailSender;
+import finalproject.financetracker.model.utils.emailing.EmailReminder;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
     @Autowired
     private CategoryDao categoryDao;
     @Autowired
-    private EmailSender emailSender;
+    private EmailReminder emailReminder;
 
     private Logger logger = LogManager.getLogger(Logger.class);
 
@@ -47,7 +47,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
             logger.error("Couldn't initialize DB: " + ex.getMessage());
         }
         // TODO remains to be tested
-        emailSender.startReminder();
+        emailReminder.start();
     }
     private void createSchemaIfNotExists() throws SQLException, IOException {
         StringBuilder oneQuerySB = new StringBuilder();

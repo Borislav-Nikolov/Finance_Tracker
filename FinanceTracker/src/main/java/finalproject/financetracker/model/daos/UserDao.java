@@ -1,8 +1,7 @@
 package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.model.pojos.User;
-import finalproject.financetracker.model.utils.ClosableCloser;
-import finalproject.financetracker.model.utils.emailing.EmailSender;
+import finalproject.financetracker.model.pojos.VerificationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -13,9 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Random;
+import java.util.*;
 
 @Component
 public class UserDao {
@@ -45,7 +42,10 @@ public class UserDao {
         deletedUser.setEmail(deletedUserValues);
         deletedUser.setEmailConfirmed(false);
         deletedUser.setSubscribed(false);
-        tokenRepository.delete(tokenRepository.findByUserId(deletedUser.getUserId()));
+        VerificationToken vt = tokenRepository.findByUserId(deletedUser.getUserId());
+        if (vt != null) {
+            tokenRepository.delete(vt);
+        }
         userRepository.save(deletedUser);
     }
 
@@ -72,36 +72,34 @@ public class UserDao {
         return user;
     }
 
-    public ResultSet getAllEmailsToBeNotifiedByReminder() throws SQLException {
-        // TODO do not forget to test
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Timestamp(cal.getTime().getTime()));
-        cal.add(Calendar.MONTH, -1);
-        Date referenceDate = new Date(cal.getTime().getTime());
-        PreparedStatement ps = null;
-        try {
-            ps = jdbcTemplate.getDataSource().getConnection().prepareStatement(
-                "SELECT u.email AS email FROM final_project.users AS u " +
-                "JOIN final_project.transactions AS t " +
-                "ON (u.user_id = t.user_id) " +
-                "WHERE u.last_notified < ? AND u.is_subscribed = 1 " +
-                "GROUP BY u.user_id " +
-                "HAVING MAX(t.execution_date) < ?;"
-            );
-            ps.setTimestamp(1, new java.sql.Timestamp(referenceDate.getTime()));
-            ps.setTimestamp(2, new java.sql.Timestamp(referenceDate.getTime()));
-            return ps.executeQuery();
-        } finally {
-            ClosableCloser closer = new ClosableCloser(ps, "Prepared statement at UserDao");
-            closer.setPriority(Thread.MAX_PRIORITY);
-            closer.start();
+    public List<Map<String, Object>> getEmailsToBeNotifiedByReminder(int limit, int offset) {
+        Date referenceDate = this.getReferenceDate();
+        List<Map<String, Object>> emails =  jdbcTemplate.queryForList(
+                        "SELECT u.email AS email FROM final_project.users AS u " +
+                                "JOIN final_project.transactions AS t " +
+                                "ON (u.user_id = t.user_id) " +
+                                "WHERE u.last_notified < ? AND u.is_subscribed = 1 " +
+                                "GROUP BY u.user_id " +
+                                "HAVING MAX(t.execution_date) < ? " +
+                                "LIMIT ? OFFSET ?;",
+                        referenceDate, referenceDate, limit, offset
+                );
+        this.updateUsersLastNotified(emails);
+        return emails;
+    }
+
+    public void updateUsersLastNotified(List<Map<String, Object>> emails) {
+        for (Map<String, Object> email : emails) {
+            jdbcTemplate.update("UPDATE final_project.users  SET last_notified = ? WHERE email = ?",
+                    new Date(), email.get("email"));
         }
     }
 
-    public void updateUserLastNotified(String email) {
-        User user = userRepository.findByEmail(email);
-        user.setLastNotified(new Date());
-        userRepository.save(user);
+    private Date getReferenceDate() {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Timestamp(cal.getTime().getTime()));
+        cal.add(Calendar.MONTH, -1);
+        return new Date(cal.getTime().getTime());
     }
 
     private User getUserByStringParam(String col, String param) {

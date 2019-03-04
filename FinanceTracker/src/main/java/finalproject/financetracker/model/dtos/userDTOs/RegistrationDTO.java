@@ -23,6 +23,8 @@ public class RegistrationDTO implements IRequestDTO {
         if (this.username == null ||
             this.password == null ||
             this.password2 == null ||
+            this.firstName == null ||
+            this.lastName == null ||
             this.email == null) {
             throw new InvalidRequestDataException("Null request data input at user registration.");
         }

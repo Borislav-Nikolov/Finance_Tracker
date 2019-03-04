@@ -48,12 +48,12 @@ public class UserController extends AbstractController {
     public ProfileInfoDTO registerUser(@RequestBody RegistrationDTO regInfo, WebRequest request)
             throws RegistrationValidationException, InvalidRequestDataException {
         regInfo.checkValid();
-        String username = regInfo.getUsername();
+        String username = regInfo.getUsername().trim();
         String password = regInfo.getPassword().trim();
         String password2 = regInfo.getPassword2().trim();
-        String firstName = regInfo.getFirstName();
-        String lastName = regInfo.getLastName();
-        String email = regInfo.getEmail();
+        String firstName = regInfo.getFirstName().trim();
+        String lastName = regInfo.getLastName().trim();
+        String email = regInfo.getEmail().trim();
         boolean isSubscribed = regInfo.isSubscribed();
         User user = new User(username, password, firstName, lastName, email, false, isSubscribed);
         this.validateUsername(username);
@@ -68,6 +68,7 @@ public class UserController extends AbstractController {
     @PostMapping(value = "/login")
     public LoginRespDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session)
                                     throws MyException, JsonProcessingException {
+        loginInfo.checkValid();
         String username = loginInfo.getUsername();
         String password = loginInfo.getPassword().trim();
         User user = userDao.getUserByUsername(username);
@@ -82,7 +83,7 @@ public class UserController extends AbstractController {
             throw new AlreadyLoggedInException();
         }
     }
-    @PostMapping(value = "/logout")
+    @GetMapping(value = "/logout")
     public CommonMsgDTO logoutUser(HttpSession session) throws AlreadyLoggedOutException {
         if (!isLoggedIn(session)) {
             throw new AlreadyLoggedOutException();
