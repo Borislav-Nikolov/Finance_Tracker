@@ -40,6 +40,10 @@ public abstract class AbstractController {
 
     private Logger logger = LogManager.getLogger(Logger.class);
 
+    protected void logInfo(String msg) {
+        logger.info(msg);
+    }
+
     protected void logInfo(HttpStatus httpStatusCode, Exception e) {
         logger.info(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
@@ -82,7 +86,7 @@ public abstract class AbstractController {
         return mapper.readValue(sess.getAttribute("User").toString(), User.class);
     }
 
-    protected void checkIfBelongsToLoggedUserAndReturnUser(long resourceUserId, User u)
+    protected void checkIfBelongsToLoggedUser(long resourceUserId, User u)
             throws
             NotLoggedInException{
 
@@ -137,14 +141,11 @@ public abstract class AbstractController {
     }
 
     protected long checkValidStringId(String urlPathId) throws InvalidRequestDataException {
-        long idL = 0;
         try {
-          idL =  Long.parseLong(urlPathId);
+          return Long.parseLong(urlPathId);
         }catch (Exception e){
             throw new InvalidRequestDataException("invalid id provided");
         }
-        if (idL == 0) throw new InvalidRequestDataException("invalid id provided");
-        return idL;
     }
 
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {

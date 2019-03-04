@@ -1,5 +1,9 @@
 package finalproject.financetracker.model.daos;
 
+import com.mysql.cj.MysqlConnection;
+import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource;
+import com.mysql.cj.jdbc.MysqlDataSource;
+import com.mysql.cj.jdbc.MysqlPooledConnection;
 import finalproject.financetracker.model.dtos.account.EditAccountDTO;
 import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.exceptions.NotFoundException;
@@ -183,7 +187,7 @@ public class AccountDao extends AbstractDao {
         return accId;
     }
 
-    public int deleteAcc(SQLColumnName param, SQLCompareOperator operator, long idColumn) throws SQLException {
+    public int deleteAcc(SQLColumnName param, SQLCompareOperator operator, long idColumn) throws SQLException {  //TODO delete all transactions from this account in a transactional DML query
         PreparedStatement ps = null;
         int affectedRows;
         checkConnAndReInitIfBad();

@@ -68,25 +68,14 @@ public class TransactionController extends AbstractController {
         }
         Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess);  // WebSercvice
         ReturnAccountDTO a = accountController.getAccByIdLong(addTransactionDTO.getAccountId(),sess);
-        double transactionAmount = 0;
-
-        if (c.isIncome()){
-            transactionAmount = addTransactionDTO.getAmount();
-        }else {
-           transactionAmount =
-                    (addTransactionDTO.getAmount() > a.getAmount())  //check if account amount is enough to make the transaction,
-                            ? a.getAmount()                         // if not transaction amount is set to account amount
-                            : addTransactionDTO.getAmount();
-           transactionAmount = transactionAmount*-1;
-        }
-        accountDao.updateAccAmount((a.getAmount()+transactionAmount),a.getAccountId());
         Transaction t = new Transaction(
                 addTransactionDTO.getTransactionName(),
-                Math.abs(transactionAmount),
+                addTransactionDTO.getAmount(),
                 LocalDateTime.now(),
                 addTransactionDTO.getAccountId(),
                 u.getUserId(),
                 addTransactionDTO.getCategoryId());
+        t = accountController.calculateBudgetAndAccountAmount(t);
         t = repo.save(t);
         return new ReturnTransactionDTO(t)
                 .withUser(u)
@@ -109,7 +98,7 @@ public class TransactionController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess);
         Transaction t = validateDataAndGetByIdFromRepo(id,repo,Transaction.class);
-        checkIfBelongsToLoggedUserAndReturnUser(t.getUserId(), u);
+        checkIfBelongsToLoggedUser(t.getUserId(), u);
         Category c = categoryController.getCategoryById(t.getCategoryId(), sess);
         ReturnAccountDTO a = accountController.getAccByIdLong(t.getAccountId(), sess);
         return new ReturnTransactionDTO(t)
@@ -150,7 +139,7 @@ public class TransactionController extends AbstractController {
         transactionDTO.checkValid();
         Transaction t = validateDataAndGetByIdFromRepo(transactionDTO.getTransactionId(),repo,Transaction.class);
         t.setTransactionName(transactionDTO.getTransactionName());
-        checkIfBelongsToLoggedUserAndReturnUser(t.getUserId(), u);
+        checkIfBelongsToLoggedUser(t.getUserId(), u);
         Category c = categoryController.getCategoryById(t.getCategoryId(), sess);
         ReturnAccountDTO a = accountController.getAccByIdLong(t.getAccountId(),sess);
         t = repo.saveAndFlush(t);

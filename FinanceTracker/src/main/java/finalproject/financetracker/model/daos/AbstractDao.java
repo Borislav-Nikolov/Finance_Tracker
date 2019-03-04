@@ -14,10 +14,6 @@ public abstract class AbstractDao {
 
     protected Logger logger = LogManager.getLogger(Logger.class);
 
-    @Autowired
-    protected JdbcTemplate jdbcTemplate;
-
-
     public enum SQLCompareOperator {
 
         SMALLER_OR_EQUAL("<="), EQUALS("="), BIGGER_OR_EQUAL(">=");

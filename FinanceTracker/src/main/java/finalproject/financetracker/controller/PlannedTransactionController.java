@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @RequestMapping(value = "/profile")
 @Controller
@@ -97,7 +96,7 @@ public class PlannedTransactionController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess);
         PlannedTransaction pt = validateDataAndGetByIdFromRepo(id,repo,PlannedTransaction.class);
-        checkIfBelongsToLoggedUserAndReturnUser(pt.getUserId(), u);
+        checkIfBelongsToLoggedUser(pt.getUserId(), u);
         Category c = categoryController.getCategoryById(pt.getCategoryId(), sess);
         ReturnAccountDTO a = accountController.getAccByIdLong(pt.getAccountId(), sess);
         return new ReturnPlannedTransactionDTO(pt)
@@ -137,7 +136,7 @@ public class PlannedTransactionController extends AbstractController {
         User u = getLoggedValidUserFromSession(sess);
         PlannedTransaction pt = validateDataAndGetByIdFromRepo(transactionDTO.getTransactionId(),repo,PlannedTransaction.class);
         pt.setPtName(transactionDTO.getTransactionName());
-        checkIfBelongsToLoggedUserAndReturnUser(pt.getUserId(), u);
+        checkIfBelongsToLoggedUser(pt.getUserId(), u);
         Category c = categoryController.getCategoryById(pt.getCategoryId(), sess);
         ReturnAccountDTO a = accountController.getAccByIdLong(pt.getAccountId(),sess);
         pt = repo.saveAndFlush(pt);
