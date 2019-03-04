@@ -112,8 +112,6 @@ public class CategoryController extends AbstractController {
             throws IOException, NotLoggedInException, ForbiddenRequestException {
         Category category = categoryDao.getCategoryById(categoryId);
         User user = getLoggedValidUserFromSession(session);
-        System.out.println(user);
-        System.out.println(category);
         if (category.getUserId() == UserDao.DEFAULT_CATEGORY_USER_ID || user.getUserId() == category.getUserId()) {
             return category;
         }
@@ -147,7 +145,7 @@ public class CategoryController extends AbstractController {
     private void validateCategoryAndUserOwnership(User user, Category category) throws CategoryException {
         if (category == null) {
             throw new CategoryNotFoundException();
-        } else if (user.getUserId() != category.getUserId()) {
+        } else if (category.getUserId()!=null && user.getUserId() != category.getUserId()) {
             throw new CategoryMismatchException();
         }
     }

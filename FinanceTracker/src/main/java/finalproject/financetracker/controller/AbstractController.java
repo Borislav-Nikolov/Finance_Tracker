@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,11 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Optional;
 
 @NoArgsConstructor
 @RestController
@@ -37,26 +40,26 @@ public abstract class AbstractController {
 
     private Logger logger = LogManager.getLogger(Logger.class);
 
-    private void logInfo(HttpStatus httpStatusCode, Exception e) {
+    protected void logInfo(HttpStatus httpStatusCode, Exception e) {
         logger.info(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
                 + "\n\tmsg = " + e.getMessage());
     }
 
-    private void logWarn(HttpStatus httpStatusCode, Exception e) {
+    protected void logWarn(HttpStatus httpStatusCode, Exception e) {
         logger.warn(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
                 + "\n\tmsg = " + e.getMessage());
     }
 
-    private void logError(HttpStatus httpStatusCode, Exception e) {
+    protected void logError(HttpStatus httpStatusCode, Exception e) {
         logger.error(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
                 + "\n\tmsg = " + e.getMessage(),e) ;
-        logger.error(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + Arrays.toString(e.getStackTrace()));
+        logger.error(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + e.getMessage(),e);
     }
 
     protected void validateLogin(HttpSession session) throws NotLoggedInException {
@@ -79,21 +82,69 @@ public abstract class AbstractController {
         return mapper.readValue(sess.getAttribute("User").toString(), User.class);
     }
 
-    protected void checkIfBelongsToLoggedUser(long resourceUserId, User u)
+    protected void checkIfBelongsToLoggedUserAndReturnUser(long resourceUserId, User u)
             throws
             NotLoggedInException{
 
         if (resourceUserId != u.getUserId() ) {
+            //TODO chng msg
             throw new NotLoggedInException("not logged in a.userId!=u.userId");
         }
     }
 
-    protected void checkIfNotNull(Object o) throws NotFoundException {
-        if (o == null) throw new NotFoundException("resource not found");
+    protected User checkIfBelongsToLoggedUserAndReturnUser(long resourceUserId, HttpSession session)
+            throws
+            NotLoggedInException,
+            IOException {
+
+        User u = getLoggedValidUserFromSession(session);
+        if (resourceUserId != u.getUserId() ) {
+            //TODO chng msg
+            throw new NotLoggedInException("not logged in a.userId!=u.userId");
+        }
+        return u;
     }
 
-    protected void checkValidId(long resourceId) throws InvalidRequestDataException {
-        if (resourceId<=0) throw new InvalidRequestDataException("invalid id provided");
+    protected <T extends Object> void checkIfNotNull(Class<?> c,T t ) throws NotFoundException {
+        String className = c.getName().substring(c.getName().lastIndexOf(".")+1);
+        if (t == null) throw new NotFoundException(className + " not found");
+    }
+
+    protected <T> T checkIfNotNull(Class<?> c, Optional<T> o ) throws NotFoundException {
+        String className = c.getName().substring(c.getName().lastIndexOf(".")+1);
+        if (!o.isPresent())throw new NotFoundException(className + " not found");
+        return o.get();
+    }
+
+    protected <T> T validateDataAndGetByIdFromRepo(String id,
+                                                   JpaRepository<T,Long> repo,
+                                                   Class<?>c)
+            throws NotFoundException,
+            InvalidRequestDataException {
+
+        long idL = checkValidStringId(id);
+        Optional<T> t = repo.findById(idL);
+        return checkIfNotNull(c,t);
+    }
+
+    protected <T> T validateDataAndGetByIdFromRepo(long id,
+                                                   JpaRepository<T,Long> repo,
+                                                   Class<?>c)
+            throws NotFoundException {
+
+        Optional<T> t = repo.findById(id);
+        return checkIfNotNull(c,t);
+    }
+
+    protected long checkValidStringId(String urlPathId) throws InvalidRequestDataException {
+        long idL = 0;
+        try {
+          idL =  Long.parseLong(urlPathId);
+        }catch (Exception e){
+            throw new InvalidRequestDataException("invalid id provided");
+        }
+        if (idL == 0) throw new InvalidRequestDataException("invalid id provided");
+        return idL;
     }
 
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {
@@ -121,42 +172,49 @@ public abstract class AbstractController {
             PasswordValidationException.class,
             CategoryException.class,
             ImageNotFoundException.class})  //400
-    public ErrMsg MyExceptionHandler(Exception e){
+    public ErrMsg MyExceptionHandler(Exception e, HttpServletResponse resp){
+        resp.setStatus(HttpStatus.BAD_REQUEST.value());
         return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler({
             NotLoggedInException.class,
             HttpClientErrorException.Unauthorized.class, })  // 401
-    public ErrMsg MyLoginExceptionHandler(Exception e){
+    public ErrMsg MyLoginExceptionHandler(Exception e, HttpServletResponse resp){
+        resp.setStatus(HttpStatus.UNAUTHORIZED.value());
         return new ErrMsg(HttpStatus.UNAUTHORIZED.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler({
             ForbiddenRequestException.class})  //403
-    public ErrMsg MyForbiddenExceptionHandler(Exception e){
+    public ErrMsg MyForbiddenExceptionHandler(Exception e, HttpServletResponse resp){
+        resp.setStatus(HttpStatus.FORBIDDEN.value());
         return new ErrMsg(HttpStatus.FORBIDDEN.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler({NotFoundException.class})  //404
-    public ErrMsg MyNotFoundExceptionHandler(Exception e){
+    public ErrMsg MyNotFoundExceptionHandler(Exception e, HttpServletResponse resp){
+        resp.setStatus(HttpStatus.NOT_FOUND.value());
         return new ErrMsg(HttpStatus.NOT_FOUND.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler(IOException.class)  //500
-    public ErrMsg IOExceptionHandler(Exception e) {
+    public ErrMsg IOExceptionHandler(Exception e, HttpServletResponse resp) {
+        resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
         return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler({SQLException.class, DataAccessException.class}) //500
-    public ErrMsg SQLExceptionHandler(Exception e) {
+    public ErrMsg SQLExceptionHandler(Exception e, HttpServletResponse resp) {
+        resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
         return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler(Exception.class) //500
-    public ErrMsg ExceptionHandler(Exception e){
+    public ErrMsg ExceptionHandler(Exception e, HttpServletResponse resp){
+        resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
         return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
     }

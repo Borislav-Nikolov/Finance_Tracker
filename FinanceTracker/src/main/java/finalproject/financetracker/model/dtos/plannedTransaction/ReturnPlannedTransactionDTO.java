@@ -1,10 +1,10 @@
-package finalproject.financetracker.model.dtos.transaction;
+package finalproject.financetracker.model.dtos.plannedTransaction;
 
-import finalproject.financetracker.model.dtos.IRequestDTO;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
+import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
 import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.pojos.Category;
-import finalproject.financetracker.model.pojos.Transaction;
+import finalproject.financetracker.model.pojos.PlannedTransaction;
 import finalproject.financetracker.model.pojos.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,18 +12,17 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReturnTransactionDTO {
-
+public class ReturnPlannedTransactionDTO {
     private long transactionId;
     private String transactionName;
     private double amount;
     private LocalDateTime executionDate;
+    private long repeatPeriod;
     private long userId;
     private long categoryId;
     private long accountId;
@@ -32,28 +31,29 @@ public class ReturnTransactionDTO {
     private String categoryName;
     private boolean isIncome;
 
-    public ReturnTransactionDTO(Transaction t) {
-        this.transactionId = t.getTransactionId();
-        this.transactionName = t.getTransactionName().trim();
-        this.executionDate = t.getExecutionDate();
-        this.amount = t.getAmount();
+    public ReturnPlannedTransactionDTO(PlannedTransaction t) {
+        this.transactionId = t.getPtId();
+        this.transactionName = t.getPtName().trim();
+        this.executionDate = t.getNextExecutionDate();
+        this.repeatPeriod = t.getRepeatPeriod();
+        this.amount = t.getPtAmount();
         this.userId = t.getUserId();
         this.categoryId = t.getCategoryId();
         this.accountId = t.getAccountId();
     }
 
-    public ReturnTransactionDTO withUser(User u) {
+    public ReturnPlannedTransactionDTO withUser(User u) {
         this.username = u.getUsername();
         return this;
     }
 
-    public ReturnTransactionDTO withCategory(Category c) {
-        this.categoryName = c.getCategoryName();
-        this.isIncome = c.isIncome();
+    public ReturnPlannedTransactionDTO withCategory(Category category) {
+        this.categoryName = category.getCategoryName();
+        this.isIncome = category.isIncome();
         return this;
     }
 
-    public ReturnTransactionDTO withAccount(ReturnAccountDTO a) {
+    public ReturnPlannedTransactionDTO withAccount(ReturnAccountDTO a) {
         this.accountName = a.getAccountName();
         return this;
     }

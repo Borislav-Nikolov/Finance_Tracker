@@ -4,17 +4,21 @@ package finalproject.financetracker.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import finalproject.financetracker.model.daos.PlannedTransactionDao;
+import finalproject.financetracker.model.daos.PlannedTransactionRepo;
 import finalproject.financetracker.model.daos.TransactionRepo;
 import finalproject.financetracker.model.dtos.account.AddAccountDTO;
 import finalproject.financetracker.model.dtos.account.EditAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnUserBalanceDTO;
 import finalproject.financetracker.model.pojos.Account;
-import finalproject.financetracker.model.pojos.ITransaction;
+import finalproject.financetracker.model.pojos.PlannedTransaction;
+import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,13 +31,21 @@ import java.util.List;
 @RequestMapping(value = "/profile", produces = "application/json")
 @ResponseBody
 public class AccountController extends AbstractController{
+    public static final int SEC_TO_MILIS = 1000;
     private final AccountDao dao;
     private final TransactionRepo tRepo;
+    private final PlannedTransactionRepo ptRepo;
+    private final PlannedTransactionDao ptDao;
 
     @Autowired
-    AccountController(AccountDao dao, TransactionRepo tRepo) {
+    AccountController(AccountDao dao,
+                      TransactionRepo tRepo,
+                      PlannedTransactionRepo ptRepo,
+                      PlannedTransactionDao ptDao) {
         this.tRepo = tRepo;
         this.dao = dao;
+        this.ptRepo = ptRepo;
+        this.ptDao = ptDao;
     }
 
     private void checkIfAccountWithSuchNameExists(Account[] accounts, String accName)
@@ -79,14 +91,15 @@ public class AccountController extends AbstractController{
                 u.getUserId());
         long accId = dao.addAcc(returnAcc);
         returnAcc.setAccountId(accId);
-        return new ReturnAccountDTO(returnAcc).withUsername(u.getUsername());
+        return new ReturnAccountDTO(returnAcc)
+                .withUser(u);
     }
 
     //--------------get account---------------------//
     @RequestMapping(
             value = "/accounts/{accId}",
             method = RequestMethod.GET)
-    public ReturnAccountDTO getAccById(@PathVariable(value = "accId") Long accId,
+    public ReturnAccountDTO getAccById(@PathVariable(value = "accId") String accId,
                                        HttpSession sess)
             throws
             SQLException,
@@ -95,20 +108,35 @@ public class AccountController extends AbstractController{
             NotFoundException,
             InvalidRequestDataException {
 
-        checkValidId(accId);
+        long idL = checkValidStringId(accId);
+        return getAccByIdLong(idL,sess);
+    }
+
+    ReturnAccountDTO getAccByIdLong( long accId,
+                                       HttpSession sess)
+            throws
+            SQLException,
+            IOException,
+            NotLoggedInException,
+            NotFoundException{
+
         User u = getLoggedValidUserFromSession(sess);
         Account account = dao.getById(accId);
-        checkIfNotNull(account);
-        checkIfBelongsToLoggedUser(account.getUserId(),u);
+        checkIfNotNull(Account.class,account);
+        checkIfBelongsToLoggedUserAndReturnUser(account.getUserId(),u);
+        List<Transaction> transactions = tRepo.findAllByAccountId(accId);
+        List<PlannedTransaction> plannedTransactions = ptRepo.findAllByAccountId(accId);
         return new ReturnAccountDTO(account)
-                .withUsername(u.getUsername());
+                .withUser(u)
+                .withTransactions(transactions)
+                .withPlannedTransactions(plannedTransactions);
     }
 
     //--------------delete account---------------------//
     @RequestMapping(
             value = "/accounts/{accId}",
             method = RequestMethod.DELETE)
-    public ReturnAccountDTO deleteAcc(@PathVariable(name = "accId") Long accId,
+    public ReturnAccountDTO deleteAcc(@PathVariable(name = "accId") String accId,
                           HttpSession sess)
             throws
             SQLException,
@@ -118,7 +146,7 @@ public class AccountController extends AbstractController{
             InvalidRequestDataException {
 
         ReturnAccountDTO a = getAccById(accId,sess);  //   "/accounts/{accId}  Web Service
-        dao.deleteAcc(AccountDao.SQLColumnName.ACCOUNT_ID, AccountDao.SQLCompareOperator.EQUALS, accId);   // WHERE account_id = accId
+        dao.deleteAcc(AccountDao.SQLColumnName.ACCOUNT_ID, AccountDao.SQLCompareOperator.EQUALS, a.getAccountId());   // WHERE account_id = accId
         return a;
     }
 
@@ -138,13 +166,13 @@ public class AccountController extends AbstractController{
 
         User u = getLoggedValidUserFromSession(sess);
         a.checkValid();
-        ReturnAccountDTO account = getAccById(a.getAccountId(),sess);
+        ReturnAccountDTO returnAccountDTO = getAccByIdLong(a.getAccountId(),sess);
         Account[] allUserAccounts = dao.getAllAccountsAsc(u.getUserId());
-        List<ITransaction> transactions = tRepo.findAllByAccountId(a.getAccountId());
         checkIfAccountWithSuchNameAndDiffIdExists(allUserAccounts,a.getAccountName(),a.getAccountId());
-        dao.updateAcc(a, u.getUserId());
-        account.setAccountName(a.getAccountName());
-        return account.withUsername(u.getUsername()).withTransactions(transactions);
+        dao.updateAcc(a);
+        returnAccountDTO.setAccountName(a.getAccountName());
+        return returnAccountDTO.withUser(u);
+
     }
 
     //--------------show all accounts for a given userId ascending/descending---------------------//
@@ -198,5 +226,30 @@ public class AccountController extends AbstractController{
     }
     //-----------------------< /Web Services >----------------------//
 
-
+    @Scheduled(cron = "0 0 * * * *")
+    private void executePlannedTransactions(){
+//        List<PlannedTransaction> plannedTransactions = ptDao.getAllWhereExecDateEqualsToday();
+//        for (PlannedTransaction pt : p    slannedTransactions){
+//            new Thread(
+//                    ()->{
+//                        try {
+//                            Thread.sleep(
+//                                    pt.getNextExecutionDate().toEpochSecond(ZoneOffset.UTC)* SEC_TO_MILIS
+//                                    -
+//                                    LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)*SEC_TO_MILIS);
+//                            this.tRepo.save(
+//                                    new Transaction(
+//                                            pt.getPtName().concat("_planned-").concat(LocalDate.now().toString()),
+//                                            pt.getPtAmount(),
+//                                            LocalDateTime.now(),
+//                                            pt.getAccountId(),
+//                                            pt.getUserId(),
+//                                            pt.getCategoryId()));
+//                        } catch (InterruptedException e) {
+//                            super.logError(HttpStatus.INTERNAL_SERVER_ERROR,e); e.printStackTrace();
+//                        }
+//                    }
+//            ).start();
+//        }
+    }
 }

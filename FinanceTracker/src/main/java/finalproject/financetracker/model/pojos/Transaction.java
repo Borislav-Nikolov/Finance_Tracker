@@ -3,15 +3,17 @@ package finalproject.financetracker.model.pojos;
 import lombok.*;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
 @Setter
 @Entity(name = "transactions")
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-//@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-public class Transaction implements ITransaction {
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+public class Transaction{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,7 +26,7 @@ public class Transaction implements ITransaction {
     private double amount;
 
     @Column
-    private Date executionDate;
+    private LocalDateTime executionDate;
 
     @Column
     private long accountId;
@@ -35,7 +37,7 @@ public class Transaction implements ITransaction {
     @Column
     private long categoryId;
 
-    public Transaction(String transactionName, double amount, Date executionDate,long accountId, long userId, long categoryId) {
+    public Transaction(String transactionName, double amount, LocalDateTime executionDate,long accountId, long userId, long categoryId) {
         this.transactionName = transactionName;
         this.amount = amount;
         this.executionDate = executionDate;

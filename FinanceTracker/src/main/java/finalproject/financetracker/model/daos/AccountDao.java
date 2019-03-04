@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Component
 public class AccountDao extends AbstractDao {
@@ -18,11 +19,22 @@ public class AccountDao extends AbstractDao {
     public static final int QUERY_RETURN_LIMIT_DEFAULT = 20;
     public static final int QUERY_RETURN_OFFSET_DEFAULT = 0;
     private Connection mySQLCon;
+    private final JdbcTemplate jdbcTemplate;
+    private static final ReentrantLock connLock = new ReentrantLock();
 
     @Autowired
     AccountDao(JdbcTemplate jdbcTemplate) throws SQLException {
-        logger.info("MySQLCon in AccountDao is created.");
-        this.mySQLCon = jdbcTemplate.getDataSource().getConnection();
+        this.jdbcTemplate = jdbcTemplate;
+        checkConnAndReInitIfBad();
+    }
+
+    private void checkConnAndReInitIfBad( ) throws SQLException {
+        synchronized (AccountDao.connLock) {
+            if (this.mySQLCon == null || this.mySQLCon.isClosed()) {
+                logger.info("MySQLCon in AccountDao is created.");
+                this.mySQLCon = this.jdbcTemplate.getDataSource().getConnection();
+            }
+        }
     }
 
     @PreDestroy
@@ -39,8 +51,9 @@ public class AccountDao extends AbstractDao {
         }
     }
 
-    public void updateAcc(EditAccountDTO acc, long userId) throws SQLException {
+    public void updateAcc(EditAccountDTO acc) throws SQLException {
         PreparedStatement ps = null;
+        checkConnAndReInitIfBad();
         try {
             String sql = "UPDATE final_project.accounts SET account_name = ? WHERE account_id = ?;";
             ps = mySQLCon.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -53,9 +66,25 @@ public class AccountDao extends AbstractDao {
         }
     }
 
+    public void updateAccAmount(double amount, long accId) throws SQLException {
+        PreparedStatement ps = null;
+        checkConnAndReInitIfBad();
+        try {
+            String sql = "UPDATE final_project.accounts SET amount = ? WHERE account_id = ?;";
+            ps = mySQLCon.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setDouble(1, amount);
+            ps.setLong(2, accId);
+            ps.executeUpdate();
+        }
+        finally {
+            closeStatement(ps);
+        }
+    }
+
     public int getAllCount(long userId) throws SQLException {
         PreparedStatement ps = null;
         ResultSet rs = null;
+        checkConnAndReInitIfBad();
         int result;
         try {
             String sql = "SELECT COUNT(*) AS count " +
@@ -94,6 +123,7 @@ public class AccountDao extends AbstractDao {
     private Account[] getAllWhere(SQLColumnName param, SQLCompareOperator operator, long idColumnValueLong, int limit, int offset, SQLOderBy order) throws SQLException {
         PreparedStatement ps = null;
         ResultSet rs = null;
+        checkConnAndReInitIfBad();
         ArrayList<Account> arr;
         try {
             String sql =
@@ -127,6 +157,7 @@ public class AccountDao extends AbstractDao {
     public long addAcc(Account acc) throws SQLException {
         PreparedStatement ps = null;
         ResultSet rs = null;
+        checkConnAndReInitIfBad();
         long accId;
         try {
             String sql = "INSERT INTO final_project.accounts(account_name, user_id, amount) VALUES (?, ?, ?);";
@@ -155,6 +186,7 @@ public class AccountDao extends AbstractDao {
     public int deleteAcc(SQLColumnName param, SQLCompareOperator operator, long idColumn) throws SQLException {
         PreparedStatement ps = null;
         int affectedRows;
+        checkConnAndReInitIfBad();
         try {
             String sql =
                     "DELETE a FROM final_project.accounts AS a " +
@@ -172,6 +204,7 @@ public class AccountDao extends AbstractDao {
     public Account getById(long id) throws SQLException, NotFoundException {
         PreparedStatement ps = null;
         ResultSet rs = null;
+        checkConnAndReInitIfBad();
         try {
             String sql =
                     "SELECT a.account_id, a.account_name, a.amount, a.user_id " +
@@ -201,6 +234,7 @@ public class AccountDao extends AbstractDao {
         String sql = "SELECT SUM(a.amount) AS sum FROM final_project.accounts AS a WHERE a.user_id = ?";
         PreparedStatement ps = null;
         ResultSet rs = null;
+        checkConnAndReInitIfBad();
         try {
             ps = mySQLCon.prepareStatement(sql);
             ps.setLong(1, userId);
@@ -213,5 +247,4 @@ public class AccountDao extends AbstractDao {
             closeStatement(ps);
         }
     }
-
 }
