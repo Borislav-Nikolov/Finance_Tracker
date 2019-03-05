@@ -9,5 +9,8 @@ public interface PlannedTransactionRepo extends JpaRepository<PlannedTransaction
 
     List<PlannedTransaction> findAllByUserId(long userId);
     List<PlannedTransaction> findAllByAccountId(long accountId);
+    List<PlannedTransaction> findAllByAccountIdAndUserId(long accountId, long userId);
+    int deleteAllByAccountId(long accountId);
+    int deletePlannedTransactionByAccountId(long accountId);
     int deleteByPtId(long transactionId);
 }

@@ -4,17 +4,21 @@ package finalproject.financetracker.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import finalproject.financetracker.model.daos.*;
-import finalproject.financetracker.model.dtos.account.AddAccountDTO;
-import finalproject.financetracker.model.dtos.account.EditAccountDTO;
-import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
-import finalproject.financetracker.model.dtos.account.ReturnUserBalanceDTO;
 import finalproject.financetracker.exceptions.ForbiddenRequestException;
 import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.exceptions.NotLoggedInException;
-import finalproject.financetracker.model.pojos.*;
-import finalproject.financetracker.model.repositories.BudgetRepository;
+import finalproject.financetracker.model.daos.AccountDao;
+import finalproject.financetracker.model.daos.PlannedTransactionDao;
+import finalproject.financetracker.model.dtos.account.AddAccountDTO;
+import finalproject.financetracker.model.dtos.account.EditAccountDTO;
+import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
+import finalproject.financetracker.model.dtos.account.ReturnUserBalanceDTO;
+import finalproject.financetracker.model.pojos.Account;
+import finalproject.financetracker.model.pojos.PlannedTransaction;
+import finalproject.financetracker.model.pojos.Transaction;
+import finalproject.financetracker.model.pojos.User;
+import finalproject.financetracker.model.repositories.AccountRepo;
 import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
 import finalproject.financetracker.model.repositories.TransactionRepo;
@@ -22,43 +26,33 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import javax.persistence.EntityManager;
 import javax.servlet.http.HttpSession;
-import javax.transaction.Transactional;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping(value = "/profile", produces = "application/json")
 @ResponseBody
 public class AccountController extends AbstractController {
     public static final int SEC_TO_MILIS = 1000;
-    private final AccountDao dao;
-    private final TransactionRepo tRepo;
-    private final PlannedTransactionRepo ptRepo;
-    private final PlannedTransactionDao ptDao;
-    private final CategoryRepository categoryRepository;
-    private final BudgetRepository budgetRepository;
 
-    @Autowired
-    AccountController(AccountDao dao,
-                      TransactionRepo tRepo,
-                      PlannedTransactionRepo ptRepo,
-                      PlannedTransactionDao ptDao,
-                      CategoryRepository categoryRepository,
-                      BudgetRepository budgetRepository) {
+    @Autowired private AccountDao dao;
+    @Autowired private AccountRepo accountRepo;
+    @Autowired private TransactionRepo tRepo;
+    @Autowired private TransactionController transactionController;
+    @Autowired private PlannedTransactionRepo ptRepo;
+    @Autowired private PlannedTransactionDao ptDao;
+    @Autowired private PlannedTransactionController plannedTransactionController;
 
-        this.tRepo = tRepo;
-        this.dao = dao;
-        this.ptRepo = ptRepo;
-        this.ptDao = ptDao;
-        this.categoryRepository = categoryRepository;
-        this.budgetRepository = budgetRepository;
-    }
 
     private void checkIfAccountWithSuchNameExists(Account[] accounts, String accName)
             throws ForbiddenRequestException {
@@ -118,7 +112,8 @@ public class AccountController extends AbstractController {
             IOException,
             NotLoggedInException,
             NotFoundException,
-            InvalidRequestDataException {
+            InvalidRequestDataException,
+            ForbiddenRequestException {
 
         long idL = parseNumber(accId);
         return getAccByIdLong(idL, sess);
@@ -130,7 +125,8 @@ public class AccountController extends AbstractController {
             SQLException,
             IOException,
             NotLoggedInException,
-            NotFoundException {
+            NotFoundException,
+            ForbiddenRequestException {
 
         User u = getLoggedValidUserFromSession(sess);
         Account account = dao.getById(accId);
@@ -140,14 +136,15 @@ public class AccountController extends AbstractController {
         List<PlannedTransaction> plannedTransactions = ptRepo.findAllByAccountId(accId);
         return new ReturnAccountDTO(account)
                 .withUser(u)
-                .withTransactions(transactions)
-                .withPlannedTransactions(plannedTransactions);
+                .withTransactions(transactionController.listEntitiesToListDTOs(transactions, u))
+                .withPlannedTransactions(plannedTransactionController.listEntitiesToListDTOs(plannedTransactions, u));
     }
 
     //--------------delete account---------------------//
     @RequestMapping(
             value = "/accounts/{accId}",
             method = RequestMethod.DELETE)
+    @Transactional(rollbackFor = Exception.class)
     public ReturnAccountDTO deleteAcc(@PathVariable(name = "accId") String accId,
                                       HttpSession sess)
             throws
@@ -155,11 +152,13 @@ public class AccountController extends AbstractController {
             IOException,
             NotLoggedInException,
             NotFoundException,
-            InvalidRequestDataException {
+            InvalidRequestDataException,
+            ForbiddenRequestException {
 
-        ReturnAccountDTO a = getAccById(accId, sess);  //   "/accounts/{accId}  Web Service
-
-        dao.deleteAcc(AccountDao.SQLColumnName.ACCOUNT_ID, AccountDao.SQLCompareOperator.EQUALS, a.getAccountId());   // WHERE account_id = accId
+        ReturnAccountDTO a = getAccById(accId, sess);
+        ptRepo.deleteAllByAccountId(a.getAccountId());   //   "/accounts/{accId}  Web Service
+        tRepo.deleteByAccountId(a.getAccountId());
+        accountRepo.deleteById(a.getAccountId());
         return a;
     }
 
@@ -192,20 +191,31 @@ public class AccountController extends AbstractController {
     @RequestMapping(
             value = "/accounts",
             method = RequestMethod.GET)
-    public Account[] allAccOrdered(@RequestParam(value = "desc", required = false) boolean order,
-                                   HttpSession sess)
+    public List<ReturnAccountDTO> allAccOrdered(@RequestParam(value = "desc", required = false) boolean order,
+                                                HttpSession sess)
             throws
             NotLoggedInException,
             IOException,
             SQLException {
 
         User u = getLoggedValidUserFromSession(sess);
-
+        Account[] result;
         if (order) {
-            return dao.getAllAccountsDesc(u.getUserId());
+            result = dao.getAllAccountsDesc(u.getUserId());
         } else {
-            return dao.getAllAccountsAsc(u.getUserId());
+            result = dao.getAllAccountsAsc(u.getUserId());
         }
+        return Arrays.stream(result)
+                .map(account ->
+                        new ReturnAccountDTO(account)
+                                .withUser(u)
+                                .withPlannedTransactions(
+                                        plannedTransactionController.listEntitiesToListDTOs(
+                                                ptRepo.findAllByAccountId(account.getAccountId()), u))
+                                .withTransactions(
+                                        transactionController.listEntitiesToListDTOs(
+                                                tRepo.findAllByAccountId(account.getAccountId()), u))
+                ).collect(Collectors.toList());
     }
 
     //--------------get total account number for a given userId---------------------//
@@ -240,33 +250,24 @@ public class AccountController extends AbstractController {
     //-----------------------< /Web Services >----------------------//
 
 
-    //-----------------------< Scheduled Task >----------------------//
-    @Scheduled(cron = "0 0 0 * * *")  //
+    //-----------------------< Account scheduled Task >----------------------//
+    @Scheduled(cron = "0 0 0 * * *")
+    //<second> <minute> <hour> <day-of-month> <month> <day-of-week> {optional}<year>
     void executePlannedTransactions() {
         logInfo("Scheduled planned transactions check.");
         List<PlannedTransaction> plannedTransactions = ptDao.getAllWhereExecDateEqualsToday();
+
         for (PlannedTransaction pt : plannedTransactions) {
-            System.out.println(pt.getNextExecutionDate());
-            System.out.println(LocalDateTime.now());
             new Thread(
                     () -> {
-                        logInfo("Scheduler started..."+pt.getPtName());
+                        logInfo("Scheduler started..." + pt.getPtName());
                         try {
                             Thread.sleep(
                                     pt.getNextExecutionDate().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
                                             -
                                             LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
                             logInfo("Scheduler executing planned transaction " + pt.getPtName());
-                            Transaction t = new Transaction(
-                                    pt.getPtName().concat("_planned-").concat(LocalDateTime.now().toString()),
-                                    pt.getPtAmount(),
-                                    LocalDateTime.now(),
-                                    pt.getAccountId(),
-                                    pt.getUserId(),
-                                    pt.getCategoryId());
-                            t = calculateBudgetAndAccountAmount(t); //TODO implement logic for not enough money to finish the plannedTransaction
-                                                                    // (reschedule/abort/negative account amount)
-                            this.tRepo.save(t);
+                            plannedTransactionController.execute(pt);
                             logInfo(pt.getPtName() + " executed.");//TODO reschedule executed planned transaction
                         } catch (Exception e) {
                             logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
@@ -278,28 +279,5 @@ public class AccountController extends AbstractController {
 
     //-----------------------< /Scheduled Task >----------------------//
 
-    @Transactional
-    Transaction calculateBudgetAndAccountAmount(Transaction t) throws NotFoundException, SQLException {
-        double transactionAmount = 0;
-        Account a = dao.getById(t.getAccountId());
-        Category c = categoryRepository.findByCategoryId(t.getCategoryId());
 
-        if (c.isIncome()) {
-            transactionAmount = t.getAmount();
-        } else {
-            transactionAmount =
-                    (t.getAmount() > a.getAmount())  //check if account amount is enough to make the transaction,
-                            ? a.getAmount()                         // if not transaction amount is set to account amount
-                            : t.getAmount();
-            transactionAmount = transactionAmount * -1;
-            List<Budget> budgets = budgetRepository.findAllByCategoryId(c.getCategoryId());
-            for (Budget budget : budgets) {
-                budget.setAmount(budget.getAmount() + t.getAmount());
-                budgetRepository.save(budget);
-            }
-            t.setAmount(Math.abs(transactionAmount));
-        }
-        dao.updateAccAmount((a.getAmount() + transactionAmount), a.getAccountId());
-        return t;
-    }
 }
