@@ -61,14 +61,7 @@ public abstract class AbstractController {
         logger.error(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
-                + "\n\tmsg = " + e.getMessage(),e) ;
-        logger.error(httpStatusCode + "\n\tOccurred in class = " + this.getClass() + ",\n\tException class = " + e.getClass() + "\n\tmsg = " + e.getMessage(),e);
-    }
-
-    protected void validateLogin(HttpSession session) throws NotLoggedInException {
-        if (!UserController.isLoggedIn(session)) {
-            throw new NotLoggedInException();
-        }
+                + "\n\tmsg = " + e.getMessage(),e);
     }
 
     protected User getLoggedValidUserFromSession(HttpSession sess)
@@ -87,24 +80,21 @@ public abstract class AbstractController {
 
     protected void checkIfBelongsToLoggedUser(long resourceUserId, User u)
             throws
-            NotLoggedInException{
+            ForbiddenRequestException{
 
         if (resourceUserId != u.getUserId() ) {
-            //TODO chng msg
-            throw new NotLoggedInException("not logged in a.userId!=u.userId");
+            throw new ForbiddenRequestException();
         }
     }
 
     protected User checkIfBelongsToLoggedUserAndReturnUser(long resourceUserId, HttpSession session)
             throws
             NotLoggedInException,
-            IOException {
+            IOException,
+            ForbiddenRequestException {
 
         User u = getLoggedValidUserFromSession(session);
-        if (resourceUserId != u.getUserId() ) {
-            //TODO chng msg
-            throw new NotLoggedInException("not logged in a.userId!=u.userId");
-        }
+        checkIfBelongsToLoggedUser(resourceUserId,u);
         return u;
     }
 
@@ -144,9 +134,9 @@ public abstract class AbstractController {
         return mapper.writeValueAsString(u);
     }
 
-    public Integer parseNumber(String num) throws InvalidRequestDataException {
+    public Long parseNumber(String num) throws InvalidRequestDataException {
         try {
-            return Integer.parseInt(num);
+            return Long.parseLong(num);
         } catch (IllegalArgumentException ex) {
             throw new InvalidRequestDataException("Non-numeric value given.");
         }
@@ -163,9 +153,6 @@ public abstract class AbstractController {
             JsonProcessingException.class,
             JsonParseException.class,
             JsonEOFException.class,
-            HttpClientErrorException.BadRequest.class,
-            BadHttpRequest.class,
-            ServletException.class,
             HttpMessageNotReadableException.class,
             RegistrationValidationException.class,
             InvalidLoginInfoException.class,

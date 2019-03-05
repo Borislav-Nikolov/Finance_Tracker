@@ -57,4 +57,9 @@ public class ReturnTransactionDTO {
         this.accountName = a.getAccountName();
         return this;
     }
+
+    public ReturnTransactionDTO withAccount(Account a) {
+        this.accountName = a.getAccountName();
+        return this;
+    }
 }

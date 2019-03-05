@@ -32,7 +32,7 @@ public class EmailReminder {
                 new Thread(()->mailUtil.sendSimpleMessage(recipientEmail, "noreply@traxter.com", subject, message))
                 .start();
             }
-//        userDao.updateUsersLastNotified(toBeNotified);
+        userDao.updateUsersLastNotified(toBeNotified);
         }).start();
     }
 

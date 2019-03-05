@@ -183,25 +183,7 @@ public class AccountDao extends AbstractDao {
         return accId;
     }
 
-    public int deleteAcc(SQLColumnName param, SQLCompareOperator operator, long idColumn) throws SQLException {  //TODO delete all transactions from this account in a transactional DML query
-        PreparedStatement ps = null;
-        int affectedRows;
-        checkConnAndReInitIfBad();
-        try {
-            String sql =
-                    "DELETE a FROM final_project.accounts AS a " +
-                            "WHERE a." + param.toString() + " " + operator.getValue() + " ?;";
-
-            ps = mySQLCon.prepareStatement(sql);
-            ps.setLong(1, idColumn);
-            affectedRows = ps.executeUpdate();
-        } finally {
-            closeStatement(ps);
-        }
-        return affectedRows;
-    }
-
-    public Account getById(long id) throws SQLException, NotFoundException {
+    public Account getById(long id) throws SQLException {
         PreparedStatement ps = null;
         ResultSet rs = null;
         checkConnAndReInitIfBad();

@@ -57,4 +57,9 @@ public class ReturnPlannedTransactionDTO {
         this.accountName = a.getAccountName();
         return this;
     }
+
+    public ReturnPlannedTransactionDTO withAccount(Account a) {
+        this.accountName = a.getAccountName();
+        return this;
+    }
 }
