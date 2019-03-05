@@ -1,11 +1,11 @@
 package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.model.pojos.Category;
+import finalproject.financetracker.model.repositories.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

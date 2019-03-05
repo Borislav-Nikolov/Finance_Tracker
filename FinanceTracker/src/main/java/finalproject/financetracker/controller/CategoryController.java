@@ -1,22 +1,22 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.model.daos.CategoryRepository;
+import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
-import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
-import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
-import finalproject.financetracker.model.exceptions.category_exceptions.CategoryAlreadyExistsException;
-import finalproject.financetracker.model.exceptions.category_exceptions.CategoryException;
-import finalproject.financetracker.model.exceptions.category_exceptions.CategoryMismatchException;
-import finalproject.financetracker.model.exceptions.category_exceptions.CategoryNotFoundException;
-import finalproject.financetracker.model.exceptions.image_exceptions.ImageNotFoundException;
+import finalproject.financetracker.exceptions.ForbiddenRequestException;
+import finalproject.financetracker.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.exceptions.category_exceptions.CategoryAlreadyExistsException;
+import finalproject.financetracker.exceptions.category_exceptions.CategoryException;
+import finalproject.financetracker.exceptions.category_exceptions.CategoryMismatchException;
+import finalproject.financetracker.exceptions.category_exceptions.CategoryNotFoundException;
+import finalproject.financetracker.exceptions.image_exceptions.ImageNotFoundException;
 import finalproject.financetracker.model.pojos.Category;
 import finalproject.financetracker.model.pojos.Image;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.CategoryDao;
 import finalproject.financetracker.model.daos.ImageDao;
 import finalproject.financetracker.model.daos.UserDao;
-import finalproject.financetracker.model.exceptions.MyException;
-import finalproject.financetracker.model.exceptions.NotLoggedInException;
+import finalproject.financetracker.exceptions.MyException;
+import finalproject.financetracker.exceptions.NotLoggedInException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

@@ -1,14 +1,14 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.model.daos.BudgetRepository;
-import finalproject.financetracker.model.daos.UserRepository;
+import finalproject.financetracker.model.repositories.BudgetRepository;
+import finalproject.financetracker.model.repositories.UserRepository;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetCreationDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetInfoDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetsViewDTO;
-import finalproject.financetracker.model.exceptions.MyException;
-import finalproject.financetracker.model.exceptions.NotLoggedInException;
-import finalproject.financetracker.model.exceptions.budget_exceptions.BudgetDatesException;
-import finalproject.financetracker.model.exceptions.budget_exceptions.BudgetNotFoundException;
+import finalproject.financetracker.exceptions.MyException;
+import finalproject.financetracker.exceptions.NotLoggedInException;
+import finalproject.financetracker.exceptions.budget_exceptions.BudgetDatesException;
+import finalproject.financetracker.exceptions.budget_exceptions.BudgetNotFoundException;
 import finalproject.financetracker.model.pojos.Budget;
 import finalproject.financetracker.model.pojos.User;
 import org.springframework.beans.factory.annotation.Autowired;

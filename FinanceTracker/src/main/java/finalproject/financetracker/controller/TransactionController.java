@@ -1,16 +1,16 @@
 package finalproject.financetracker.controller;
 
 import finalproject.financetracker.model.daos.AccountDao;
-import finalproject.financetracker.model.daos.TransactionRepo;
-import finalproject.financetracker.model.daos.UserRepository;
+import finalproject.financetracker.model.repositories.TransactionRepo;
+import finalproject.financetracker.model.repositories.UserRepository;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.transaction.AddTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.UpdateTransactionDTO;
-import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
-import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
-import finalproject.financetracker.model.exceptions.NotFoundException;
-import finalproject.financetracker.model.exceptions.NotLoggedInException;
+import finalproject.financetracker.exceptions.ForbiddenRequestException;
+import finalproject.financetracker.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.exceptions.NotFoundException;
+import finalproject.financetracker.exceptions.NotLoggedInException;
 import finalproject.financetracker.model.pojos.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

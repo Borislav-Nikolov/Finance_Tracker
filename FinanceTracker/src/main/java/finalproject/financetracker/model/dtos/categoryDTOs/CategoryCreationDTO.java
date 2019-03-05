@@ -1,7 +1,7 @@
 package finalproject.financetracker.model.dtos.categoryDTOs;
 
 import finalproject.financetracker.model.dtos.IRequestDTO;
-import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;

@@ -2,15 +2,14 @@ package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.pojos.VerificationToken;
+import finalproject.financetracker.model.repositories.TokenRepository;
+import finalproject.financetracker.model.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
 

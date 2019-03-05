@@ -5,12 +5,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import finalproject.financetracker.model.exceptions.*;
-import finalproject.financetracker.model.exceptions.category_exceptions.CategoryException;
-import finalproject.financetracker.model.exceptions.image_exceptions.ImageNotFoundException;
+import finalproject.financetracker.exceptions.*;
+import finalproject.financetracker.exceptions.category_exceptions.CategoryException;
+import finalproject.financetracker.exceptions.image_exceptions.ImageNotFoundException;
 import finalproject.financetracker.model.pojos.ErrMsg;
 import finalproject.financetracker.model.pojos.User;
-import finalproject.financetracker.model.exceptions.user_exceptions.*;
+import finalproject.financetracker.exceptions.user_exceptions.*;
 import javassist.tools.web.BadHttpRequest;
 import lombok.NoArgsConstructor;
 import org.apache.log4j.LogManager;
@@ -28,7 +28,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
 
@@ -207,21 +206,7 @@ public abstract class AbstractController {
         return new ErrMsg(HttpStatus.NOT_FOUND.value(), e.getMessage(),new Date());
     }
 
-    @ExceptionHandler(IOException.class)  //500
-    public ErrMsg IOExceptionHandler(Exception e, HttpServletResponse resp) {
-        resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
-        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
-    }
-
-    @ExceptionHandler({SQLException.class, DataAccessException.class}) //500
-    public ErrMsg SQLExceptionHandler(Exception e, HttpServletResponse resp) {
-        resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
-        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
-    }
-
-    @ExceptionHandler(Exception.class) //500
+    @ExceptionHandler({Exception.class,SQLException.class, DataAccessException.class,IOException.class}) //500
     public ErrMsg ExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         logError(HttpStatus.INTERNAL_SERVER_ERROR,e);

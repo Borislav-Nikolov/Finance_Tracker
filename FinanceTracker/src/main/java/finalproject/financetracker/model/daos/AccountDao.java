@@ -1,12 +1,8 @@
 package finalproject.financetracker.model.daos;
 
-import com.mysql.cj.MysqlConnection;
-import com.mysql.cj.jdbc.MysqlConnectionPoolDataSource;
-import com.mysql.cj.jdbc.MysqlDataSource;
-import com.mysql.cj.jdbc.MysqlPooledConnection;
 import finalproject.financetracker.model.dtos.account.EditAccountDTO;
 import finalproject.financetracker.model.pojos.Account;
-import finalproject.financetracker.model.exceptions.NotFoundException;
+import finalproject.financetracker.exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;

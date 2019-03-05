@@ -9,16 +9,17 @@ import finalproject.financetracker.model.dtos.account.AddAccountDTO;
 import finalproject.financetracker.model.dtos.account.EditAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnUserBalanceDTO;
-import finalproject.financetracker.model.exceptions.ForbiddenRequestException;
-import finalproject.financetracker.model.exceptions.InvalidRequestDataException;
-import finalproject.financetracker.model.exceptions.NotFoundException;
-import finalproject.financetracker.model.exceptions.NotLoggedInException;
+import finalproject.financetracker.exceptions.ForbiddenRequestException;
+import finalproject.financetracker.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.exceptions.NotFoundException;
+import finalproject.financetracker.exceptions.NotLoggedInException;
 import finalproject.financetracker.model.pojos.*;
+import finalproject.financetracker.model.repositories.BudgetRepository;
+import finalproject.financetracker.model.repositories.CategoryRepository;
+import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
+import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,6 @@ import javax.servlet.http.HttpSession;
 import javax.transaction.Transactional;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -241,7 +241,7 @@ public class AccountController extends AbstractController {
 
 
     //-----------------------< Scheduled Task >----------------------//
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *")  //
     void executePlannedTransactions() {
         logInfo("Scheduled planned transactions check.");
         List<PlannedTransaction> plannedTransactions = ptDao.getAllWhereExecDateEqualsToday();
