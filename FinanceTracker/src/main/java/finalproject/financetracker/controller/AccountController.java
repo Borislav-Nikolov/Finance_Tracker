@@ -120,7 +120,7 @@ public class AccountController extends AbstractController {
             NotFoundException,
             InvalidRequestDataException {
 
-        long idL = checkValidStringId(accId);
+        long idL = parseNumber(accId);
         return getAccByIdLong(idL, sess);
     }
 

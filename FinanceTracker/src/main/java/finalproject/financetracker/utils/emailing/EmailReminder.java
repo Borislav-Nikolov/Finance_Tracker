@@ -12,8 +12,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Scope("prototype")
 public class EmailReminder extends Thread {
-    private static final long REMINDER_INTERVAL = TimeUnit.DAYS.toMillis(1); // 24 hours
-    private static final int MAX_EMAILS_LIMIT = 2;
+    private static final long REMINDER_INTERVAL = 1000 * 60 * 15; // 15 minutes
     @Autowired
     UserDao userDao;
     @Autowired
@@ -26,25 +25,11 @@ public class EmailReminder extends Thread {
         while (true) {
             int offset = 0;
             List<Map<String, Object>> toBeNotified;
-            while (true) {
-                toBeNotified = userDao.getEmailsToBeNotifiedByReminder(MAX_EMAILS_LIMIT, offset);
-                // TODO solve this:
-//                    offset += MAX_EMAILS_LIMIT;
-                for (Map<String, Object> email : toBeNotified) {
-                    String recipientEmail = (String) email.get("email");
-                    System.out.println("-------------------- " + recipientEmail + " ----------------------");
-                    mailUtil.sendSimpleMessage(recipientEmail, "noreply@traxter.com", subject, message);
-                    try {
-                        System.out.println("------------------- SLEEPS -------------------");
-                        Thread.sleep(5000);
-                    } catch (InterruptedException ex) {
-                        System.out.println("opa: " + ex.getMessage());
-                    }
-                }
-                if (toBeNotified.size() < MAX_EMAILS_LIMIT) {
-                    toBeNotified = null;
-                    break;
-                }
+            toBeNotified = userDao.getEmailsToBeNotifiedByReminder();
+            for (Map<String, Object> email : toBeNotified) {
+                String recipientEmail = (String) email.get("email");
+                System.out.println("-------------------- " + recipientEmail + " ----------------------");
+                new Thread(()->mailUtil.sendSimpleMessage(recipientEmail, "noreply@traxter.com", subject, message));
             }
             try {
                 System.out.println("--------------- REMINDER GOES TO SLEEP --------------");

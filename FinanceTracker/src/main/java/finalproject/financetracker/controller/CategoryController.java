@@ -1,22 +1,15 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.exceptions.*;
 import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
-import finalproject.financetracker.exceptions.ForbiddenRequestException;
-import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.exceptions.category_exceptions.CategoryAlreadyExistsException;
-import finalproject.financetracker.exceptions.category_exceptions.CategoryException;
-import finalproject.financetracker.exceptions.category_exceptions.CategoryMismatchException;
-import finalproject.financetracker.exceptions.category_exceptions.CategoryNotFoundException;
-import finalproject.financetracker.exceptions.image_exceptions.ImageNotFoundException;
 import finalproject.financetracker.model.pojos.Category;
 import finalproject.financetracker.model.pojos.Image;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.CategoryDao;
 import finalproject.financetracker.model.daos.ImageDao;
 import finalproject.financetracker.model.daos.UserDao;
-import finalproject.financetracker.exceptions.MyException;
-import finalproject.financetracker.exceptions.NotLoggedInException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,9 +49,8 @@ public class CategoryController extends AbstractController {
     @GetMapping(value = "/categories/{categoryId}")
     public CategoryInfoDTO viewCategory(@PathVariable String categoryId, HttpSession session)
             throws IOException, MyException {
-        long parsedId = parseNumber(categoryId);
         User user = this.getLoggedValidUserFromSession(session);
-        Category category = categoryRepository.findByCategoryId(parsedId);
+        Category category = categoryRepository.findByCategoryId(parseNumber(categoryId));
         this.validateCategoryAndUserOwnership(user, category);
         return this.getCategoryInfoDTO(category);
     }
@@ -140,16 +132,14 @@ public class CategoryController extends AbstractController {
             }
         }
     }
-    private void validateCategoryAndUserOwnership(User user, Category category) throws CategoryException {
-        if (category == null) {
-            throw new CategoryNotFoundException();
-        } else if (category.getUserId() != null && user.getUserId() != category.getUserId()) {
-            throw new CategoryMismatchException();
+    private void validateCategoryAndUserOwnership(User user, Category category) throws NotFoundException {
+        if (category == null || (category.getUserId() != null && user.getUserId() != category.getUserId())) {
+            throw new NotFoundException("Category not found.");
         }
     }
-    private void validateImage(long imageId) throws ImageNotFoundException {
+    private void validateImage(long imageId) throws NotFoundException {
         if (imageDao.getImageById(imageId) == null) {
-            throw new ImageNotFoundException();
+            throw new NotFoundException("Image not found.");
         }
     }
 }

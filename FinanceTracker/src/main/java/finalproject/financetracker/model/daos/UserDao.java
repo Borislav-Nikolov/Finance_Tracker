@@ -1,5 +1,6 @@
 package finalproject.financetracker.model.daos;
 
+import finalproject.financetracker.exceptions.MyException;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.pojos.VerificationToken;
 import finalproject.financetracker.model.repositories.TokenRepository;
@@ -9,6 +10,7 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -29,6 +31,7 @@ public class UserDao {
         userRepository.save(user);
     }
 
+    @Transactional(rollbackFor = MyException.class)
     public void deleteUser(User user) {
         User deletedUser = userRepository.findByUsername(user.getUsername());
         // TODO consider is_deleted column and validations
@@ -71,7 +74,7 @@ public class UserDao {
         return user;
     }
 
-    public List<Map<String, Object>> getEmailsToBeNotifiedByReminder(int limit, int offset) {
+    public List<Map<String, Object>> getEmailsToBeNotifiedByReminder() {
         Date referenceDate = this.getReferenceDate();
         List<Map<String, Object>> emails =  jdbcTemplate.queryForList(
                         "SELECT u.email AS email FROM final_project.users AS u " +
@@ -79,9 +82,8 @@ public class UserDao {
                                 "ON (u.user_id = t.user_id) " +
                                 "WHERE u.last_notified < ? AND u.is_subscribed = 1 " +
                                 "GROUP BY u.user_id " +
-                                "HAVING MAX(t.execution_date) < ? " +
-                                "LIMIT ? OFFSET ?;",
-                        referenceDate, referenceDate, limit, offset
+                                "HAVING MAX(t.execution_date) < ?;",
+                                  referenceDate, referenceDate
                 );
         this.updateUsersLastNotified(emails);
         return emails;

@@ -125,7 +125,7 @@ public abstract class AbstractController {
             throws NotFoundException,
             InvalidRequestDataException {
 
-        long idL = checkValidStringId(id);
+        long idL = parseNumber(id);
         Optional<T> t = repo.findById(idL);
         return checkIfNotNull(c,t);
     }
@@ -139,20 +139,12 @@ public abstract class AbstractController {
         return checkIfNotNull(c,t);
     }
 
-    protected long checkValidStringId(String urlPathId) throws InvalidRequestDataException {
-        try {
-          return Long.parseLong(urlPathId);
-        }catch (Exception e){
-            throw new InvalidRequestDataException("invalid id provided");
-        }
-    }
-
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(u);
     }
 
-    public static Integer parseNumber(String num) throws InvalidRequestDataException {
+    public Integer parseNumber(String num) throws InvalidRequestDataException {
         try {
             return Integer.parseInt(num);
         } catch (IllegalArgumentException ex) {

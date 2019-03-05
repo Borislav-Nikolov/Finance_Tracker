@@ -69,7 +69,7 @@ public class UserController extends AbstractController {
     public LoginRespDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session)
                                     throws MyException, JsonProcessingException {
         loginInfo.checkValid();
-        String username = loginInfo.getUsername();
+        String username = loginInfo.getUsername().trim();
         String password = loginInfo.getPassword().trim();
         User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
@@ -120,28 +120,33 @@ public class UserController extends AbstractController {
     @PutMapping(value = "/profile/edit/password")
     public CommonMsgDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session)
             throws IOException, MyException {
+        passChange.checkValid();
         User user = this.getLoggedValidUserFromSession(session);
         if (passChange.getOldPass().equals(user.getPassword())) {
-            validateNewPassword(passChange.getNewPass(), passChange.getNewPass2());
-            user.setPassword(passChange.getNewPass());
+            String newPass = passChange.getNewPass().trim();
+            String newPass2 = passChange.getNewPass2().trim();
+            validateNewPassword(newPass, newPass2);
+            user.setPassword(newPass);
             userDao.updateUser(user);
         } else {
-            throw new InvalidPasswordInputException();
+            throw new InvalidRequestDataException("Wrong password.");
         }
         return new CommonMsgDTO("Password changed successfully.", new Date());
     }
     @PutMapping(value = "/profile/edit/email")
-    public CommonMsgDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session)
+    public ProfileInfoDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session)
             throws IOException, MyException {
+        emailChange.checkValid();
         User user = this.getLoggedValidUserFromSession(session);
         if (emailChange.getPassword().equals(user.getPassword())) {
-            this.validateEmail(emailChange.getNewEmail());
-            user.setEmail(emailChange.getNewEmail());
+            String newEmail = emailChange.getNewEmail().trim();
+            this.validateEmail(newEmail);
+            user.setEmail(newEmail);
             userDao.updateUser(user);
         } else {
-            throw new InvalidPasswordInputException();
+            throw new InvalidRequestDataException("Wrong password.");
         }
-        return new CommonMsgDTO("Email changed successfully.", new Date());
+        return this.getProfileInfoDTO(user);
     }
     @DeleteMapping(value = "/profile")
     public ProfileInfoDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session)
@@ -151,7 +156,7 @@ public class UserController extends AbstractController {
             userDao.deleteUser(user);
             session.invalidate();
         } else {
-            throw new InvalidPasswordInputException();
+            throw new InvalidRequestDataException("Wrong password.");
         }
         return getProfileInfoDTO(user);
     }
@@ -166,64 +171,62 @@ public class UserController extends AbstractController {
     public static boolean isLoggedIn (HttpSession session){
         return !(session.isNew() || session.getAttribute("Username") == null);
     }
-    private void validateEmail (String email) throws RegistrationValidationException {
+    private void validateEmail (String email) throws InvalidRequestDataException {
         try {
             InternetAddress emailAddr = new InternetAddress(email);
             emailAddr.validate();
         } catch (AddressException ex) {
-            throw new InvalidEmailException();
+            throw new InvalidRequestDataException("Invalid email given.");
         }
         if (userDao.getUserByEmail(email) != null) {
-            throw new EmailAlreadyUsedException();
+            throw new InvalidRequestDataException("Email is already taken.");
         }
     }
     private void validatePasswordsAtRegistration(User user, String password2)
-            throws RegistrationValidationException {
-        if ((user.getPassword() == null || password2 == null) ||
-                (user.getPassword().length() < 3  || password2.length() < 3)) {
-            throw new InvalidPasswordException();
+            throws InvalidRequestDataException {
+        if (user.getPassword() == null || password2 == null) {
+            throw new InvalidRequestDataException("Null value for passwords at user registration.");
         }
         if (!user.getPassword().equals(password2)) {
-            throw new PasswordMismatchException();
+            throw new InvalidRequestDataException("Passwords don't match.");
         }
         validatePasswordFormat(user.getPassword());
     }
     private void validateNewPassword(String newPass, String newPass2)
-            throws PasswordValidationException {
-        if ((newPass == null || newPass2 == null) ||
-                (newPass.length() < 3  || newPass2.length() < 3)) {
-            throw new InvalidPasswordException();
+            throws InvalidRequestDataException {
+        if (newPass == null || newPass2 == null) {
+            throw new InvalidRequestDataException("Null value for passwords at password change.");
         }
         if (!newPass.equals(newPass2)) {
-            throw new PasswordMismatchException();
+            throw new InvalidRequestDataException("Passwords don't match.");
         }
         validatePasswordFormat(newPass);
     }
-    private void validatePasswordFormat(String password) throws InvalidPasswordException {
+    private void validatePasswordFormat(String password) throws InvalidRequestDataException {
         // TODO remove after testing
         // added for easier testing
         if (password.charAt(0) == '1') {
             return;
         }
         if (!password.matches("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$")) {
-            throw new InvalidPasswordException("Invalid password format: must contain at least 8 characters, " +
+            throw new InvalidRequestDataException("Invalid password format: must contain at least 8 characters, " +
                     "at least one upper case and one lower case letter, at least one number and at least one special " +
                     "character");
         }
     }
-    private void validateUsername(String username) throws RegistrationValidationException {
+    private void validateUsername(String username) throws InvalidRequestDataException {
         // TODO make a more intricate validation (concerning abusive language, etc.)
         if (username.isEmpty() || username.equals(UserDao.DEFAULT_USER_USERNAME)) {
-            throw new InvalidUsernameException();
+            throw new InvalidRequestDataException("Invalid username input.");
         }
         if (userDao.getUserByUsername(username) != null) {
-            throw new UserAlreadyExistsException();
+            throw new InvalidRequestDataException("Username already taken.");
         }
     }
-    private void validateLoginAttempt(String username, String password) throws InvalidLoginInfoException {
+    private void validateLoginAttempt(String username, String password) throws InvalidRequestDataException {
         User user = userDao.getUserByUsername(username);
         if (user == null || !user.getPassword().equals(password)) {
-            throw new InvalidLoginInfoException();
+            throw new InvalidRequestDataException("Wrong user or password.");
         }
     }
     private void validateToken(VerificationToken token) throws MyException {

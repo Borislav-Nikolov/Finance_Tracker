@@ -1,13 +1,13 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.model.repositories.BudgetRepository;
 import finalproject.financetracker.model.repositories.UserRepository;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetCreationDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetInfoDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetsViewDTO;
 import finalproject.financetracker.exceptions.MyException;
-import finalproject.financetracker.exceptions.NotLoggedInException;
-import finalproject.financetracker.exceptions.budget_exceptions.BudgetDatesException;
 import finalproject.financetracker.exceptions.budget_exceptions.BudgetNotFoundException;
 import finalproject.financetracker.model.pojos.Budget;
 import finalproject.financetracker.model.pojos.User;
@@ -47,9 +47,9 @@ public class BudgetController extends AbstractController {
     }
 
     @GetMapping(value = "/budgets/{budgetId}")
-    public BudgetInfoDTO viewBudget(@PathVariable long budgetId, HttpSession session) throws IOException, MyException {
+    public BudgetInfoDTO viewBudget(@PathVariable String budgetId, HttpSession session) throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session);
-        Budget budget = budgetRepository.findByBudgetId(budgetId);
+        Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         return this.getBudgetInfoDTO(budget);
     }
@@ -74,7 +74,7 @@ public class BudgetController extends AbstractController {
 
     @PutMapping(value = "/budgets/{budgetId}")
     public BudgetInfoDTO editBudget(
-            @PathVariable long budgetId,
+            @PathVariable String budgetId,
             @RequestParam(value = "budgetName", required = false) String budgetName,
             @RequestParam(value = "amount", required = false) Double amount,
             @RequestParam(value = "endDate", required = false)
@@ -83,7 +83,7 @@ public class BudgetController extends AbstractController {
             HttpSession session)
                                 throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session);
-        Budget budget = budgetRepository.findByBudgetId(budgetId);
+        Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         if (budgetName != null) {
             budget.setBudgetName(budgetName);
@@ -103,9 +103,9 @@ public class BudgetController extends AbstractController {
     }
 
     @DeleteMapping(value = "/budgets/{budgetId}")
-    public BudgetInfoDTO deleteBudget(@PathVariable long budgetId, HttpSession session) throws IOException, MyException {
+    public BudgetInfoDTO deleteBudget(@PathVariable String budgetId, HttpSession session) throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session);
-        Budget budget = budgetRepository.findByBudgetId(budgetId);
+        Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         budgetRepository.delete(budget);
         return this.getBudgetInfoDTO(budget);
@@ -138,6 +138,7 @@ public class BudgetController extends AbstractController {
     }
 
     private void sendBudgetLimitEmail(long userId, List<Budget> budgets) {
+        // TODO
         User user = userRepository.getByUserId(userId);
         if (user.isEmailConfirmed() && user.isSubscribed()) {
             System.out.println("Email to " + user.getEmail() + " not sent: email not confirmed.");
@@ -148,9 +149,9 @@ public class BudgetController extends AbstractController {
 
     /* ----- VALIDATIONS ----- */
 
-    private void validateDates(LocalDate startingDate, LocalDate endDate) throws BudgetDatesException {
+    private void validateDates(LocalDate startingDate, LocalDate endDate) throws InvalidRequestDataException {
         if (!startingDate.isBefore(endDate) || startingDate.isBefore(LocalDate.now())) {
-            throw new BudgetDatesException();
+            throw new InvalidRequestDataException("Incorrect date input.");
         }
     }
 
@@ -158,40 +159,7 @@ public class BudgetController extends AbstractController {
         if (budget == null){
             throw new BudgetNotFoundException();
         } else if (budget.getUserId() != sessionUserId) {
-            throw new NotLoggedInException("User does not match budget.");
+            throw new NotFoundException("Budget not found.");
         }
     }
-
-    /* ----- TESTING ----- */
-//    @GetMapping(value = "testDate")
-//    public dto1 testDate() {
-//        return new dto1(LocalDate.now());
-//    }
-//    @AllArgsConstructor
-//    @Getter
-//    @Setter
-//    static class dto1 {
-//        LocalDate ld;
-//    }
-//    @GetMapping(value = "testString")
-//    public dto2 testString() {
-//        return new dto2("test test");
-//    }
-//    @AllArgsConstructor
-//    @Getter
-//    @Setter
-//    static class dto2 {
-//        String string;
-//    }
-//    @GetMapping(value = "testInt")
-//    public dto3 testInteger() {
-//        return new dto3(new Integer(5));
-//    }
-//    @AllArgsConstructor
-//    @Getter
-//    @Setter
-//    static class dto3 {
-//        Integer integer;
-//    }
-    /* ----- /TESTING ----- */
 }
