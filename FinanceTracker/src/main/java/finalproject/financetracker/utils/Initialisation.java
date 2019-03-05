@@ -46,8 +46,6 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
         } catch (SQLException | IOException ex) {
             logger.error("Couldn't initialize DB: " + ex.getMessage());
         }
-        // TODO remains to be tested
-        emailReminder.start();
     }
     private void createSchemaIfNotExists() throws SQLException, IOException {
         StringBuilder oneQuerySB = new StringBuilder();

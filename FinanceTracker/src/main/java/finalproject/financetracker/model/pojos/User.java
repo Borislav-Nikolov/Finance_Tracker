@@ -25,6 +25,7 @@ public class User {
     private boolean isEmailConfirmed;
     private boolean isSubscribed;
     private Date lastNotified;
+    private Date lastLogin;
 
     public User(String username, String password, String firstName, String lastName,
                 String email, boolean isEmailConfirmed, boolean isSubscribed) {

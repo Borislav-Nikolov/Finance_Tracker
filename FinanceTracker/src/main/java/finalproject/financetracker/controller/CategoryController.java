@@ -3,7 +3,6 @@ package finalproject.financetracker.controller;
 import finalproject.financetracker.exceptions.*;
 import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
-import finalproject.financetracker.exceptions.category_exceptions.CategoryAlreadyExistsException;
 import finalproject.financetracker.model.pojos.Category;
 import finalproject.financetracker.model.pojos.Image;
 import finalproject.financetracker.model.pojos.User;
@@ -121,14 +120,14 @@ public class CategoryController extends AbstractController {
     }
 
     /* ----- VALIDATIONS ----- */
-    private void validateCategoryName(long userId, String categoryName) throws MyException {
+    private void validateCategoryName(long userId, String categoryName) throws InvalidRequestDataException {
         if (categoryName == null || categoryName.isEmpty()) {
             throw new InvalidRequestDataException("No category name input.");
         }
         List<Category> categories = categoryDao.getPredefinedAndUserCategories(userId);
         for (Category category : categories) {
             if (category.getCategoryName().equals(categoryName)) {
-                throw new CategoryAlreadyExistsException();
+                throw new InvalidRequestDataException("Category already exists.");
             }
         }
     }

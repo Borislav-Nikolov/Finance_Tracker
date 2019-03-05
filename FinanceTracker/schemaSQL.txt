@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS final_project.users (
     is_email_confirmed TINYINT(1) NOT NULL,
     is_subscribed TINYINT(1) NOT NULL,
     last_notified TIMESTAMP,
+    last_login TIMESTAMP,
     INDEX username_idx (username ASC),
     INDEX email_idx (email ASC)
 );

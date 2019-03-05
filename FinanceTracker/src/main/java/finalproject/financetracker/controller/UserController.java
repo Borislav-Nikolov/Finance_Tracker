@@ -46,7 +46,7 @@ public class UserController extends AbstractController {
 
     @PostMapping(value = "/register")
     public ProfileInfoDTO registerUser(@RequestBody RegistrationDTO regInfo, WebRequest request)
-            throws RegistrationValidationException, InvalidRequestDataException {
+            throws InvalidRequestDataException {
         regInfo.checkValid();
         String username = regInfo.getUsername().trim();
         String password = regInfo.getPassword().trim();
@@ -76,7 +76,10 @@ public class UserController extends AbstractController {
             validateLoginAttempt(username, password);
             session.setAttribute("User", AbstractController.toJson(user));
             session.setAttribute("Username", user.getUsername());
+            // TODO add IP to session to prevent session hijacking
             session.setMaxInactiveInterval(-1);
+            user.setLastLogin(new Date());
+            userRepository.save(user);
             return new LoginRespDTO(user.getUserId(), user.getUsername(), user.getFirstName(),
                     user.getLastName(), user.getEmail(), user.isEmailConfirmed(), user.isSubscribed(), new Date());
         } else {
@@ -215,7 +218,6 @@ public class UserController extends AbstractController {
         }
     }
     private void validateUsername(String username) throws InvalidRequestDataException {
-        // TODO make a more intricate validation (concerning abusive language, etc.)
         if (username.isEmpty() || username.equals(UserDao.DEFAULT_USER_USERNAME)) {
             throw new InvalidRequestDataException("Invalid username input.");
         }

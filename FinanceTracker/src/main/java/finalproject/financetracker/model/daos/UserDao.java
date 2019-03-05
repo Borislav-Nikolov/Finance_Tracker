@@ -5,6 +5,7 @@ import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.pojos.VerificationToken;
 import finalproject.financetracker.model.repositories.TokenRepository;
 import finalproject.financetracker.model.repositories.UserRepository;
+import finalproject.financetracker.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -27,6 +28,8 @@ public class UserDao {
     private TokenRepository tokenRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private TimeUtil timeUtil;
     public void registerUser(User user) {
         userRepository.save(user);
     }
@@ -75,17 +78,18 @@ public class UserDao {
     }
 
     public List<Map<String, Object>> getEmailsToBeNotifiedByReminder() {
-        Date referenceDate = this.getReferenceDate();
+        Date notificationReferenceDate = timeUtil.getDateByMonthChange(-1);
+        Date loginReferenceDate = timeUtil.getDateByMonthChange(-2);
         List<Map<String, Object>> emails =  jdbcTemplate.queryForList(
                         "SELECT u.email AS email FROM final_project.users AS u " +
                                 "JOIN final_project.transactions AS t " +
                                 "ON (u.user_id = t.user_id) " +
                                 "WHERE u.last_notified < ? AND u.is_subscribed = 1 " +
+                                "AND u.is_email_confirmed = 1 AND NOT u.last_login < ? " +
                                 "GROUP BY u.user_id " +
                                 "HAVING MAX(t.execution_date) < ?;",
-                                  referenceDate, referenceDate
+                      notificationReferenceDate, loginReferenceDate, notificationReferenceDate
                 );
-        this.updateUsersLastNotified(emails);
         return emails;
     }
 
@@ -94,13 +98,6 @@ public class UserDao {
             jdbcTemplate.update("UPDATE final_project.users  SET last_notified = ? WHERE email = ?",
                     new Date(), email.get("email"));
         }
-    }
-
-    private Date getReferenceDate() {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Timestamp(cal.getTime().getTime()));
-        cal.add(Calendar.MONTH, -1);
-        return new Date(cal.getTime().getTime());
     }
 
     private User getUserByStringParam(String col, String param) {
