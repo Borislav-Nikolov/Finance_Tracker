@@ -28,9 +28,7 @@ public class TransactionDao {
             AbstractDao.SQLColumnName columnName,
             AbstractDao.SQLOderBy order){
         String orIncome = (isIncome!=null)?isIncome+") ":"true OR c.is_income = false)";
-
         String orAcc = (accId!=null)? accId+") ":(" 1 OR a.account_id != 1 )");
-
         String sql = "SELECT " +
                 "u.username," +
                 "u.user_id, " +
