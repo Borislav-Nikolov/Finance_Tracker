@@ -10,6 +10,7 @@ import finalproject.financetracker.model.dtos.transaction.AddTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.UpdateTransactionDTO;
 import finalproject.financetracker.model.pojos.*;
+import finalproject.financetracker.model.repositories.AccountRepo;
 import finalproject.financetracker.model.repositories.BudgetRepository;
 import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.repositories.TransactionRepo;
@@ -23,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +43,8 @@ public class TransactionController extends AbstractController {
     private AccountDao accountDao;
     @Autowired
     private AccountController accountController;
+    @Autowired
+    private AccountRepo accountRepo;
     @Autowired
     private CategoryController categoryController;
     @Autowired
@@ -225,7 +229,7 @@ public class TransactionController extends AbstractController {
         repo.deleteByTransactionId(t.getTransactionId());
         return t;
     }
-
+//    @Transactional(rollbackFor = Exception.class)
     Transaction calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
         double transactionAmount = 0;
         Account a = accountDao.getById(t.getAccountId());
@@ -237,12 +241,21 @@ public class TransactionController extends AbstractController {
             transactionAmount = t.getAmount() * -1;
             List<Budget> budgets = budgetRepository.findAllByCategoryId(c.getCategoryId());
             for (Budget budget : budgets) {
-                budget.setAmount(budget.getAmount() + t.getAmount());
-                budgetRepository.save(budget);
+                if (    (
+                        budget.getStartingDate().isBefore(LocalDate.now()) ||
+                        budget.getStartingDate().isEqual(LocalDate.now())
+                        )
+                        &&
+                        budget.getEndDate().isAfter(LocalDate.now())
+                ) {
+                    budget.setAmount(budget.getAmount() + transactionAmount);
+                    budgetRepository.save(budget);
+                }
             }
             t.setAmount(Math.abs(transactionAmount));
         }
-        accountDao.updateAccAmount((a.getAmount() + transactionAmount), a.getAccountId());
+        a.setAmount(a.getAmount() + transactionAmount);
+        accountRepo.save(a);
         return t;
     }
 

@@ -21,6 +21,7 @@ public abstract class AbstractDao {
         private String value;
 
         SQLCompareOperator(String value) {
+            this.value = value;
         }
 
         protected String getValue() {

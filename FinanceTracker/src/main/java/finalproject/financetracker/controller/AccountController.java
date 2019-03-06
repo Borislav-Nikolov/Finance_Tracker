@@ -198,7 +198,7 @@ public class AccountController extends AbstractController {
     @RequestMapping(
             value = "/accounts",
             method = RequestMethod.GET)
-    public List<ReturnAccountDTO> allAccOrdered(@RequestParam(value = "desc", required = false) boolean order,
+    public List<ReturnAccountDTO> allAccOrdered(@RequestParam(value = "desc", required = false) Boolean order,
                                                 HttpSession sess, HttpServletRequest request)
             throws
             NotLoggedInException,
@@ -208,7 +208,7 @@ public class AccountController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess, request);
         List<Account> result;
-        if (order) {
+        if (order!= null && order == true) {
             result = dao.getAllAccountsDesc(u.getUserId());
         } else {
             result = dao.getAllAccountsAsc(u.getUserId());

@@ -2,16 +2,12 @@ package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.controller.AbstractController;
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
-import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.stereotype.Component;
 
-import java.sql.PreparedStatement;
 import java.util.List;
-import java.util.function.Predicate;
 
 @Component
 public class TransactionDao {
