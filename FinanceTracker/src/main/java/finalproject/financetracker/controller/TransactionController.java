@@ -115,6 +115,7 @@ public class TransactionController extends AbstractController {
     //--------------get all transaction for given user by filter---------------------//
     @RequestMapping(value = "/transactions", method = RequestMethod.GET)
     public List<ReturnTransactionDTO> getAllWhere(@RequestParam(value = "acc", required = false) String accId,
+                                                  @RequestParam(value = "cat", required = false) String catId,
                                                   @RequestParam(value = "from", required = false) String startDate,
                                                   @RequestParam(value = "to", required = false) String endDate,
                                                   @RequestParam(value = "income", required = false) String income,
@@ -127,6 +128,12 @@ public class TransactionController extends AbstractController {
             accIdLong = parseNumber(accId);
             ReturnAccountDTO a = accountController.getAccByIdLong(accIdLong,session,request);
         }
+        Category c = null;
+        Long catIdLong = null;
+        if (catId != null) {
+            catIdLong = parseNumber(catId);
+            c = categoryController.getCategoryById(catIdLong,session,request);
+        }
         Long startDateMillis = (startDate != null)? parseNumber(startDate): 0L;
         Long endDateMillis = (endDate != null)? parseNumber(endDate): System.currentTimeMillis();
 
@@ -134,7 +141,11 @@ public class TransactionController extends AbstractController {
         if (income != null) {
             if (income.equalsIgnoreCase("true")) isIncome = true;
             if (income.equalsIgnoreCase("false")) isIncome = false;
+            if (c!=null && c.isIncome() != isIncome){
+                isIncome = c.isIncome();
+            }
         }
+
         AbstractDao.SQLColumnName columnName = AbstractDao.SQLColumnName.EXECUTION_DATE;
         if (order != null) {
             switch (order) {
@@ -161,6 +172,7 @@ public class TransactionController extends AbstractController {
         return dao.getAllByAccIdStartDateEndDateIsIncome(
                 u.getUserId(),
                 accIdLong,
+                catIdLong,
                 startDateMillis,
                 endDateMillis,
                 isIncome,

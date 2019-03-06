@@ -22,13 +22,16 @@ public class TransactionDao {
     public List<ReturnTransactionDTO> getAllByAccIdStartDateEndDateIsIncome(
             Long userId,
             Long accId,
+            Long catId,
             Long startDateTimestamp,
             Long endDateTimestamp,
             Boolean isIncome,
             AbstractDao.SQLColumnName columnName,
             AbstractDao.SQLOderBy order){
-        String orIncome = (isIncome!=null)?isIncome+") ":"true OR c.is_income = false)";
-        String orAcc = (accId!=null)? accId+") ":(" 1 OR a.account_id != 1 )");
+        String incomeQuery = (isIncome!=null)?("AND c.is_income = "+isIncome+" "):" ";
+        String accIdQuery = (accId!=null)? ("AND a.account_id = "+accId+" "):" ";
+        String catIdQuery = (catId!=null)? ("AND c.category_id = "+catId+" "):" ";
+
         String sql = "SELECT " +
                 "u.username," +
                 "u.user_id, " +
@@ -51,9 +54,10 @@ public class TransactionDao {
                 "WHERE a.user_id = ? " +                              //(1 -> userId) Long
                 "AND t.execution_date >= FROM_UNIXTIME(?) " +         //(2 -> startDate) Long(sec)
                 "AND t.execution_date < FROM_UNIXTIME(?) " +          //(3 -> endDate) Long(sec)
-                "AND (a.account_id = " +orAcc+
-                " AND (c.is_income = " + orIncome +
-                " ORDER BY "+columnName.toString()+" "+order.toString()+";";
+                 accIdQuery+
+                 incomeQuery +
+                 catIdQuery+
+                "ORDER BY "+columnName.toString()+" "+order.toString()+";";
         System.out.println(sql);  //TODO {remove}show sql query in console
         return jdbcTemplate.query(
                 sql,
