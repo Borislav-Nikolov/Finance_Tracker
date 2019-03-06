@@ -13,7 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UpdateTransactionDTO implements IRequestDTO {
 
-    private long transactionId;
+    private Long transactionId;
     private String transactionName;
 
     @Override

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Component
@@ -108,19 +109,28 @@ public class AccountDao extends AbstractDao {
         return result;
     }
 
-    public Account[] getAllAccountsAsc(long userId) throws SQLException {
+    public List<Account> getAllAccountsAsc(long userId) throws SQLException {
         return getAll(userId, QUERY_RETURN_MAX_LIMIT, QUERY_RETURN_OFFSET_DEFAULT, SQLOderBy.ASC);
     }
 
-    public Account[] getAllAccountsDesc(long userId) throws SQLException {
+    public List<Account> getAllAccountsDesc(long userId) throws SQLException {
         return getAll(userId, QUERY_RETURN_MAX_LIMIT, QUERY_RETURN_OFFSET_DEFAULT, SQLOderBy.DESC);
     }
 
-    private Account[] getAll(long userId, int limit, int offset, SQLOderBy order) throws SQLException {
+    private List<Account> getAll(long userId, int limit, int offset, SQLOderBy order) throws SQLException {
         return getAllWhere(SQLColumnName.USER_ID, SQLCompareOperator.EQUALS, userId, limit, offset, order);
     }
 
-    private Account[] getAllWhere(SQLColumnName param, SQLCompareOperator operator, long idColumnValueLong, int limit, int offset, SQLOderBy order) throws SQLException {
+    private List<Account> getAllWhere(
+            SQLColumnName param,
+            SQLCompareOperator operator,
+            long idColumnValueLong,
+            int limit,
+            int offset,
+            SQLOderBy order)
+            throws
+            SQLException {
+
         PreparedStatement ps = null;
         ResultSet rs = null;
         checkConnAndReInitIfBad();
@@ -129,7 +139,8 @@ public class AccountDao extends AbstractDao {
             String sql =
                     "SELECT a.account_id, a.account_name, a.amount, a.user_id " +
                             "FROM final_project.accounts AS a " +
-                            "WHERE a." + param.toString() + " " + operator.getValue() + " ? ORDER BY a.account_name " + order + " LIMIT ? OFFSET ?;";
+                            "WHERE a." + param.toString() + " " + operator.getValue() + " ? " +
+                            "ORDER BY a.account_name " + order + " LIMIT ? OFFSET ?;";
 
             ps = mySQLCon.prepareStatement(sql);
             ps.setLong(1, idColumnValueLong);
@@ -151,7 +162,7 @@ public class AccountDao extends AbstractDao {
             closeStatement(ps);
             closeResultSet(rs);
         }
-        return arr.toArray(new Account[0]);
+        return arr;
     }
 
     public long addAcc(Account acc) throws SQLException {

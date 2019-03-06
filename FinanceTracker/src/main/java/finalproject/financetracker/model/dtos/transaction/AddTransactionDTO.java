@@ -14,9 +14,9 @@ import lombok.Setter;
 public class AddTransactionDTO implements IRequestDTO {
 
     private String transactionName;
-    private double amount;
-    private long categoryId;
-    private long accountId;
+    private Double amount;
+    private Long categoryId;
+    private Long accountId;
 
     @Override
     public void checkValid() throws InvalidRequestDataException {

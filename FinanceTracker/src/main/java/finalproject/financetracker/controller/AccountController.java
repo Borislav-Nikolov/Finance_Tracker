@@ -16,7 +16,6 @@ import finalproject.financetracker.model.pojos.PlannedTransaction;
 import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.repositories.AccountRepo;
-import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,14 +25,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import javax.persistence.EntityManager;
+import javax.accessibility.AccessibleValue;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,16 +40,23 @@ import java.util.stream.Collectors;
 @ResponseBody
 public class AccountController extends AbstractController {
 
-    @Autowired private AccountDao dao;
-    @Autowired private AccountRepo accountRepo;
-    @Autowired private TransactionRepo tRepo;
-    @Autowired private TransactionController transactionController;
-    @Autowired private PlannedTransactionRepo ptRepo;
-    @Autowired private PlannedTransactionDao ptDao;
-    @Autowired private PlannedTransactionController plannedTransactionController;
+    @Autowired
+    private AccountDao dao;
+    @Autowired
+    private AccountRepo accountRepo;
+    @Autowired
+    private TransactionRepo tRepo;
+    @Autowired
+    private TransactionController transactionController;
+    @Autowired
+    private PlannedTransactionRepo ptRepo;
+    @Autowired
+    private PlannedTransactionDao ptDao;
+    @Autowired
+    private PlannedTransactionController plannedTransactionController;
 
 
-    private void checkIfAccountWithSuchNameExists(Account[] accounts, String accName)
+    private void checkIfAccountWithSuchNameExists(List<Account> accounts, String accName)
             throws ForbiddenRequestException {
 
         for (Account account : accounts) {
@@ -61,7 +66,7 @@ public class AccountController extends AbstractController {
         }
     }
 
-    private void checkIfAccountWithSuchNameAndDiffIdExists(Account[] accounts, String accName, long accId)
+    private void checkIfAccountWithSuchNameAndDiffIdExists(List<Account> accounts, String accName, long accId)
             throws ForbiddenRequestException {
 
         for (Account account : accounts) {
@@ -83,11 +88,11 @@ public class AccountController extends AbstractController {
             ForbiddenRequestException,
             NotLoggedInException,
             IOException,
-            UnauthorizedAccessException  {
+            UnauthorizedAccessException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         a.checkValid();
-        Account[] checkAcc = dao.getAllAccountsAsc(u.getUserId());
+        List<Account> checkAcc = dao.getAllAccountsAsc(u.getUserId());
         checkIfAccountWithSuchNameExists(checkAcc, a.getAccountName());
         Account returnAcc = new Account(
                 a.getAccountName(),
@@ -112,7 +117,7 @@ public class AccountController extends AbstractController {
             NotFoundException,
             InvalidRequestDataException,
             ForbiddenRequestException,
-            UnauthorizedAccessException  {
+            UnauthorizedAccessException {
 
         long idL = parseNumber(accId);
         return getAccByIdLong(idL, sess, request);
@@ -126,7 +131,7 @@ public class AccountController extends AbstractController {
             NotLoggedInException,
             NotFoundException,
             ForbiddenRequestException,
-            UnauthorizedAccessException  {
+            UnauthorizedAccessException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         Account account = dao.getById(accId);
@@ -154,7 +159,7 @@ public class AccountController extends AbstractController {
             NotFoundException,
             InvalidRequestDataException,
             ForbiddenRequestException,
-            UnauthorizedAccessException  {
+            UnauthorizedAccessException {
 
         ReturnAccountDTO a = getAccById(accId, sess, request);
         ptRepo.deleteAllByAccountId(a.getAccountId());   //   "/accounts/{accId}  Web Service
@@ -176,12 +181,12 @@ public class AccountController extends AbstractController {
             SQLException,
             ForbiddenRequestException,
             NotFoundException,
-            UnauthorizedAccessException  {
+            UnauthorizedAccessException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         a.checkValid();
         ReturnAccountDTO returnAccountDTO = getAccByIdLong(a.getAccountId(), sess, request);
-        Account[] allUserAccounts = dao.getAllAccountsAsc(u.getUserId());
+        List<Account> allUserAccounts = dao.getAllAccountsAsc(u.getUserId());
         checkIfAccountWithSuchNameAndDiffIdExists(allUserAccounts, a.getAccountName(), a.getAccountId());
         dao.updateAcc(a);
         returnAccountDTO.setAccountName(a.getAccountName());
@@ -199,16 +204,17 @@ public class AccountController extends AbstractController {
             NotLoggedInException,
             IOException,
             SQLException,
-            UnauthorizedAccessException  {
+            UnauthorizedAccessException {
 
         User u = getLoggedValidUserFromSession(sess, request);
-        Account[] result;
+        List<Account> result;
         if (order) {
             result = dao.getAllAccountsDesc(u.getUserId());
         } else {
             result = dao.getAllAccountsAsc(u.getUserId());
         }
-        return Arrays.stream(result)
+        return result
+                .stream()
                 .map(account ->
                         new ReturnAccountDTO(account)
                                 .withUser(u)
@@ -228,7 +234,7 @@ public class AccountController extends AbstractController {
             SQLException,
             NotLoggedInException,
             IOException,
-            UnauthorizedAccessException  {
+            UnauthorizedAccessException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         ObjectMapper mapper = new ObjectMapper();
@@ -265,7 +271,7 @@ public class AccountController extends AbstractController {
         for (PlannedTransaction pt : plannedTransactions) {
             new Thread(
                     () -> {
-                        logInfo("Scheduler started..." + pt.getPtName()+"/"+pt.getUserId()+"/"+pt.getAccountId());
+                        logInfo("Scheduler started..." + pt.getPtName() + "/" + pt.getUserId() + "/" + pt.getAccountId());
                         try {
                             Thread.sleep(
                                     pt.getNextExecutionDate().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS

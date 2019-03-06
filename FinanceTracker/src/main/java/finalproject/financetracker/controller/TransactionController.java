@@ -2,7 +2,9 @@ package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.*;
 import finalproject.financetracker.exceptions.runntime.ServerErrorException;
+import finalproject.financetracker.model.daos.AbstractDao;
 import finalproject.financetracker.model.daos.AccountDao;
+import finalproject.financetracker.model.daos.TransactionDao;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.transaction.AddTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
@@ -31,13 +33,20 @@ import java.util.stream.Collectors;
 @ResponseBody
 public class TransactionController extends AbstractController {
 
-    @Autowired private TransactionRepo repo;
-    @Autowired private AccountDao accountDao;
-    @Autowired private AccountController accountController;
-    @Autowired private CategoryController categoryController;
-    @Autowired private CategoryRepository categoryRepository;
-    @Autowired private BudgetRepository budgetRepository;
-
+    @Autowired
+    private TransactionRepo repo;
+    @Autowired
+    private TransactionDao dao;
+    @Autowired
+    private AccountDao accountDao;
+    @Autowired
+    private AccountController accountController;
+    @Autowired
+    private CategoryController categoryController;
+    @Autowired
+    private CategoryRepository categoryRepository;
+    @Autowired
+    private BudgetRepository budgetRepository;
 
     //--------------add transaction for given account---------------------//
     @RequestMapping(value = "/transactions", method = RequestMethod.POST)
@@ -103,22 +112,60 @@ public class TransactionController extends AbstractController {
     }
 
 
-    //--------------get all transaction for given user / accId---------------------//
+    //--------------get all transaction for given user by filter---------------------//
     @RequestMapping(value = "/transactions", method = RequestMethod.GET)
-    public List<ReturnTransactionDTO> getAllTransactions(@RequestParam(value = "accId", required = false) String accId,
-                                                         HttpSession sess, HttpServletRequest request)
-            throws
-            NotLoggedInException,
-            IOException,
-            InvalidRequestDataException,
-            UnauthorizedAccessException {
-
-        User u = getLoggedValidUserFromSession(sess, request);
+    public List<ReturnTransactionDTO> getAllWhere(@RequestParam(value = "acc", required = false) String accId,
+                                                  @RequestParam(value = "from", required = false) String startDate,
+                                                  @RequestParam(value = "to", required = false) String endDate,
+                                                  @RequestParam(value = "income", required = false) String income,
+                                                  @RequestParam(value = "order", required = false) String order,
+                                                  @RequestParam(value = "desc", required = false) String desc,
+                                                  HttpSession session, HttpServletRequest request) throws NotLoggedInException, UnauthorizedAccessException, IOException, InvalidRequestDataException, ForbiddenRequestException, SQLException, NotFoundException {
+        User u = getLoggedValidUserFromSession(session, request);
+        Long accIdLong = null;
         if (accId != null) {
-            long accIdLong = parseNumber(accId);
-            return listEntitiesToListDTOs(repo.findAllByAccountIdAndUserId(accIdLong, u.getUserId()), u);
+            accIdLong = parseNumber(accId);
+            ReturnAccountDTO a = accountController.getAccByIdLong(accIdLong,session,request);
         }
-        return listEntitiesToListDTOs(repo.findAllByUserId(u.getUserId()), u);
+        Long startDateMillis = (startDate != null)? parseNumber(startDate): 0L;
+        Long endDateMillis = (endDate != null)? parseNumber(endDate): System.currentTimeMillis();
+
+        Boolean isIncome = null;
+        if (income != null) {
+            if (income.equalsIgnoreCase("true")) isIncome = true;
+            if (income.equalsIgnoreCase("false")) isIncome = false;
+        }
+        AbstractDao.SQLColumnName columnName = AbstractDao.SQLColumnName.EXECUTION_DATE;
+        if (order != null) {
+            switch (order) {
+                case "amount": {
+                    columnName = AbstractDao.SQLColumnName.AMOUNT;
+                    break;
+                }
+                case "tname": {
+                    columnName = AbstractDao.SQLColumnName.TRANSACTION_NAME;
+                    break;
+                }
+                case "aname": {
+                    columnName = AbstractDao.SQLColumnName.ACCOUNT_NAME;
+                    break;
+                }
+            }
+        }
+
+        AbstractDao.SQLOderBy orderBy = AbstractDao.SQLOderBy.ASC;
+        if (desc != null) {
+            if (desc.equalsIgnoreCase("true")) orderBy = AbstractDao.SQLOderBy.DESC;
+        }
+
+        return dao.getAllByAccIdStartDateEndDateIsIncome(
+                u.getUserId(),
+                accIdLong,
+                startDateMillis,
+                endDateMillis,
+                isIncome,
+                columnName,
+                orderBy);
     }
 
     //-------------- edit transaction ---------------------//
@@ -162,7 +209,7 @@ public class TransactionController extends AbstractController {
             NotFoundException,
             UnauthorizedAccessException {
 
-        ReturnTransactionDTO t = getTransactionById(deleteId, sess,request);
+        ReturnTransactionDTO t = getTransactionById(deleteId, sess, request);
         repo.deleteByTransactionId(t.getTransactionId());
         return t;
     }

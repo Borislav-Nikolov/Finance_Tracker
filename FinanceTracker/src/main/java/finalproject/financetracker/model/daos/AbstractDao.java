@@ -21,7 +21,6 @@ public abstract class AbstractDao {
         private String value;
 
         SQLCompareOperator(String value) {
-            this.value = value;
         }
 
         protected String getValue() {
@@ -30,7 +29,14 @@ public abstract class AbstractDao {
     }
 
     public enum SQLColumnName {
-        ACCOUNT_ID, ACCOUNT_NAME, AMOUNT, USER_ID
+        USER_ID,
+        EXECUTION_DATE,
+        AMOUNT,
+        TRANSACTION_NAME,
+        ACCOUNT_NAME,;
+
+        SQLColumnName(){
+        }
     }
 
     public enum SQLOderBy {

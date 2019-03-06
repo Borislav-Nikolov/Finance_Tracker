@@ -1,5 +1,6 @@
 package finalproject.financetracker.model.dtos.transaction;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import finalproject.financetracker.model.dtos.IRequestDTO;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.pojos.Account;
@@ -20,17 +21,17 @@ import java.util.Date;
 @AllArgsConstructor
 public class ReturnTransactionDTO {
 
-    private long transactionId;
+    private Long transactionId;
     private String transactionName;
-    private double amount;
+    private Double amount;
     private LocalDateTime executionDate;
-    private long userId;
-    private long categoryId;
-    private long accountId;
+    private Long userId;
+    private Long categoryId;
+    private Long accountId;
     private String username;
     private String accountName;
     private String categoryName;
-    private boolean isIncome;
+    private Boolean isIncome;
 
     public ReturnTransactionDTO(Transaction t) {
         this.transactionId = t.getTransactionId();
