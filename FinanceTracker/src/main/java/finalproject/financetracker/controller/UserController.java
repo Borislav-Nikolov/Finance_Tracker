@@ -59,7 +59,14 @@ public class UserController extends AbstractController {
         this.validateUsername(username);
         this.validateEmail(email);
         this.validatePasswordsAtRegistration(password, password2);
-        User user = new User(username, password, firstName, lastName, email, false, isSubscribed);
+        User user = new User(
+                username,
+                passCrypter.crypt(password),
+                firstName,
+                lastName,
+                email,
+                false,
+                isSubscribed);
         user.setLastNotified(new Date());
         try {
             userRepository.save(user);
@@ -244,7 +251,7 @@ public class UserController extends AbstractController {
     }
     private void validateLoginAttempt(String username, String password) throws InvalidRequestDataException {
         User user = userDao.getUserByUsername(username);
-        if (user == null || !user.getPassword().equals(password)) {
+        if (user == null || !passCrypter.check(password,user.getPassword())) {
             throw new InvalidRequestDataException("Wrong user or password.");
         }
     }
