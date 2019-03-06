@@ -12,6 +12,7 @@ import finalproject.financetracker.model.daos.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,14 +29,10 @@ public class CategoryController extends AbstractController {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    @GetMapping(value = "/testNull")
-    public void testIt(HttpSession session) throws Exception {
-        this.getCategoryById(3, session);
-    }
-
     @GetMapping(value = "/categories")
-    public CategoriesViewDTO viewCategories(HttpSession session) throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+    public CategoriesViewDTO viewCategories(HttpSession session, HttpServletRequest request)
+            throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
         List<Category> categories = categoryDao.getPredefinedAndUserCategories(user.getUserId());
         CategoriesViewDTO categoriesViewDTO = new CategoriesViewDTO(new ArrayList<>());
         for (Category category : categories) {
@@ -46,22 +43,23 @@ public class CategoryController extends AbstractController {
     }
 
     @GetMapping(value = "/categories/{categoryId}")
-    public CategoryInfoDTO viewCategory(@PathVariable String categoryId, HttpSession session)
+    public CategoryInfoDTO viewCategory(@PathVariable String categoryId, HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         Category category = categoryRepository.findByCategoryId(parseNumber(categoryId));
         this.validateCategoryAndUserOwnership(user, category);
         return this.getCategoryInfoDTO(category);
     }
 
     @PostMapping(value = "/categories")
-    public CategoryInfoDTO createCategory(@RequestBody CategoryCreationDTO categoryCreationDTO, HttpSession session)
+    public CategoryInfoDTO createCategory(@RequestBody CategoryCreationDTO categoryCreationDTO, HttpSession session,
+                                          HttpServletRequest request)
                                         throws IOException, MyException {
         categoryCreationDTO.checkValid();
         String categoryName = categoryCreationDTO.getCategoryName();
         boolean isIncome = categoryCreationDTO.isIncome();
         long imageId = categoryCreationDTO.getImageId();
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         this.validateCategoryName(user.getUserId(), categoryName);
         this.validateImage(imageId);
         Category category = new Category(categoryName, isIncome, user.getUserId(), imageId);
@@ -73,9 +71,9 @@ public class CategoryController extends AbstractController {
     public CategoryInfoDTO editCategory(@PathVariable long categoryId,
                                         @RequestParam(value = "categoryName", required = false) String categoryName,
                                         @RequestParam(value = "imageId", required = false) Long imageId,
-                                        HttpSession session)
+                                        HttpSession session, HttpServletRequest request)
                                 throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         Category category = categoryRepository.findByCategoryId(categoryId);
         this.validateCategoryAndUserOwnership(user, category);
         if (categoryName != null) {
@@ -88,19 +86,20 @@ public class CategoryController extends AbstractController {
     }
 
     @DeleteMapping(value = "/categories/{categoryId}")
-    public CategoryInfoDTO deleteCategory(@PathVariable("categoryId") long categoryId, HttpSession session)
+    public CategoryInfoDTO deleteCategory(@PathVariable("categoryId") long categoryId, HttpSession session,
+                                          HttpServletRequest request)
             throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         Category category = categoryRepository.findByCategoryId(categoryId);
         this.validateCategoryAndUserOwnership(user, category);
         categoryDao.deleteCategory(category);
         return this.getCategoryInfoDTO(category);
     }
 
-    public Category getCategoryById(long categoryId, HttpSession session)
-            throws IOException, NotLoggedInException, ForbiddenRequestException {
+    public Category getCategoryById(long categoryId, HttpSession session, HttpServletRequest request)
+            throws IOException, UnauthorizedAccessException, NotLoggedInException, ForbiddenRequestException {
         Category category = categoryDao.getCategoryById(categoryId);
-        User user = getLoggedValidUserFromSession(session);
+        User user = getLoggedValidUserFromSession(session, request);
         if (category.getUserId() == UserDao.DEFAULT_CATEGORY_USER_ID || user.getUserId() == category.getUserId()) {
             return category;
         }

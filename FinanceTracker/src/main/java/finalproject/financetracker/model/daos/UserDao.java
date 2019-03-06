@@ -1,19 +1,22 @@
 package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.exceptions.MyException;
+import finalproject.financetracker.exceptions.ServerErrorException;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.pojos.VerificationToken;
 import finalproject.financetracker.model.repositories.TokenRepository;
 import finalproject.financetracker.model.repositories.UserRepository;
 import finalproject.financetracker.utils.TimeUtil;
+import finalproject.financetracker.utils.emailing.OnRegistrationCompleteEvent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.WebRequest;
 
-import java.sql.Timestamp;
 import java.util.*;
 
 @Component
@@ -30,8 +33,11 @@ public class UserDao {
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private TimeUtil timeUtil;
-    public void registerUser(User user) {
+
+    @Transactional(rollbackFor = ServerErrorException.class)
+    public void verifyUserEmail(User user, VerificationToken token) {
         userRepository.save(user);
+        tokenRepository.delete(token);
     }
 
     @Transactional(rollbackFor = MyException.class)

@@ -1,16 +1,13 @@
 package finalproject.financetracker.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import finalproject.financetracker.exceptions.*;
+import finalproject.financetracker.model.dtos.MsgObjectDTO;
 import finalproject.financetracker.model.repositories.TokenRepository;
 import finalproject.financetracker.model.repositories.UserRepository;
 import finalproject.financetracker.model.dtos.CommonMsgDTO;
-import finalproject.financetracker.exceptions.AlreadyLoggedInException;
-import finalproject.financetracker.exceptions.InvalidRequestDataException;
-import finalproject.financetracker.exceptions.MyException;
-import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.UserDao;
-import finalproject.financetracker.exceptions.user_exceptions.*;
 import finalproject.financetracker.model.dtos.userDTOs.*;
 import finalproject.financetracker.model.pojos.VerificationToken;
 import finalproject.financetracker.utils.emailing.MailUtil;
@@ -22,6 +19,7 @@ import org.springframework.web.context.request.WebRequest;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Date;
@@ -32,21 +30,21 @@ import java.util.Map;
 public class UserController extends AbstractController {
 
     @Autowired
-    UserDao userDao;
+    private UserDao userDao;
     @Autowired
-    MailUtil mailUtil;
+    private MailUtil mailUtil;
     @Autowired
-    ApplicationEventPublisher applicationEventPublisher;
+    private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
-    TokenRepository tokenRepository;
+    private TokenRepository tokenRepository;
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     /* ----- STATUS CHANGES ----- */
 
     @PostMapping(value = "/register")
-    public ProfileInfoDTO registerUser(@RequestBody RegistrationDTO regInfo, WebRequest request)
-            throws InvalidRequestDataException {
+    public MsgObjectDTO registerUser(@RequestBody RegistrationDTO regInfo, WebRequest request)
+            throws InvalidRequestDataException, FailedActionException {
         regInfo.checkValid();
         String username = regInfo.getUsername().trim();
         String password = regInfo.getPassword().trim();
@@ -60,13 +58,25 @@ public class UserController extends AbstractController {
         this.validateEmail(email);
         this.validatePasswordsAtRegistration(user, password2);
         this.formatNames(user);
-        userDao.registerUser(user);
-        String appUrl = request.getContextPath();
-        applicationEventPublisher.publishEvent(new OnRegistrationCompleteEvent(user, request.getLocale(), appUrl));
-        return getProfileInfoDTO(user);
+        user.setLastNotified(new Date());
+        try {
+            userRepository.save(user);
+            String appUrl = request.getContextPath();
+            applicationEventPublisher.publishEvent(new OnRegistrationCompleteEvent(user, request.getLocale(), appUrl));
+        } catch (Exception ex) {
+            user = userRepository.findByUsername(user.getUsername());
+            if (user != null) {
+                userDao.deleteUser(user);
+            }
+            // TODO come up with appropriate handler
+            throw new FailedActionException("User registration failed.");
+        }
+        CommonMsgDTO msg = new CommonMsgDTO("User registered. Verification email successfully sent.", new Date());
+        ProfileInfoDTO profile = this.getProfileInfoDTO(user);
+        return new MsgObjectDTO(msg, profile);
     }
     @PostMapping(value = "/login")
-    public LoginRespDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session)
+    public MsgObjectDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session, HttpServletRequest request)
                                     throws MyException, JsonProcessingException {
         loginInfo.checkValid();
         String username = loginInfo.getUsername().trim();
@@ -74,25 +84,28 @@ public class UserController extends AbstractController {
         User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
             validateLoginAttempt(username, password);
-            session.setAttribute("User", AbstractController.toJson(user));
-            session.setAttribute("Username", user.getUsername());
-            // TODO add IP to session to prevent session hijacking
+            session.setAttribute(SESSION_USER_KEY, AbstractController.toJson(user));
+            session.setAttribute(SESSION_USERNAME_KEY, user.getUsername());
+            session.setAttribute(SESSION_IP_ADDR_KEY, request.getRemoteAddr());
             session.setMaxInactiveInterval(-1);
             user.setLastLogin(new Date());
             userRepository.save(user);
-            return new LoginRespDTO(user.getUserId(), user.getUsername(), user.getFirstName(),
-                    user.getLastName(), user.getEmail(), user.isEmailConfirmed(), user.isSubscribed(), new Date());
+            CommonMsgDTO msg = new CommonMsgDTO("Login successful.", new Date());
+            ProfileInfoDTO profile = this.getProfileInfoDTO(user);
+            return new MsgObjectDTO(msg, profile);
         } else {
+            this.validateIpAddr(session, request);
             throw new AlreadyLoggedInException();
         }
     }
     @GetMapping(value = "/logout")
-    public CommonMsgDTO logoutUser(HttpSession session) throws AlreadyLoggedOutException {
-        if (!isLoggedIn(session)) {
-            throw new AlreadyLoggedOutException();
-        }
+    public MsgObjectDTO logoutUser(HttpSession session, HttpServletRequest request)
+            throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
         session.invalidate();
-        return new CommonMsgDTO("Logout successful.", new Date());
+        CommonMsgDTO msg = new CommonMsgDTO("Logout successful.", new Date());
+        ProfileInfoDTO profile = this.getProfileInfoDTO(user);
+        return new MsgObjectDTO(msg, profile);
     }
     @GetMapping(value = "/confirm")
     public CommonMsgDTO confirmEmail(@RequestParam(value = "token") String token) throws MyException {
@@ -100,31 +113,31 @@ public class UserController extends AbstractController {
         this.validateToken(verToken);
         User user = userRepository.getByUserId(verToken.getUserId());
         user.setEmailConfirmed(true);
-        userRepository.save(user);
-        tokenRepository.delete(verToken);
+        userDao.verifyUserEmail(user, verToken);
         return new CommonMsgDTO("Email " + user.getEmail() + " was confirmed.", new Date());
     }
 
     /* ----- PROFILE ACTIONS ----- */
 
     @GetMapping(value = "/profile")
-    public ProfileInfoDTO viewProfile(HttpSession session)
+    public ProfileInfoDTO viewProfile(HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         return getProfileInfoDTO(user);
     }
     @GetMapping(value = "/profile/edit")
-    public ProfileInfoDTO editProfile(HttpSession session)
+    public ProfileInfoDTO editProfile(HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         return getProfileInfoDTO(user);
     }
     // TODO maybe gather editing into one method
     @PutMapping(value = "/profile/edit/password")
-    public CommonMsgDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session)
+    public CommonMsgDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session,
+                                       HttpServletRequest request)
             throws IOException, MyException {
         passChange.checkValid();
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         if (passChange.getOldPass().equals(user.getPassword())) {
             String newPass = passChange.getNewPass().trim();
             String newPass2 = passChange.getNewPass2().trim();
@@ -137,10 +150,11 @@ public class UserController extends AbstractController {
         return new CommonMsgDTO("Password changed successfully.", new Date());
     }
     @PutMapping(value = "/profile/edit/email")
-    public ProfileInfoDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session)
+    public ProfileInfoDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session,
+                                      HttpServletRequest request)
             throws IOException, MyException {
         emailChange.checkValid();
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         if (emailChange.getPassword().equals(user.getPassword())) {
             String newEmail = emailChange.getNewEmail().trim();
             this.validateEmail(newEmail);
@@ -152,9 +166,10 @@ public class UserController extends AbstractController {
         return this.getProfileInfoDTO(user);
     }
     @DeleteMapping(value = "/profile")
-    public ProfileInfoDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session)
+    public ProfileInfoDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session,
+                                        HttpServletRequest request)
             throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         if (password.get("password").equals(user.getPassword())) {
             userDao.deleteUser(user);
             session.invalidate();

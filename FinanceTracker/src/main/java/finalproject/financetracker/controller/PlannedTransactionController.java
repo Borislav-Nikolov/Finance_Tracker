@@ -19,6 +19,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -50,19 +51,20 @@ public class PlannedTransactionController extends AbstractController {
     @RequestMapping(value = "/ptransactions", method = RequestMethod.POST)
     @ResponseBody
     public ReturnPlannedTransactionDTO addPlannedTransaction(@RequestBody AddPlannedTransactionDTO addTransactionDTO,
-                                                             HttpSession sess)
+                                                             HttpSession sess, HttpServletRequest request)
             throws InvalidRequestDataException,
             NotLoggedInException,
             IOException,
             ForbiddenRequestException,
             NotFoundException,
-            SQLException {
+            SQLException,
+            UnauthorizedAccessException {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         addTransactionDTO.checkValid();
         List<PlannedTransaction> transactions = repo.findAllByAccountId(addTransactionDTO.getAccountId());
-        Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess);  // WebSercvice
-        ReturnAccountDTO a = accountController.getAccByIdLong(addTransactionDTO.getAccountId(), sess);
+        Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess, request);  // WebSercvice
+        ReturnAccountDTO a = accountController.getAccByIdLong(addTransactionDTO.getAccountId(), sess, request);
 
         for (PlannedTransaction transaction : transactions) {
             if (addTransactionDTO.getTransactionName().equalsIgnoreCase(transaction.getPtName())) {
@@ -88,20 +90,21 @@ public class PlannedTransactionController extends AbstractController {
     @RequestMapping(value = "/ptransactions/{id}", method = RequestMethod.GET)
     @ResponseBody
     public ReturnPlannedTransactionDTO getPlannedTransactionById(@PathVariable(value = "id") String id,
-                                                                 HttpSession sess)
+                                                                 HttpSession sess, HttpServletRequest request)
             throws
             InvalidRequestDataException,
             NotLoggedInException,
             IOException,
             ForbiddenRequestException,
             NotFoundException,
-            SQLException {
+            SQLException,
+            UnauthorizedAccessException {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         PlannedTransaction pt = validateDataAndGetByIdFromRepo(id, repo, PlannedTransaction.class);
         checkIfBelongsToLoggedUser(pt.getUserId(), u);
-        Category c = categoryController.getCategoryById(pt.getCategoryId(), sess);
-        ReturnAccountDTO a = accountController.getAccByIdLong(pt.getAccountId(), sess);
+        Category c = categoryController.getCategoryById(pt.getCategoryId(), sess, request);
+        ReturnAccountDTO a = accountController.getAccByIdLong(pt.getAccountId(), sess, request);
         return new ReturnPlannedTransactionDTO(pt)
                 .withUser(u)
                 .withCategory(c)
@@ -113,13 +116,14 @@ public class PlannedTransactionController extends AbstractController {
     @ResponseBody
     public List<ReturnPlannedTransactionDTO> getAllPlannedTransaction(
             @RequestParam(value = "accId", required = false) String accId,
-            HttpSession sess)
+            HttpSession sess, HttpServletRequest request)
             throws
             NotLoggedInException,
             IOException,
-            InvalidRequestDataException {
+            InvalidRequestDataException,
+            UnauthorizedAccessException {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         if (accId != null) {
             long accIdLong = parseNumber(accId);
             return listEntitiesToListDTOs(repo.findAllByAccountIdAndUserId(accIdLong, u.getUserId()), u);
@@ -131,22 +135,23 @@ public class PlannedTransactionController extends AbstractController {
     @RequestMapping(value = "/ptransactions", method = RequestMethod.PUT)
     @ResponseBody
     public ReturnPlannedTransactionDTO updatePlannedTransaction(@RequestBody UpdatePlannedTransactionDTO transactionDTO,
-                                                                HttpSession sess)
+                                                                HttpSession sess, HttpServletRequest request)
             throws
             InvalidRequestDataException,
             NotLoggedInException,
             IOException,
             ForbiddenRequestException,
             NotFoundException,
-            SQLException {
+            SQLException,
+            UnauthorizedAccessException {
 
         transactionDTO.checkValid();
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         PlannedTransaction pt = validateDataAndGetByIdFromRepo(transactionDTO.getTransactionId(), repo, PlannedTransaction.class);
         pt.setPtName(transactionDTO.getTransactionName());
         checkIfBelongsToLoggedUser(pt.getUserId(), u);
-        Category c = categoryController.getCategoryById(pt.getCategoryId(), sess);
-        ReturnAccountDTO a = accountController.getAccByIdLong(pt.getAccountId(), sess);
+        Category c = categoryController.getCategoryById(pt.getCategoryId(), sess, request);
+        ReturnAccountDTO a = accountController.getAccByIdLong(pt.getAccountId(), sess, request);
         pt = repo.saveAndFlush(pt);
         return new ReturnPlannedTransactionDTO(pt)
                 .withUser(u)
@@ -158,16 +163,17 @@ public class PlannedTransactionController extends AbstractController {
     @ResponseBody
     @Transactional
     public ReturnPlannedTransactionDTO deletePlannedTransaction(@PathVariable(value = "id") String deleteId,
-                                                                HttpSession sess)
+                                                                HttpSession sess, HttpServletRequest request)
             throws
             NotLoggedInException,
             IOException,
             InvalidRequestDataException,
             ForbiddenRequestException,
             SQLException,
-            NotFoundException {
+            NotFoundException,
+            UnauthorizedAccessException {
 
-        ReturnPlannedTransactionDTO t = getPlannedTransactionById(deleteId, sess);
+        ReturnPlannedTransactionDTO t = getPlannedTransactionById(deleteId, sess, request);
         repo.deleteByPtId(t.getTransactionId());
         return t;
     }

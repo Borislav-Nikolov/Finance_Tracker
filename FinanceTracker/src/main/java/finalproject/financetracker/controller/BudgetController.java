@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -32,8 +33,9 @@ public class BudgetController extends AbstractController {
 
 
     @GetMapping(value = "/budgets")
-    public BudgetsViewDTO viewBudgets(HttpSession session) throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+    public BudgetsViewDTO viewBudgets(HttpSession session, HttpServletRequest request)
+            throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
         List<Budget> budgets = budgetRepository.findAllByUserId(user.getUserId());
         List<BudgetInfoDTO> budgetsInfo = new ArrayList<>();
         for (Budget budget : budgets) {
@@ -47,20 +49,23 @@ public class BudgetController extends AbstractController {
     }
 
     @GetMapping(value = "/budgets/{budgetId}")
-    public BudgetInfoDTO viewBudget(@PathVariable String budgetId, HttpSession session) throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+    public BudgetInfoDTO viewBudget(@PathVariable String budgetId, HttpSession session, HttpServletRequest request)
+            throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
         Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         return this.getBudgetInfoDTO(budget);
     }
 
     @PostMapping(value = "/budgets")
-    public BudgetInfoDTO createBudget(@RequestBody BudgetCreationDTO budgetCreationDTO, HttpSession session)
+    public BudgetInfoDTO createBudget(@RequestBody BudgetCreationDTO budgetCreationDTO, HttpSession session,
+                                      HttpServletRequest request)
                                     throws IOException, MyException {
         budgetCreationDTO.checkValid();
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         String budgetName = budgetCreationDTO.getBudgetName();
         double amount = budgetCreationDTO.getAmount();
+        // TODO test meticulously the dates
         LocalDate startingDate = budgetCreationDTO.getStartingDate();
         LocalDate endDate = budgetCreationDTO.getEndDate();
         long userId = user.getUserId();
@@ -80,9 +85,10 @@ public class BudgetController extends AbstractController {
             @RequestParam(value = "endDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
-            HttpSession session)
+            HttpSession session,
+            HttpServletRequest request)
                                 throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+        User user = this.getLoggedValidUserFromSession(session, request);
         Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         if (budgetName != null) {
@@ -103,8 +109,9 @@ public class BudgetController extends AbstractController {
     }
 
     @DeleteMapping(value = "/budgets/{budgetId}")
-    public BudgetInfoDTO deleteBudget(@PathVariable String budgetId, HttpSession session) throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session);
+    public BudgetInfoDTO deleteBudget(@PathVariable String budgetId, HttpSession session, HttpServletRequest request)
+            throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
         Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         budgetRepository.delete(budget);

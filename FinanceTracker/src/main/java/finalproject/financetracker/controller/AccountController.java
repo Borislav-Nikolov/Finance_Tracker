@@ -4,10 +4,7 @@ package finalproject.financetracker.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import finalproject.financetracker.exceptions.ForbiddenRequestException;
-import finalproject.financetracker.exceptions.InvalidRequestDataException;
-import finalproject.financetracker.exceptions.NotFoundException;
-import finalproject.financetracker.exceptions.NotLoggedInException;
+import finalproject.financetracker.exceptions.*;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.daos.PlannedTransactionDao;
 import finalproject.financetracker.model.dtos.account.AddAccountDTO;
@@ -30,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityManager;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -79,15 +77,16 @@ public class AccountController extends AbstractController {
     @RequestMapping(value = "/accounts",
             method = RequestMethod.POST)
     public ReturnAccountDTO addAcc(@RequestBody AddAccountDTO a,
-                                   HttpSession sess)
+                                   HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
             InvalidRequestDataException,
             ForbiddenRequestException,
             NotLoggedInException,
-            IOException {
+            IOException,
+            UnauthorizedAccessException  {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         a.checkValid();
         Account[] checkAcc = dao.getAllAccountsAsc(u.getUserId());
         checkIfAccountWithSuchNameExists(checkAcc, a.getAccountName());
@@ -106,29 +105,31 @@ public class AccountController extends AbstractController {
             value = "/accounts/{accId}",
             method = RequestMethod.GET)
     public ReturnAccountDTO getAccById(@PathVariable(value = "accId") String accId,
-                                       HttpSession sess)
+                                       HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
             IOException,
             NotLoggedInException,
             NotFoundException,
             InvalidRequestDataException,
-            ForbiddenRequestException {
+            ForbiddenRequestException,
+            UnauthorizedAccessException  {
 
         long idL = parseNumber(accId);
-        return getAccByIdLong(idL, sess);
+        return getAccByIdLong(idL, sess, request);
     }
 
     ReturnAccountDTO getAccByIdLong(long accId,
-                                    HttpSession sess)
+                                    HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
             IOException,
             NotLoggedInException,
             NotFoundException,
-            ForbiddenRequestException {
+            ForbiddenRequestException,
+            UnauthorizedAccessException  {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         Account account = dao.getById(accId);
         checkIfNotNull(Account.class, account);
         checkIfBelongsToLoggedUser(account.getUserId(), u);
@@ -146,16 +147,17 @@ public class AccountController extends AbstractController {
             method = RequestMethod.DELETE)
     @Transactional(rollbackFor = Exception.class)
     public ReturnAccountDTO deleteAcc(@PathVariable(name = "accId") String accId,
-                                      HttpSession sess)
+                                      HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
             IOException,
             NotLoggedInException,
             NotFoundException,
             InvalidRequestDataException,
-            ForbiddenRequestException {
+            ForbiddenRequestException,
+            UnauthorizedAccessException  {
 
-        ReturnAccountDTO a = getAccById(accId, sess);
+        ReturnAccountDTO a = getAccById(accId, sess, request);
         ptRepo.deleteAllByAccountId(a.getAccountId());   //   "/accounts/{accId}  Web Service
         tRepo.deleteByAccountId(a.getAccountId());
         accountRepo.deleteById(a.getAccountId());
@@ -167,18 +169,19 @@ public class AccountController extends AbstractController {
             value = "/accounts",
             method = RequestMethod.PUT)
     public ReturnAccountDTO editAccount(@RequestBody EditAccountDTO a,
-                                        HttpSession sess)
+                                        HttpSession sess, HttpServletRequest request)
             throws
             InvalidRequestDataException,
             NotLoggedInException,
             IOException,
             SQLException,
             ForbiddenRequestException,
-            NotFoundException {
+            NotFoundException,
+            UnauthorizedAccessException  {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         a.checkValid();
-        ReturnAccountDTO returnAccountDTO = getAccByIdLong(a.getAccountId(), sess);
+        ReturnAccountDTO returnAccountDTO = getAccByIdLong(a.getAccountId(), sess, request);
         Account[] allUserAccounts = dao.getAllAccountsAsc(u.getUserId());
         checkIfAccountWithSuchNameAndDiffIdExists(allUserAccounts, a.getAccountName(), a.getAccountId());
         dao.updateAcc(a);
@@ -192,13 +195,14 @@ public class AccountController extends AbstractController {
             value = "/accounts",
             method = RequestMethod.GET)
     public List<ReturnAccountDTO> allAccOrdered(@RequestParam(value = "desc", required = false) boolean order,
-                                                HttpSession sess)
+                                                HttpSession sess, HttpServletRequest request)
             throws
             NotLoggedInException,
             IOException,
-            SQLException {
+            SQLException,
+            UnauthorizedAccessException  {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         Account[] result;
         if (order) {
             result = dao.getAllAccountsDesc(u.getUserId());
@@ -220,13 +224,14 @@ public class AccountController extends AbstractController {
 
     //--------------get total account number for a given userId---------------------//
     @RequestMapping(value = "/accounts/count", method = RequestMethod.GET)
-    public JsonNode allAccCount(HttpSession sess)
+    public JsonNode allAccCount(HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
             NotLoggedInException,
-            IOException {
+            IOException,
+            UnauthorizedAccessException  {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode jn = mapper.createObjectNode();
         long accounts = dao.getAllCount(u.getUserId());
@@ -238,13 +243,14 @@ public class AccountController extends AbstractController {
 
     //-------------- get User balance all accounts amount ---------------------//
     @RequestMapping(value = "/balance", method = RequestMethod.GET)
-    public ReturnUserBalanceDTO getBalance(HttpSession sess)
+    public ReturnUserBalanceDTO getBalance(HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
             NotLoggedInException,
-            IOException {
+            IOException,
+            UnauthorizedAccessException {
 
-        User u = getLoggedValidUserFromSession(sess);
+        User u = getLoggedValidUserFromSession(sess, request);
         return new ReturnUserBalanceDTO(u).withBalance(dao.getUserBalanceByUserId(u.getUserId()));
     }
     //-----------------------< /Web Services >----------------------//

@@ -11,7 +11,6 @@ import finalproject.financetracker.exceptions.image_exceptions.ImageNotFoundExce
 import finalproject.financetracker.model.pojos.ErrMsg;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.exceptions.user_exceptions.*;
-import javassist.tools.web.BadHttpRequest;
 import lombok.NoArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -23,7 +22,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 
-import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -34,6 +33,10 @@ import java.util.Optional;
 @NoArgsConstructor
 @RestController
 public abstract class AbstractController {
+
+    static final String SESSION_USERNAME_KEY = "Username";
+    static final String SESSION_USER_KEY = "User";
+    static final String SESSION_IP_ADDR_KEY = "IpAddr";
 
     //---------------------< Methods >----------------------//
 
@@ -64,10 +67,11 @@ public abstract class AbstractController {
                 + "\n\tmsg = " + e.getMessage(),e);
     }
 
-    protected User getLoggedValidUserFromSession(HttpSession sess)
+    protected User getLoggedValidUserFromSession(HttpSession sess, HttpServletRequest request)
             throws
             NotLoggedInException,
-            IOException{
+            IOException,
+            UnauthorizedAccessException {
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -75,7 +79,8 @@ public abstract class AbstractController {
         if(!UserController.isLoggedIn(sess)){
             throw new NotLoggedInException();
         }
-        return mapper.readValue(sess.getAttribute("User").toString(), User.class);
+        this.validateIpAddr(sess, request);
+        return mapper.readValue(sess.getAttribute(SESSION_USER_KEY).toString(), User.class);
     }
 
     protected void checkIfBelongsToLoggedUser(long resourceUserId, User u)
@@ -87,13 +92,14 @@ public abstract class AbstractController {
         }
     }
 
-    protected User checkIfBelongsToLoggedUserAndReturnUser(long resourceUserId, HttpSession session)
+    protected User checkIfBelongsToLoggedUserAndReturnUser(long resourceUserId, HttpSession session, HttpServletRequest request)
             throws
             NotLoggedInException,
             IOException,
-            ForbiddenRequestException {
+            ForbiddenRequestException,
+            UnauthorizedAccessException {
 
-        User u = getLoggedValidUserFromSession(session);
+        User u = getLoggedValidUserFromSession(session, request);
         checkIfBelongsToLoggedUser(resourceUserId,u);
         return u;
     }
@@ -139,6 +145,13 @@ public abstract class AbstractController {
             return Long.parseLong(num);
         } catch (IllegalArgumentException ex) {
             throw new InvalidRequestDataException("Non-numeric value given.");
+        }
+    }
+
+    void validateIpAddr(HttpSession session, HttpServletRequest request) throws UnauthorizedAccessException {
+        if (!session.getAttribute(SESSION_IP_ADDR_KEY).equals(request.getRemoteAddr())) {
+            session.invalidate();
+            throw new UnauthorizedAccessException("Attempt to access from another IP.");
         }
     }
 
