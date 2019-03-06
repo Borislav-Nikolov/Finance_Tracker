@@ -1,6 +1,6 @@
 package finalproject.financetracker.utils;
 
-import finalproject.financetracker.utils.emailing.EmailReminder;
+import finalproject.financetracker.utils.emailing.EmailSender;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +28,6 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
     private ImageDao imageDao;
     @Autowired
     private CategoryDao categoryDao;
-    @Autowired
-    private EmailReminder emailReminder;
 
     private Logger logger = LogManager.getLogger(Logger.class);
 

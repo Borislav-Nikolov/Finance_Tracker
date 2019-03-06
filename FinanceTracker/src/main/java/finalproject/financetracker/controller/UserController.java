@@ -12,6 +12,7 @@ import finalproject.financetracker.model.dtos.userDTOs.*;
 import finalproject.financetracker.model.pojos.VerificationToken;
 import finalproject.financetracker.utils.emailing.MailUtil;
 import finalproject.financetracker.utils.emailing.OnRegistrationCompleteEvent;
+import finalproject.financetracker.utils.passCrypt.PassCrypter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +40,8 @@ public class UserController extends AbstractController {
     private TokenRepository tokenRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private PassCrypter passCrypter;
 
     /* ----- STATUS CHANGES ----- */
 
@@ -49,15 +52,14 @@ public class UserController extends AbstractController {
         String username = regInfo.getUsername().trim();
         String password = regInfo.getPassword().trim();
         String password2 = regInfo.getPassword2().trim();
-        String firstName = regInfo.getFirstName().trim();
-        String lastName = regInfo.getLastName().trim();
+        String firstName = this.formatName(regInfo.getFirstName().trim());
+        String lastName = this.formatName(regInfo.getLastName().trim());
         String email = regInfo.getEmail().trim();
         boolean isSubscribed = regInfo.isSubscribed();
-        User user = new User(username, password, firstName, lastName, email, false, isSubscribed);
         this.validateUsername(username);
         this.validateEmail(email);
-        this.validatePasswordsAtRegistration(user, password2);
-        this.formatNames(user);
+        this.validatePasswordsAtRegistration(password, password2);
+        User user = new User(username, password, firstName, lastName, email, false, isSubscribed);
         user.setLastNotified(new Date());
         try {
             userRepository.save(user);
@@ -200,15 +202,15 @@ public class UserController extends AbstractController {
             throw new InvalidRequestDataException("Email is already taken.");
         }
     }
-    private void validatePasswordsAtRegistration(User user, String password2)
+    private void validatePasswordsAtRegistration(String password, String password2)
             throws InvalidRequestDataException {
-        if (user.getPassword() == null || password2 == null) {
+        if (password == null || password2 == null) {
             throw new InvalidRequestDataException("Null value for passwords at user registration.");
         }
-        if (!user.getPassword().equals(password2)) {
+        if (!password.equals(password2)) {
             throw new InvalidRequestDataException("Passwords don't match.");
         }
-        validatePasswordFormat(user.getPassword());
+        validatePasswordFormat(password);
     }
     private void validateNewPassword(String newPass, String newPass2)
             throws InvalidRequestDataException {
@@ -255,15 +257,11 @@ public class UserController extends AbstractController {
             throw new InvalidRequestDataException("That token has already expired.");
         }
     }
-    private void formatNames(User user) {
-        String firstName = user.getFirstName();
-        String lastName = user.getLastName();
-        if (firstName != null && firstName.isEmpty()) {
-            user.setFirstName(null);
+    private String formatName(String name) {
+        if (name != null && name.isEmpty()) {
+            return null;
         }
-        if (lastName != null && lastName.isEmpty()) {
-            user.setLastName(null);
-        }
+        return name;
     }
 }
 

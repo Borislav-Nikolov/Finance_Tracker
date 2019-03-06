@@ -6,13 +6,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class PassCrypter {
 
-    public static final int LOG_ROUNDS = 13;
+    private static final int LOG_ROUNDS = 13;
 
-    String crypt(String pass){
-        return BCrypt.hashpw(pass,BCrypt.gensalt(LOG_ROUNDS));
+    public String crypt(String pass){
+        return BCrypt.hashpw(pass, BCrypt.gensalt(LOG_ROUNDS));
     }
 
-    boolean check(String pass, String hashedPass){
-        return BCrypt.checkpw(pass,hashedPass);
+    public boolean check(String pass, String hashedPass){
+        return BCrypt.checkpw(pass, hashedPass);
     }
 }

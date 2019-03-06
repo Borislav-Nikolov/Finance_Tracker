@@ -14,8 +14,8 @@ import java.time.LocalDate;
 public class BudgetCreationDTO implements IRequestDTO {
     private String budgetName;
     private double amount;
-    private LocalDate startingDate;
-    private LocalDate endDate;
+    private String startingDate;
+    private String endDate;
     private long userId;
     private long categoryId;
 

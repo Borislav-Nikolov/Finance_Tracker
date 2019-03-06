@@ -11,8 +11,9 @@ import finalproject.financetracker.exceptions.MyException;
 import finalproject.financetracker.exceptions.budget_exceptions.BudgetNotFoundException;
 import finalproject.financetracker.model.pojos.Budget;
 import finalproject.financetracker.model.pojos.User;
+import finalproject.financetracker.utils.TimeUtil;
+import finalproject.financetracker.utils.emailing.EmailSender;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -30,7 +31,10 @@ public class BudgetController extends AbstractController {
     private BudgetRepository budgetRepository;
     @Autowired
     private UserRepository userRepository;
-
+    @Autowired
+    private EmailSender emailSender;
+    @Autowired
+    private TimeUtil timeUtil;
 
     @GetMapping(value = "/budgets")
     public BudgetsViewDTO viewBudgets(HttpSession session, HttpServletRequest request)
@@ -65,9 +69,8 @@ public class BudgetController extends AbstractController {
         User user = this.getLoggedValidUserFromSession(session, request);
         String budgetName = budgetCreationDTO.getBudgetName();
         double amount = budgetCreationDTO.getAmount();
-        // TODO test meticulously the dates
-        LocalDate startingDate = budgetCreationDTO.getStartingDate();
-        LocalDate endDate = budgetCreationDTO.getEndDate();
+        LocalDate startingDate = timeUtil.checkParseLocalDate(budgetCreationDTO.getStartingDate());
+        LocalDate endDate = timeUtil.checkParseLocalDate(budgetCreationDTO.getEndDate());
         long userId = user.getUserId();
         long categoryId = budgetCreationDTO.getCategoryId();
         this.validateDates(startingDate, endDate);
@@ -82,8 +85,7 @@ public class BudgetController extends AbstractController {
             @PathVariable String budgetId,
             @RequestParam(value = "budgetName", required = false) String budgetName,
             @RequestParam(value = "amount", required = false) Double amount,
-            @RequestParam(value = "endDate", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(value = "endDate", required = false) String endDate,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
             HttpSession session,
             HttpServletRequest request)
@@ -98,8 +100,8 @@ public class BudgetController extends AbstractController {
             budget.setAmount(amount);
         }
         if (endDate != null) {
-            this.validateDates(budget.getStartingDate(), endDate);
-            budget.setEndDate(endDate);
+            this.validateDates(budget.getStartingDate(), timeUtil.checkParseLocalDate(endDate));
+            budget.setEndDate(timeUtil.checkParseLocalDate(endDate));
         }
         if (categoryId != null) {
             budget.setCategoryId(categoryId);
@@ -120,20 +122,15 @@ public class BudgetController extends AbstractController {
 
     public void subtractFromBudgets(double amount, long userId, long categoryId) {
         List<Budget> budgets = budgetRepository.findAllByUserId(userId);
-        List<Budget> nearingLimit = new ArrayList<>();
         for (Budget budget : budgets) {
             if (budget.getCategoryId() == categoryId && !budget.getEndDate().isAfter(LocalDate.now())) {
                 budget.setAmount(budget.getAmount() - amount);
-                // TODO send email / message if budget is near 0
-                if (budget.getAmount() <= 50) {
-                    nearingLimit.add(budget);
+                User user = userRepository.getByUserId(userId);
+                if (budget.getAmount() <= 50 && user.isSubscribed() && user.isEmailConfirmed()) {
+                    emailSender.sendBudgetNearLimitEmail(user, budget);
                 }
-                //
                 budgetRepository.save(budget);
             }
-        }
-        if (nearingLimit.size() > 0) {
-            this.sendBudgetLimitEmail(userId, nearingLimit);
         }
     }
 
@@ -144,15 +141,7 @@ public class BudgetController extends AbstractController {
                 budget.getEndDate(), budget.getUserId(), budget.getCategoryId());
     }
 
-    private void sendBudgetLimitEmail(long userId, List<Budget> budgets) {
-        // TODO
-        User user = userRepository.getByUserId(userId);
-        if (user.isEmailConfirmed() && user.isSubscribed()) {
-            System.out.println("Email to " + user.getEmail() + " not sent: email not confirmed.");
-        }
-        String to = user.getEmail();
-//        , String from, String subject, String text
-    }
+
 
     /* ----- VALIDATIONS ----- */
 

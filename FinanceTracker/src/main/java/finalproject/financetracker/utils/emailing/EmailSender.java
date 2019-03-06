@@ -1,6 +1,8 @@
 package finalproject.financetracker.utils.emailing;
 
 import finalproject.financetracker.model.daos.UserDao;
+import finalproject.financetracker.model.pojos.Budget;
+import finalproject.financetracker.model.pojos.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -11,8 +13,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
-@Scope("prototype")
-public class EmailReminder {
+public class EmailSender {
     private static final long REMINDER_INTERVAL = 1000 * 60 * 15; // 15 minutes
     @Autowired
     UserDao userDao;
@@ -34,6 +35,14 @@ public class EmailReminder {
             }
         userDao.updateUsersLastNotified(toBeNotified);
         }).start();
+    }
+
+    public void sendBudgetNearLimitEmail(User user, Budget budget) {
+        String subject = "Budget notification from Traxter";
+        String message = user.getUsername() + ",\n" +
+                "Your " + budget.getBudgetName() + " budget is at " + budget.getAmount() + ".";
+        new Thread(()->
+                mailUtil.sendSimpleMessage(user.getEmail(), "noreply@traxter.com", subject, message));
     }
 
 }
