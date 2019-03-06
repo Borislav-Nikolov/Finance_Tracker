@@ -2,6 +2,7 @@ package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.exceptions.NotFoundException;
+import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.repositories.BudgetRepository;
 import finalproject.financetracker.model.repositories.UserRepository;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetCreationDTO;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +37,8 @@ public class BudgetController extends AbstractController {
     private EmailSender emailSender;
     @Autowired
     private TimeUtil timeUtil;
+    @Autowired
+    private UserDao userDao;
 
     @GetMapping(value = "/budgets")
     public BudgetsViewDTO viewBudgets(HttpSession session, HttpServletRequest request)
@@ -120,13 +124,13 @@ public class BudgetController extends AbstractController {
         return this.getBudgetInfoDTO(budget);
     }
 
-    public void subtractFromBudgets(double amount, long userId, long categoryId) {
+    public void subtractFromBudgets(double amount, long userId, long categoryId) throws SQLException {
         List<Budget> budgets = budgetRepository.findAllByUserId(userId);
         for (Budget budget : budgets) {
             if (budget.getCategoryId() == categoryId && !budget.getEndDate().isAfter(LocalDate.now())) {
                 budget.setAmount(budget.getAmount() - amount);
                 User user = userRepository.getByUserId(userId);
-                if (budget.getAmount() <= 50 && user.isSubscribed() && user.isEmailConfirmed()) {
+                if (budget.getAmount() <= 50 && userDao.isEligibleForReceivingEmail(user.getEmail())) {
                     emailSender.sendBudgetNearLimitEmail(user, budget);
                 }
                 budgetRepository.save(budget);

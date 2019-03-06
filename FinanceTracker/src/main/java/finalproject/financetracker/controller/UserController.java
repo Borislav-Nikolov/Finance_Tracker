@@ -2,6 +2,7 @@ package finalproject.financetracker.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import finalproject.financetracker.exceptions.*;
+import finalproject.financetracker.model.daos.TokenDao;
 import finalproject.financetracker.model.dtos.MsgObjectDTO;
 import finalproject.financetracker.model.repositories.TokenRepository;
 import finalproject.financetracker.model.repositories.UserRepository;
@@ -10,7 +11,7 @@ import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.dtos.userDTOs.*;
 import finalproject.financetracker.model.pojos.VerificationToken;
-import finalproject.financetracker.utils.emailing.MailUtil;
+import finalproject.financetracker.utils.emailing.EmailSender;
 import finalproject.financetracker.utils.emailing.OnRegistrationCompleteEvent;
 import finalproject.financetracker.utils.passCrypt.PassCrypter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +34,6 @@ public class UserController extends AbstractController {
     @Autowired
     private UserDao userDao;
     @Autowired
-    private MailUtil mailUtil;
-    @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
     private TokenRepository tokenRepository;
@@ -42,11 +41,15 @@ public class UserController extends AbstractController {
     private UserRepository userRepository;
     @Autowired
     private PassCrypter passCrypter;
+    @Autowired
+    private EmailSender emailSender;
+    @Autowired
+    private TokenDao tokenDao;
 
     /* ----- STATUS CHANGES ----- */
 
     @PostMapping(value = "/register")
-    public MsgObjectDTO registerUser(@RequestBody RegistrationDTO regInfo, WebRequest request)
+    public MsgObjectDTO registerUser(@RequestBody RegistrationDTO regInfo, HttpServletRequest request)
             throws InvalidRequestDataException, FailedActionException {
         regInfo.checkValid();
         String username = regInfo.getUsername().trim();
@@ -125,6 +128,12 @@ public class UserController extends AbstractController {
         userDao.verifyUserEmail(user, verToken);
         return new CommonMsgDTO("Email " + user.getEmail() + " was confirmed.", new Date());
     }
+    // TODO consider if cannot be abused
+    @GetMapping(value = "/new_token")
+    public void sendNewToken(HttpSession session, HttpServletRequest request) throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
+        this.sendVerificationTokenToUser(user, request);
+    }
 
     /* ----- PROFILE ACTIONS ----- */
 
@@ -134,6 +143,7 @@ public class UserController extends AbstractController {
         User user = this.getLoggedValidUserFromSession(session, request);
         return getProfileInfoDTO(user);
     }
+    // TODO remove
     @GetMapping(value = "/profile/edit")
     public ProfileInfoDTO editProfile(HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
@@ -147,31 +157,28 @@ public class UserController extends AbstractController {
             throws IOException, MyException {
         passChange.checkValid();
         User user = this.getLoggedValidUserFromSession(session, request);
-        if (passChange.getOldPass().equals(user.getPassword())) {
-            String newPass = passChange.getNewPass().trim();
-            String newPass2 = passChange.getNewPass2().trim();
-            validateNewPassword(newPass, newPass2);
-            user.setPassword(newPass);
-            userDao.updateUser(user);
-        } else {
-            throw new InvalidRequestDataException("Wrong password.");
-        }
+        this.validateUserPasswordInput(passChange.getOldPass(), user.getPassword());
+        String newPass = passChange.getNewPass().trim();
+        String newPass2 = passChange.getNewPass2().trim();
+        validateNewPassword(newPass, newPass2);
+        user.setPassword(passCrypter.crypt(newPass));
+        userDao.updateUser(user);
         return new CommonMsgDTO("Password changed successfully.", new Date());
     }
+    // TODO check why if you try to ask for new token after email change it says "already confirmed"
     @PutMapping(value = "/profile/edit/email")
     public ProfileInfoDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session,
                                       HttpServletRequest request)
             throws IOException, MyException {
         emailChange.checkValid();
         User user = this.getLoggedValidUserFromSession(session, request);
-        if (emailChange.getPassword().equals(user.getPassword())) {
-            String newEmail = emailChange.getNewEmail().trim();
-            this.validateEmail(newEmail);
-            user.setEmail(newEmail);
-            userDao.updateUser(user);
-        } else {
-            throw new InvalidRequestDataException("Wrong password.");
-        }
+        this.validateUserPasswordInput(emailChange.getPassword(), user.getPassword());
+        String newEmail = emailChange.getNewEmail().trim();
+        this.validateEmail(newEmail);
+        user.setEmail(newEmail);
+        user.setEmailConfirmed(false);
+        this.sendVerificationTokenToUser(user, request);
+        userDao.updateUser(user);
         return this.getProfileInfoDTO(user);
     }
     @DeleteMapping(value = "/profile")
@@ -179,19 +186,11 @@ public class UserController extends AbstractController {
                                         HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
-        if (password.get("password").equals(user.getPassword())) {
-            userDao.deleteUser(user);
-            session.invalidate();
-        } else {
-            throw new InvalidRequestDataException("Wrong password.");
-        }
+        this.validateUserPasswordInput(password.get("password"), (user.getPassword()));
+        userDao.deleteUser(user);
+        session.invalidate();
+        // TODO make with MsgObjectDTO
         return getProfileInfoDTO(user);
-    }
-
-    private ProfileInfoDTO getProfileInfoDTO(User user) {
-        return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
-                user.getFirstName(), user.getLastName(), user.getEmail(),
-                user.isEmailConfirmed(), user.isSubscribed());
     }
     /* ----- VALIDATIONS ----- */
 
@@ -251,7 +250,7 @@ public class UserController extends AbstractController {
     }
     private void validateLoginAttempt(String username, String password) throws InvalidRequestDataException {
         User user = userDao.getUserByUsername(username);
-        if (user == null || !passCrypter.check(password,user.getPassword())) {
+        if (user == null || !passCrypter.check(password, user.getPassword())) {
             throw new InvalidRequestDataException("Wrong user or password.");
         }
     }
@@ -264,11 +263,27 @@ public class UserController extends AbstractController {
             throw new InvalidRequestDataException("That token has already expired.");
         }
     }
+    private void validateUserPasswordInput(String givenPass, String userPass) throws InvalidRequestDataException {
+        if (!passCrypter.check(givenPass, userPass)) {
+            throw new InvalidRequestDataException("Wrong password.");
+        }
+    }
+    /* ----- OTHER METHODS ----- */
     private String formatName(String name) {
         if (name != null && name.isEmpty()) {
             return null;
         }
         return name;
+    }
+    private void sendVerificationTokenToUser(User user, HttpServletRequest request) {
+        String appUrl = request.getContextPath();
+        VerificationToken token = tokenDao.getNewToken(user);
+        emailSender.sendEmailConfirmationToken(appUrl, token, user);
+    }
+    private ProfileInfoDTO getProfileInfoDTO(User user) {
+        return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
+                user.getFirstName(), user.getLastName(), user.getEmail(),
+                user.isEmailConfirmed(), user.isSubscribed());
     }
 }
 
