@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS final_project.verification_tokens (
     INDEX user_fk_inx (user_id ASC),
     INDEX token_idx (token ASC),
     CONSTRAINT token_user_fk FOREIGN KEY (user_id)
-    REFERENCES users(user_id)
+    REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS final_project.images (
@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS final_project.categories (
     INDEX user_fk_idx (user_id ASC),
     INDEX image_fk_idx (image_id ASC),
     CONSTRAINT user_fk FOREIGN KEY (user_id)
-    REFERENCES users(user_id),
+    REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT image_fk FOREIGN KEY (image_id)
-    REFERENCES images(image_id)
+    REFERENCES images(image_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS final_project.accounts (
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS final_project.accounts (
     user_id INT NOT NULL,
     INDEX user_fk_idx (user_id ASC) ,
     CONSTRAINT acc_user_fk FOREIGN KEY (user_id)
-    REFERENCES users(user_id)
+    REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS final_project.transactions (
@@ -68,10 +68,11 @@ CREATE TABLE IF NOT EXISTS final_project.transactions (
     INDEX user_fk_idx (user_id ASC),
     INDEX category_fk_idx (category_id ASC) ,
     CONSTRAINT trans_user_fk FOREIGN KEY (user_id)
-    REFERENCES users(user_id),
+    REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT trans_category_fk FOREIGN KEY (category_id)
-    REFERENCES categories(category_id),
-    CONSTRAINT trans_account_fk FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+    REFERENCES categories(category_id) ON DELETE CASCADE,
+    CONSTRAINT trans_account_fk FOREIGN KEY (account_id)
+    REFERENCES accounts(account_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS final_project.planned_transactions (
@@ -86,9 +87,12 @@ CREATE TABLE IF NOT EXISTS final_project.planned_transactions (
     INDEX acc_fk_idx (account_id ASC),
     INDEX user_fk_idx (user_id ASC),
     INDEX category_fk_idx (category_id ASC),
-    CONSTRAINT pt_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id),
-    CONSTRAINT pt_category_fk FOREIGN KEY (category_id) REFERENCES categories(category_id),
-    CONSTRAINT pt_account_fk FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+    CONSTRAINT pt_user_fk FOREIGN KEY (user_id)
+    REFERENCES users(user_id) ON DELETE CASCADE,
+    CONSTRAINT pt_category_fk FOREIGN KEY (category_id)
+    REFERENCES categories(category_id) ON DELETE CASCADE,
+    CONSTRAINT pt_account_fk FOREIGN KEY (account_id)
+    REFERENCES accounts(account_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS final_project.budgets (
@@ -101,8 +105,8 @@ CREATE TABLE IF NOT EXISTS final_project.budgets (
     category_id INT NOT NULL,
     INDEX user_fk_idx (user_id ASC),
     CONSTRAINT budget_user_fk FOREIGN KEY (user_id)
-    REFERENCES users(user_id),
+    REFERENCES users(user_id) ON DELETE CASCADE,
     INDEX category_fk_idx (category_id ASC) ,
     CONSTRAINT budget_category_fk FOREIGN KEY (category_id)
-    REFERENCES categories(category_id)
+    REFERENCES categories(category_id) ON DELETE CASCADE
 );

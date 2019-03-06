@@ -2,11 +2,10 @@ package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.exceptions.MyException;
 import finalproject.financetracker.exceptions.runntime.ServerErrorException;
-import finalproject.financetracker.model.pojos.User;
-import finalproject.financetracker.model.pojos.VerificationToken;
-import finalproject.financetracker.model.repositories.TokenRepository;
-import finalproject.financetracker.model.repositories.UserRepository;
+import finalproject.financetracker.model.pojos.*;
+import finalproject.financetracker.model.repositories.*;
 import finalproject.financetracker.utils.TimeUtil;
+import finalproject.financetracker.utils.passCrypt.PassCrypter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -14,6 +13,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 @Component
@@ -25,11 +29,23 @@ public class UserDao {
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private AccountRepo accountRepo;
+    @Autowired
+    private BudgetRepository budgetRepository;
+    @Autowired
+    private TransactionRepo transactionRepo;
+    @Autowired
+    private PlannedTransactionRepo plannedTransactionRepo;
+    @Autowired
+    private CategoryRepository categoryRepository;
+    @Autowired
     private TokenRepository tokenRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private TimeUtil timeUtil;
+    @Autowired
+    private PassCrypter passCrypter;
 
     @Transactional(rollbackFor = ServerErrorException.class)
     public void verifyUserEmail(User user, VerificationToken token) {
@@ -40,16 +56,46 @@ public class UserDao {
     @Transactional(rollbackFor = MyException.class)
     public void deleteUser(User user) {
         User deletedUser = userRepository.findByUsername(user.getUsername());
-        // TODO consider is_deleted column and validations
         String deletedUserValues = "deleted" + (new Random().nextInt(90000) + 10000) + deletedUser.getUserId();
-        // TODO implement after password hashing is possible
-        String deletedUserPassword = "deleted" + (new Random().nextInt(90000) + 10000) + deletedUser.getUserId();
+        String deletedUserPassword = passCrypter
+                    .crypt("deleted" + (new Random().nextInt(90000) + 10000) + deletedUser.getUserId());
         deletedUser.setUsername(deletedUserValues);
+        deletedUser.setPassword(deletedUserPassword);
         deletedUser.setFirstName(deletedUserValues);
         deletedUser.setLastName(deletedUserValues);
         deletedUser.setEmail(deletedUserValues);
         deletedUser.setEmailConfirmed(false);
         deletedUser.setSubscribed(false);
+        List<Transaction> transactions = transactionRepo.findAllByUserId(deletedUser.getUserId());
+        if (transactions != null && transactions.size() > 0) {
+            for (Transaction transaction : transactions) {
+                transactionRepo.delete(transaction);
+            }
+        }
+        List<PlannedTransaction> plannedTransactions = plannedTransactionRepo.findAllByUserId(deletedUser.getUserId());
+        if (plannedTransactions != null && plannedTransactions.size() > 0) {
+            for (PlannedTransaction plannedTransaction : plannedTransactions) {
+                plannedTransactionRepo.delete(plannedTransaction);
+            }
+        }
+        List<Account> accounts = accountRepo.findAllByUserId(deletedUser.getUserId());
+        if (accounts != null && accounts.size() > 0) {
+            for (Account account : accounts) {
+                accountRepo.delete(account);
+            }
+        }
+        List<Budget> budgets = budgetRepository.findAllByUserId(deletedUser.getUserId());
+        if (budgets != null && budgets.size() > 0) {
+            for (Budget budget : budgets) {
+                budgetRepository.delete(budget);
+            }
+        }
+        List<Category> categories = categoryRepository.findAllByUserId(deletedUser.getUserId());
+        if (categories != null && categories.size() > 0) {
+            for (Category category : categories) {
+                categoryRepository.delete(category);
+            }
+        }
         VerificationToken vt = tokenRepository.findByUserId(deletedUser.getUserId());
         if (vt != null) {
             tokenRepository.delete(vt);
@@ -117,6 +163,28 @@ public class UserDao {
 
     public long getUserId(User user) {
         return getUserByUsername(user.getUsername()).getUserId();
+    }
+
+    public boolean isEligibleForReceivingEmail(String email) throws SQLException {
+        Connection con = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            con = jdbcTemplate.getDataSource().getConnection();
+            ps = con.prepareStatement(
+                    "SELECT * FROM final_project.users WHERE email LIKE ? " +
+                            "AND is_email_confirmed = 1 AND is_subscribed = 1;");
+            ps.setString(1, email);
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                return true;
+            }
+        } finally {
+            if (rs != null) rs.close();
+            if (ps != null) ps.close();
+            if (con != null) con.close();
+        }
+        return false;
     }
 
 }
