@@ -1,6 +1,7 @@
 package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.*;
+import finalproject.financetracker.exceptions.runntime.ServerErrorException;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.plannedTransaction.AddPlannedTransactionDTO;
@@ -63,7 +64,7 @@ public class PlannedTransactionController extends AbstractController {
         User u = getLoggedValidUserFromSession(sess, request);
         addTransactionDTO.checkValid();
         List<PlannedTransaction> transactions = repo.findAllByAccountId(addTransactionDTO.getAccountId());
-        Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess, request);  // WebSercvice
+        Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess, request);// WebService
         ReturnAccountDTO a = accountController.getAccByIdLong(addTransactionDTO.getAccountId(), sess, request);
 
         for (PlannedTransaction transaction : transactions) {
@@ -74,7 +75,8 @@ public class PlannedTransactionController extends AbstractController {
         PlannedTransaction t = new PlannedTransaction(
                 addTransactionDTO.getTransactionName(),
                 addTransactionDTO.getAmount(),
-                LocalDateTime.now().plusSeconds(addTransactionDTO.getRepeatPeriod() / 1000),  // nextExecutionDate LocalDateTime.now() + repeatPeriod
+                // nextExecutionDate LocalDateTime.now() + repeatPeriod
+                LocalDateTime.now().plusSeconds(addTransactionDTO.getRepeatPeriod() / AccountController.SEC_TO_MILIS),
                 addTransactionDTO.getAccountId(),
                 u.getUserId(),
                 addTransactionDTO.getCategoryId(),
@@ -134,8 +136,11 @@ public class PlannedTransactionController extends AbstractController {
     //-------------- edit transaction ---------------------//
     @RequestMapping(value = "/ptransactions", method = RequestMethod.PUT)
     @ResponseBody
-    public ReturnPlannedTransactionDTO updatePlannedTransaction(@RequestBody UpdatePlannedTransactionDTO transactionDTO,
-                                                                HttpSession sess, HttpServletRequest request)
+    public ReturnPlannedTransactionDTO updatePlannedTransaction(
+            @RequestBody UpdatePlannedTransactionDTO transactionDTO,
+            HttpSession sess,
+            HttpServletRequest request)
+
             throws
             InvalidRequestDataException,
             NotLoggedInException,
@@ -147,7 +152,11 @@ public class PlannedTransactionController extends AbstractController {
 
         transactionDTO.checkValid();
         User u = getLoggedValidUserFromSession(sess, request);
-        PlannedTransaction pt = validateDataAndGetByIdFromRepo(transactionDTO.getTransactionId(), repo, PlannedTransaction.class);
+        PlannedTransaction pt = validateDataAndGetByIdFromRepo(
+                transactionDTO.getTransactionId(),
+                repo,
+                PlannedTransaction.class
+        );
         pt.setPtName(transactionDTO.getTransactionName());
         checkIfBelongsToLoggedUser(pt.getUserId(), u);
         Category c = categoryController.getCategoryById(pt.getCategoryId(), sess, request);
@@ -187,9 +196,9 @@ public class PlannedTransactionController extends AbstractController {
                 pt.getAccountId(),
                 pt.getUserId(),
                 pt.getCategoryId());
-        t = transactionController.calculateBudgetAndAccountAmount(t); //TODO implement logic for not enough money
-        this.transactionRepo.save(t);                                 // to finish the plannedTransaction
-    }                                                                 // (reschedule/abort/negative account amount)
+        t = transactionController.calculateBudgetAndAccountAmount(t); //TODO to finish the plannedTransaction
+        this.transactionRepo.save(t);                                 //TODO (reschedule/abort/negative account amount)
+    }
 
     List<ReturnPlannedTransactionDTO> listEntitiesToListDTOs(List<PlannedTransaction> list, User u) {
         return list.stream().map((PlannedTransaction t) -> {

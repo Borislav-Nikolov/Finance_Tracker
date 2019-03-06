@@ -109,7 +109,7 @@ public abstract class AbstractController {
         if (t == null) throw new NotFoundException(className + " not found");
     }
 
-    protected <T> T checkIfNotNull(Class<?> c, Optional<T> o ) throws NotFoundException {
+    protected <T> T checkIfOptionalPresent(Class<?> c, Optional<T> o ) throws NotFoundException {
         String className = c.getName().substring(c.getName().lastIndexOf(".")+1);
         if (!o.isPresent())throw new NotFoundException(className + " not found");
         return o.get();
@@ -123,7 +123,7 @@ public abstract class AbstractController {
 
         long idL = parseNumber(id);
         Optional<T> t = repo.findById(idL);
-        return checkIfNotNull(c,t);
+        return checkIfOptionalPresent(c,t);
     }
 
     protected <T> T validateDataAndGetByIdFromRepo(long id,
@@ -132,7 +132,7 @@ public abstract class AbstractController {
             throws NotFoundException {
 
         Optional<T> t = repo.findById(id);
-        return checkIfNotNull(c,t);
+        return checkIfOptionalPresent(c,t);
     }
 
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {

@@ -1,6 +1,7 @@
 package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.*;
+import finalproject.financetracker.exceptions.runntime.ServerErrorException;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.transaction.AddTransactionDTO;

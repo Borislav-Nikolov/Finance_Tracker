@@ -14,9 +14,6 @@
     <name>FinanceTracker</name>
     <description>Demo project for Spring Boot</description>
 
-    <groupId>org.springframework</groupId>
-    <artifactId>gs-scheduling-tasks</artifactId>
-    <version>0.1.0</version>
 
     <properties>
         <java.version>1.8</java.version>
@@ -100,6 +97,14 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-core -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>5.1.4.RELEASE</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>

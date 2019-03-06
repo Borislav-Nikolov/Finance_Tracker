@@ -1,4 +1,4 @@
-package finalproject.financetracker.exceptions;
+package finalproject.financetracker.exceptions.runntime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
