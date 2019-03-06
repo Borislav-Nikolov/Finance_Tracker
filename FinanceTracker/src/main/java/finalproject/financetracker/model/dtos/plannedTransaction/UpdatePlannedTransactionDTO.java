@@ -16,11 +16,11 @@ public class UpdatePlannedTransactionDTO implements IRequestDTO {
     private String transactionName;
     private long repeatPeriod;
 
-    @Override
+    @Override //TODO repeatPeriod >= 24*60*60*1000  (1 DAY)
     public void checkValid() throws InvalidRequestDataException {
-        if (!(transactionId>0 &&
-                transactionName != null &&
-                !transactionName.isEmpty() &&
+        if (!(this.transactionId>0 &&
+                this.transactionName != null &&
+                !this.transactionName.isEmpty() &&
                 this.repeatPeriod>0)){
             throw new InvalidRequestDataException();
         };

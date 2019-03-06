@@ -41,7 +41,6 @@ import java.util.stream.Collectors;
 @RequestMapping(value = "/profile", produces = "application/json")
 @ResponseBody
 public class AccountController extends AbstractController {
-    public static final int SEC_TO_MILIS = 1000;
 
     @Autowired private AccountDao dao;
     @Autowired private AccountRepo accountRepo;
@@ -266,7 +265,7 @@ public class AccountController extends AbstractController {
         for (PlannedTransaction pt : plannedTransactions) {
             new Thread(
                     () -> {
-                        logInfo("Scheduler started..." + pt.getPtName());
+                        logInfo("Scheduler started..." + pt.getPtName()+"/"+pt.getUserId()+"/"+pt.getAccountId());
                         try {
                             Thread.sleep(
                                     pt.getNextExecutionDate().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
@@ -274,7 +273,8 @@ public class AccountController extends AbstractController {
                                             LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
                             logInfo("Scheduler executing planned transaction " + pt.getPtName());
                             plannedTransactionController.execute(pt);
-                            logInfo(pt.getPtName() + " executed.");//TODO reschedule executed planned transaction
+                            plannedTransactionController.reSchedule(pt.getPtId());
+                            logInfo(pt.getPtName() + " executed.");
                         } catch (Exception e) {
                             logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
                         }
