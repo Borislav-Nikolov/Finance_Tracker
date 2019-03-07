@@ -35,9 +35,7 @@ import java.util.stream.Collectors;
 @RequestMapping(value = "/profile")
 @Controller
 public class PlannedTransactionController extends AbstractController {
-    private static final ReentrantLock ptRepoWriteLock = new ReentrantLock();
-    private static final ReentrantLock ptRepoReadLock = new ReentrantLock();
-    private static final ReentrantLock tRepoWriteLock = new ReentrantLock();
+
     @Autowired
     private PlannedTransactionRepo repo;
     @Autowired
