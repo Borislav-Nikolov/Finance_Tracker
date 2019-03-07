@@ -2,7 +2,9 @@ package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.*;
 import finalproject.financetracker.exceptions.runntime.ServerErrorException;
+import finalproject.financetracker.model.daos.AbstractDao;
 import finalproject.financetracker.model.daos.AccountDao;
+import finalproject.financetracker.model.daos.PlannedTransactionDao;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.plannedTransaction.AddPlannedTransactionDTO;
 import finalproject.financetracker.model.dtos.plannedTransaction.ReturnPlannedTransactionDTO;
@@ -24,7 +26,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,6 +39,8 @@ public class PlannedTransactionController extends AbstractController {
 
     @Autowired
     private PlannedTransactionRepo repo;
+    @Autowired
+    private PlannedTransactionDao dao;
     @Autowired
     private AccountController accountController;
     @Autowired
@@ -73,17 +79,26 @@ public class PlannedTransactionController extends AbstractController {
                 throw new ForbiddenRequestException("planned transaction with such name exists");
             }
         }
+        long waitMillisToExec = addTransactionDTO.getExecutionOffset();
         PlannedTransaction t = new PlannedTransaction(
                 addTransactionDTO.getTransactionName(),
                 addTransactionDTO.getAmount(),
-                // nextExecutionDate LocalDateTime.now() + repeatPeriod
-                LocalDateTime.now().plusSeconds(addTransactionDTO.getRepeatPeriod() / SEC_TO_MILIS),
+                LocalDateTime
+                        .now()
+                        .plusSeconds(addTransactionDTO.getExecutionOffset() / SEC_TO_MILIS),
                 addTransactionDTO.getAccountId(),
                 u.getUserId(),
                 addTransactionDTO.getCategoryId(),
                 addTransactionDTO.getRepeatPeriod());
-        t = repo.save(t);
-        return new ReturnPlannedTransactionDTO(t)
+        new Thread(()->{
+            try {
+                Thread.sleep(waitMillisToExec);
+                execute(t);
+            } catch (Exception e) {
+                logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
+            }
+        }).start();
+        return new ReturnPlannedTransactionDTO(repo.save(t))
                 .withUser(u)
                 .withCategory(c)
                 .withAccount(a);
@@ -118,20 +133,70 @@ public class PlannedTransactionController extends AbstractController {
     @RequestMapping(value = "/ptransactions", method = RequestMethod.GET)
     @ResponseBody
     public List<ReturnPlannedTransactionDTO> getAllPlannedTransaction(
-            @RequestParam(value = "accId", required = false) String accId,
+            @RequestParam(value = "acc", required = false) String accId,
+            @RequestParam(value = "cat", required = false) String catId,
+            @RequestParam(value = "order", required = false) String order,
+            @RequestParam(value = "desc", required = false) String desc,
+            @RequestParam(value = "income", required = false) String income,
             HttpSession sess, HttpServletRequest request)
             throws
             NotLoggedInException,
             IOException,
             InvalidRequestDataException,
-            UnauthorizedAccessException {
+            UnauthorizedAccessException, ForbiddenRequestException, SQLException, NotFoundException {
 
         User u = getLoggedValidUserFromSession(sess, request);
+        Long accIdL = null;
         if (accId != null) {
-            long accIdLong = parseLong(accId);
-            return listEntitiesToListDTOs(repo.findAllByAccountIdAndUserId(accIdLong, u.getUserId()), u);
+            accIdL = parseLong(accId);
+            ReturnAccountDTO a = accountController.getAccByIdLong(accIdL,sess,request);
         }
-        return listEntitiesToListDTOs(repo.findAllByUserId(u.getUserId()), u);
+        Category c = null;
+        Long catIdL = null;
+        if (catId != null) {
+            catIdL = parseLong(catId);
+            c = categoryController.getCategoryById(catIdL,sess,request);
+        }
+        Boolean isIncome = null;
+        if (income != null) {
+            if (income.equalsIgnoreCase("true")) isIncome = true;
+            if (income.equalsIgnoreCase("false")) isIncome = false;
+            if (c!=null){
+                isIncome =c.isIncome();
+            }
+        }
+        AbstractDao.SQLColumnName columnName = AbstractDao.SQLColumnName.NEXT_EXECUTION_DATE;
+        if (order != null) {
+            switch (order) {
+                case "amount": {
+                    columnName = AbstractDao.SQLColumnName.AMOUNT;
+                    break;
+                }
+                case "ptname": {
+                    columnName = AbstractDao.SQLColumnName.PT_NAME;
+                    break;
+                }
+                case "aname": {
+                    columnName = AbstractDao.SQLColumnName.ACCOUNT_NAME;
+                    break;
+                }
+                case "cname": {
+                    columnName = AbstractDao.SQLColumnName.CATEGORY_NAME;
+                    break;
+                }
+            }
+        }
+        AbstractDao.SQLOderBy orderBy = AbstractDao.SQLOderBy.ASC;
+        if (desc != null) {
+            if (desc.equalsIgnoreCase("true")) orderBy = AbstractDao.SQLOderBy.DESC;
+        }
+        return dao.getAllByAccIdIsIncomeOrder(
+                u.getUserId(),
+                accIdL,
+                catIdL,
+                isIncome,
+                columnName,
+                orderBy);
     }
 
     //-------------- edit transaction ---------------------//
@@ -200,7 +265,7 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void execute(PlannedTransaction pt) throws SQLException {
+    public void execute(PlannedTransaction pt) throws SQLException, NotFoundException {
         Transaction t = new Transaction(
                 pt.getPtName()
                         .concat("_planned")
@@ -212,10 +277,11 @@ public class PlannedTransactionController extends AbstractController {
                 pt.getUserId(),
                 pt.getCategoryId());
         t = transactionController.calculateBudgetAndAccountAmount(t);
+        reSchedule(pt.getPtId());
         this.transactionRepo.save(t);
     }
 
-    void reSchedule(long ptId) throws NotFoundException {
+    private void reSchedule(long ptId) throws NotFoundException {
         PlannedTransaction pt = validateDataAndGetByIdFromRepo(ptId,repo,PlannedTransaction.class);
         pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(pt.getRepeatPeriod()/SEC_TO_MILIS));
         repo.save(pt);

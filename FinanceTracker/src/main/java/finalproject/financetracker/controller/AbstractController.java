@@ -55,7 +55,7 @@ public abstract class AbstractController {
         logger.warn(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
-                + "\n\tmsg = " + e.getMessage());
+                + "\n\tmsg = " + e.getMessage(),e);
     }
 
     protected void logError(HttpStatus httpStatusCode, Exception e) {
@@ -90,7 +90,11 @@ public abstract class AbstractController {
         }
     }
 
-    protected User checkIfBelongsToLoggedUserAndReturnUser(long resourceUserId, HttpSession session, HttpServletRequest request)
+    protected User checkIfBelongsToLoggedUserAndReturnUser(
+            long resourceUserId,
+            HttpSession session,
+            HttpServletRequest request)
+
             throws
             NotLoggedInException,
             IOException,

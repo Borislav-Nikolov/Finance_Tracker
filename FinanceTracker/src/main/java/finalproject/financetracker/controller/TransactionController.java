@@ -144,7 +144,7 @@ public class TransactionController extends AbstractController {
         if (income != null) {
             if (income.equalsIgnoreCase("true")) isIncome = true;
             if (income.equalsIgnoreCase("false")) isIncome = false;
-            if (c!=null && c.isIncome() != isIncome){
+            if (c!=null){
                 isIncome = c.isIncome();
             }
         }
@@ -166,12 +166,10 @@ public class TransactionController extends AbstractController {
                 }
             }
         }
-
         AbstractDao.SQLOderBy orderBy = AbstractDao.SQLOderBy.ASC;
         if (desc != null) {
             if (desc.equalsIgnoreCase("true")) orderBy = AbstractDao.SQLOderBy.DESC;
         }
-
         return dao.getAllByAccIdStartDateEndDateIsIncome(
                 u.getUserId(),
                 accIdLong,

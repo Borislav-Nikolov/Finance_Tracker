@@ -34,7 +34,9 @@ public abstract class AbstractDao {
         EXECUTION_DATE,
         AMOUNT,
         TRANSACTION_NAME,
-        ACCOUNT_NAME,;
+        ACCOUNT_NAME,
+        PT_NAME,
+        NEXT_EXECUTION_DATE, CATEGORY_NAME, PT_AMOUNT;
 
         SQLColumnName(){
         }

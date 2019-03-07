@@ -261,7 +261,7 @@ public class AccountController extends AbstractController {
 
 
     //-----------------------< Account scheduled Task >----------------------//
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0/35 12 * * *")
     //<second> <minute> <hour> <day-of-month> <month> <day-of-week> {optional}<year>
     void executePlannedTransactions() {
         logInfo("Scheduled planned transactions check.");
@@ -278,7 +278,6 @@ public class AccountController extends AbstractController {
                                             LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
                             logInfo("Scheduler executing planned transaction " + pt.getPtName());
                             plannedTransactionController.execute(pt);
-                            plannedTransactionController.reSchedule(pt.getPtId());
                             logInfo(pt.getPtName() + " executed.");
                         } catch (Exception e) {
                             logError(HttpStatus.INTERNAL_SERVER_ERROR, e);

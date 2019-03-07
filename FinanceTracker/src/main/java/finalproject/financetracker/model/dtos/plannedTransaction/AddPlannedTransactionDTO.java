@@ -1,7 +1,7 @@
 package finalproject.financetracker.model.dtos.plannedTransaction;
 
-import finalproject.financetracker.model.dtos.IRequestDTO;
 import finalproject.financetracker.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.model.dtos.IRequestDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AddPlannedTransactionDTO implements IRequestDTO {
     private String transactionName;
+    private long executionOffset;
     private double amount;
     private long categoryId;
     private long accountId;
@@ -22,10 +23,11 @@ public class AddPlannedTransactionDTO implements IRequestDTO {
     public void checkValid() throws InvalidRequestDataException {
         if (this.transactionName == null ||
                 this.transactionName.isEmpty() ||
+                this.executionOffset < 0 ||
                 this.amount <= 0 ||
-                this.categoryId<=0||
-                this.accountId<=0 ||
-                this.repeatPeriod == 0){
+                this.categoryId <= 0 ||
+                this.accountId <= 0 ||
+                this.repeatPeriod == 0) {
             throw new InvalidRequestDataException();
         }
     }

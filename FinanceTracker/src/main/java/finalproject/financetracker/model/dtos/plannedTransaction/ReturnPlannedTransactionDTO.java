@@ -21,7 +21,7 @@ public class ReturnPlannedTransactionDTO {
     private long transactionId;
     private String transactionName;
     private double amount;
-    private LocalDateTime executionDate;
+    private LocalDateTime nextExecutionDate;
     private long repeatPeriod;
     private long userId;
     private long categoryId;
@@ -29,12 +29,12 @@ public class ReturnPlannedTransactionDTO {
     private String username;
     private String accountName;
     private String categoryName;
-    private boolean isIncome;
+    private Boolean isIncome;
 
     public ReturnPlannedTransactionDTO(PlannedTransaction t) {
         this.transactionId = t.getPtId();
         this.transactionName = t.getPtName().trim();
-        this.executionDate = t.getNextExecutionDate();
+        this.nextExecutionDate = t.getNextExecutionDate();
         this.repeatPeriod = t.getRepeatPeriod();
         this.amount = t.getPtAmount();
         this.userId = t.getUserId();

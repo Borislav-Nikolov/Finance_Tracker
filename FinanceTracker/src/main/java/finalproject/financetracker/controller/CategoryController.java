@@ -97,8 +97,13 @@ public class CategoryController extends AbstractController {
     }
 
     public Category getCategoryById(long categoryId, HttpSession session, HttpServletRequest request)
-            throws IOException, UnauthorizedAccessException, NotLoggedInException, ForbiddenRequestException {
-        Category category = categoryDao.getCategoryById(categoryId);
+            throws IOException,
+            UnauthorizedAccessException,
+            NotLoggedInException,
+            ForbiddenRequestException,
+            NotFoundException {
+
+        Category category = validateDataAndGetByIdFromRepo(categoryId,categoryRepository,Category.class);
         User user = getLoggedValidUserFromSession(session, request);
         if (category.getUserId() == UserDao.DEFAULT_CATEGORY_USER_ID || user.getUserId() == category.getUserId()) {
             return category;
