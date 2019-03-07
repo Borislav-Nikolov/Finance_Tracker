@@ -48,8 +48,12 @@ public class UserController extends AbstractController {
     /* ----- STATUS CHANGES ----- */
 
     @PostMapping(value = "/register")
-    public MsgObjectDTO registerUser(@RequestBody RegistrationDTO regInfo, HttpServletRequest request)
-            throws InvalidRequestDataException, FailedActionException {
+    public MsgObjectDTO registerUser(@RequestBody RegistrationDTO regInfo,
+                                     HttpServletRequest request, HttpSession session)
+            throws InvalidRequestDataException, FailedActionException, AlreadyLoggedInException {
+        if (isLoggedIn(session)) {
+            throw new AlreadyLoggedInException("Must not be logged in to create new user.");
+        }
         regInfo.checkValid();
         String username = regInfo.getUsername().trim();
         String password = regInfo.getPassword().trim();
@@ -79,7 +83,6 @@ public class UserController extends AbstractController {
             if (user != null) {
                 userDao.deleteUser(user);
             }
-            // TODO come up with appropriate handler
             throw new FailedActionException("User registration failed.");
         }
         CommonMsgDTO msg = new CommonMsgDTO("User registered. Verification email successfully sent.", new Date());
@@ -95,10 +98,7 @@ public class UserController extends AbstractController {
         User user = userDao.getUserByUsername(username);
         if (!isLoggedIn(session)) {
             validateLoginAttempt(username, password);
-            session.setAttribute(SESSION_USER_KEY, AbstractController.toJson(user));
-            session.setAttribute(SESSION_USERNAME_KEY, user.getUsername());
-            session.setAttribute(SESSION_IP_ADDR_KEY, request.getRemoteAddr());
-            session.setMaxInactiveInterval(-1);
+            this.setupSession(session, user, request);
             user.setLastLogin(new Date());
             userRepository.save(user);
             CommonMsgDTO msg = new CommonMsgDTO("Login successful.", new Date());
@@ -119,11 +119,15 @@ public class UserController extends AbstractController {
         return new MsgObjectDTO(msg, profile);
     }
     @GetMapping(value = "/confirm")
-    public CommonMsgDTO confirmEmail(@RequestParam(value = "token") String token) throws MyException {
+    public CommonMsgDTO confirmEmail(@RequestParam(value = "token") String token,
+                                     HttpSession session,
+                                     HttpServletRequest request)
+            throws MyException, JsonProcessingException {
         VerificationToken verToken = tokenRepository.findByToken(token);
         this.validateToken(verToken);
         User user = userRepository.getByUserId(verToken.getUserId());
         user.setEmailConfirmed(true);
+        this.setupSession(session, user, request);
         userDao.verifyUserEmail(user, verToken);
         return new CommonMsgDTO("Email " + user.getEmail() + " was confirmed.", new Date());
     }
@@ -136,19 +140,6 @@ public class UserController extends AbstractController {
 
     /* ----- PROFILE ACTIONS ----- */
 
-    @GetMapping(value = "/profile")
-    public ProfileInfoDTO viewProfile(HttpSession session, HttpServletRequest request)
-            throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session, request);
-        return getProfileInfoDTO(user);
-    }
-    // TODO remove
-    @GetMapping(value = "/profile/edit")
-    public ProfileInfoDTO editProfile(HttpSession session, HttpServletRequest request)
-            throws IOException, MyException {
-        User user = this.getLoggedValidUserFromSession(session, request);
-        return getProfileInfoDTO(user);
-    }
     // TODO maybe gather editing into one method
     @PutMapping(value = "/profile/edit/password")
     public CommonMsgDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session,
@@ -161,6 +152,7 @@ public class UserController extends AbstractController {
         String newPass2 = passChange.getNewPass2().trim();
         validateNewPassword(newPass, newPass2);
         user.setPassword(passCrypter.crypt(newPass));
+        this.setupSession(session, user, request);
         userDao.updateUser(user);
         return new CommonMsgDTO("Password changed successfully.", new Date());
     }
@@ -176,6 +168,7 @@ public class UserController extends AbstractController {
         this.validateEmail(newEmail);
         user.setEmail(newEmail);
         user.setEmailConfirmed(false);
+        this.setupSession(session, user, request);
         this.sendVerificationTokenToUser(user, request);
         userDao.updateUser(user);
         return this.getProfileInfoDTO(user);
@@ -228,11 +221,6 @@ public class UserController extends AbstractController {
         validatePasswordFormat(newPass);
     }
     private void validatePasswordFormat(String password) throws InvalidRequestDataException {
-        // TODO remove after testing
-        // added for easier testing
-        if (password.charAt(0) == '1') {
-            return;
-        }
         if (!password.matches("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$")) {
             throw new InvalidRequestDataException("Invalid password format: must contain at least 8 characters, " +
                     "at least one upper case and one lower case letter, at least one number and at least one special " +
@@ -268,6 +256,13 @@ public class UserController extends AbstractController {
         }
     }
     /* ----- OTHER METHODS ----- */
+    private void setupSession(HttpSession session, User user, HttpServletRequest request)
+            throws JsonProcessingException {
+        session.setAttribute(SESSION_USER_KEY, AbstractController.toJson(user));
+        session.setAttribute(SESSION_USERNAME_KEY, user.getUsername());
+        session.setAttribute(SESSION_IP_ADDR_KEY, request.getRemoteAddr());
+        session.setMaxInactiveInterval(-1);
+    }
     private String formatName(String name) {
         if (name != null && name.isEmpty()) {
             return null;
