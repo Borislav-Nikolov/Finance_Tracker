@@ -20,11 +20,10 @@ public class AddTransactionDTO implements IRequestDTO {
 
     @Override
     public void checkValid() throws InvalidRequestDataException {
-        if (this.transactionName == null ||
-            this.transactionName.isEmpty() ||
-            this.amount <= 0 ||
-            this.categoryId<=0||
-            this.accountId<=0){
+        if (this.transactionName == null || this.transactionName.isEmpty() ||
+            this.amount== null || this.amount <= 0 ||
+            this.categoryId == null || this.categoryId <=0||
+            this.accountId == null || this.accountId <=0){
                 throw new InvalidRequestDataException();
         }
     }

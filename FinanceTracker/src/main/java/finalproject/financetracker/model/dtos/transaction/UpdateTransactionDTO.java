@@ -18,9 +18,8 @@ public class UpdateTransactionDTO implements IRequestDTO {
 
     @Override
     public void checkValid() throws InvalidRequestDataException {
-        if (!(transactionId>0 &&
-            transactionName != null &&
-            !transactionName.isEmpty())){
+        if ((this.transactionId == null || transactionId <= 0 ||
+            transactionName == null || transactionName.isEmpty())){
             throw new InvalidRequestDataException();
         };
     }
