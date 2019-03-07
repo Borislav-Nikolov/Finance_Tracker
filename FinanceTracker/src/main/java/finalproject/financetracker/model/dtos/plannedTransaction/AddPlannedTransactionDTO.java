@@ -27,7 +27,7 @@ public class AddPlannedTransactionDTO implements IRequestDTO {
                 this.amount <= 0 ||
                 this.categoryId <= 0 ||
                 this.accountId <= 0 ||
-                this.repeatPeriod == 0) {
+                this.repeatPeriod == 0) {  //TODO repeat period >= 1 day in millis
             throw new InvalidRequestDataException();
         }
     }
