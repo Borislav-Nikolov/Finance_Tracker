@@ -24,7 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -50,7 +49,7 @@ public class TransactionController extends AbstractController {
     @Autowired
     private CategoryRepository categoryRepository;
     @Autowired
-    private BudgetRepository budgetRepository;
+    private BudgetController budgetController;
 
     //--------------add transaction for given account---------------------//
     @RequestMapping(value = "/transactions", method = RequestMethod.POST)
@@ -239,19 +238,7 @@ public class TransactionController extends AbstractController {
             transactionAmount = t.getAmount();
         } else {
             transactionAmount = t.getAmount() * -1;
-            List<Budget> budgets = budgetRepository.findAllByCategoryId(c.getCategoryId());
-            for (Budget budget : budgets) {
-                if (    (
-                        budget.getStartingDate().isBefore(LocalDate.now()) ||
-                        budget.getStartingDate().isEqual(LocalDate.now())
-                        )
-                        &&
-                        budget.getEndDate().isAfter(LocalDate.now())
-                ) {
-                    budget.setAmount(budget.getAmount() + transactionAmount);
-                    budgetRepository.save(budget);
-                }
-            }
+            budgetController.subtractFromBudgets(t.getAmount(),t.getUserId(),c.getCategoryId());
             t.setAmount(Math.abs(transactionAmount));
         }
         a.setAmount(a.getAmount() + transactionAmount);
