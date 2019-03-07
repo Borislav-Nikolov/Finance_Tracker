@@ -11,6 +11,8 @@ import java.util.UUID;
 @Component
 public class TokenDao {
 
+    public static final long NEW_TOKEN_INTERVAL = 1000 * 60 * 5; // 5 minutes
+
     @Autowired
     private TokenRepository tokenRepository;
 

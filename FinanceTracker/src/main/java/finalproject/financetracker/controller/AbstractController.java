@@ -185,7 +185,8 @@ public abstract class AbstractController {
 
     @ExceptionHandler({
             NotLoggedInException.class,
-            HttpClientErrorException.Unauthorized.class, })  // 401
+            HttpClientErrorException.Unauthorized.class,
+            UnauthorizedAccessException.class})  // 401
     public ErrMsg MyLoginExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.UNAUTHORIZED.value());
         return new ErrMsg(HttpStatus.UNAUTHORIZED.value(), e.getMessage(),new Date());

@@ -1,6 +1,7 @@
 package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.*;
+import finalproject.financetracker.model.dtos.MsgObjectDTO;
 import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.dtos.categoryDTOs.*;
 import finalproject.financetracker.model.pojos.Category;
@@ -16,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -52,8 +54,8 @@ public class CategoryController extends AbstractController {
     }
 
     @PostMapping(value = "/categories")
-    public CategoryInfoDTO createCategory(@RequestBody CategoryCreationDTO categoryCreationDTO, HttpSession session,
-                                          HttpServletRequest request)
+    public MsgObjectDTO createCategory(@RequestBody CategoryCreationDTO categoryCreationDTO, HttpSession session,
+                                       HttpServletRequest request)
                                         throws IOException, MyException {
         categoryCreationDTO.checkValid();
         String categoryName = categoryCreationDTO.getCategoryName();
@@ -64,36 +66,46 @@ public class CategoryController extends AbstractController {
         this.validateImage(imageId);
         Category category = new Category(categoryName, isIncome, user.getUserId(), imageId);
         categoryDao.addCategory(category);
-        return this.getCategoryInfoDTO(category);
+        CategoryInfoDTO categoryInfo = getCategoryInfoDTO(category);
+        return new MsgObjectDTO("Category created successfully.", new Date(), categoryInfo);
     }
 
     @PutMapping(value = "/categories/{categoryId}")
-    public CategoryInfoDTO editCategory(@PathVariable long categoryId,
-                                        @RequestParam(value = "categoryName", required = false) String categoryName,
-                                        @RequestParam(value = "imageId", required = false) Long imageId,
-                                        HttpSession session, HttpServletRequest request)
+    public MsgObjectDTO editCategory(@PathVariable String categoryId,
+                                     @RequestParam(value = "categoryName", required = false) String categoryName,
+                                     @RequestParam(value = "imageId", required = false) String imageId,
+                                     HttpSession session, HttpServletRequest request)
                                 throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
-        Category category = categoryRepository.findByCategoryId(categoryId);
+        Category category = categoryRepository.findByCategoryId(parseLong(categoryId));
         this.validateCategoryAndUserOwnership(user, category);
+        if (category.getUserId() == null) {
+            throw new UnauthorizedAccessException("Default category cannot be edited.");
+        }
         if (categoryName != null) {
             category.setCategoryName(categoryName);
         }
         if (imageId != null) {
-            category.setImageId(imageId);
+            category.setImageId(parseLong(imageId));
         }
-        return getCategoryInfoDTO(category);
+        categoryRepository.save(category);
+        CategoryInfoDTO categoryInfo = getCategoryInfoDTO(category);
+        return new MsgObjectDTO("Category edited successfully.", new Date(), categoryInfo);
     }
 
     @DeleteMapping(value = "/categories/{categoryId}")
-    public CategoryInfoDTO deleteCategory(@PathVariable("categoryId") long categoryId, HttpSession session,
+    public MsgObjectDTO deleteCategory(@PathVariable("categoryId") long categoryId, HttpSession session,
                                           HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
         Category category = categoryRepository.findByCategoryId(categoryId);
         this.validateCategoryAndUserOwnership(user, category);
+        if (category.getUserId() == null) {
+            throw new UnauthorizedAccessException("Default category cannot be deleted.");
+        }
         categoryDao.deleteCategory(category);
-        return this.getCategoryInfoDTO(category);
+        CategoryInfoDTO categoryInfo = getCategoryInfoDTO(category);
+        return new MsgObjectDTO("Category deleted successfully.", new Date(), categoryInfo);
     }
 
     public Category getCategoryById(long categoryId, HttpSession session, HttpServletRequest request)

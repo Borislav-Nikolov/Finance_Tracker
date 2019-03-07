@@ -43,7 +43,7 @@ public class EmailSender {
         String message = user.getUsername() + ",\n" +
                 "Your " + budget.getBudgetName() + " budget is at " + budget.getAmount() + ".";
         new Thread(()->
-                mailUtil.sendSimpleMessage(user.getEmail(), "noreply@traxter.com", subject, message));
+                mailUtil.sendSimpleMessage(user.getEmail(), "noreply@traxter.com", subject, message)).start();
     }
 
     public void sendEmailConfirmationToken(String appUrl, VerificationToken verToken, User user) {
