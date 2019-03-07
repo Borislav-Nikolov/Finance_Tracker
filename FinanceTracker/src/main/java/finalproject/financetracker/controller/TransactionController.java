@@ -128,17 +128,17 @@ public class TransactionController extends AbstractController {
         User u = getLoggedValidUserFromSession(session, request);
         Long accIdLong = null;
         if (accId != null) {
-            accIdLong = parseNumber(accId);
+            accIdLong = parseLong(accId);
             ReturnAccountDTO a = accountController.getAccByIdLong(accIdLong,session,request);
         }
         Category c = null;
         Long catIdLong = null;
         if (catId != null) {
-            catIdLong = parseNumber(catId);
+            catIdLong = parseLong(catId);
             c = categoryController.getCategoryById(catIdLong,session,request);
         }
-        Long startDateMillis = (startDate != null)? parseNumber(startDate): 0L;
-        Long endDateMillis = (endDate != null)? parseNumber(endDate): System.currentTimeMillis();
+        Long startDateMillis = (startDate != null)? parseLong(startDate): 0L;
+        Long endDateMillis = (endDate != null)? parseLong(endDate): System.currentTimeMillis();
 
         Boolean isIncome = null;
         if (income != null) {

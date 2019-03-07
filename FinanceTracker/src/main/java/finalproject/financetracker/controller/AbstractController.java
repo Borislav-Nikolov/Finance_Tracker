@@ -6,11 +6,9 @@ import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import finalproject.financetracker.exceptions.*;
-import finalproject.financetracker.exceptions.category_exceptions.CategoryException;
-import finalproject.financetracker.exceptions.image_exceptions.ImageNotFoundException;
 import finalproject.financetracker.model.pojos.ErrMsg;
 import finalproject.financetracker.model.pojos.User;
-import finalproject.financetracker.exceptions.user_exceptions.*;
+import finalproject.financetracker.utils.emailing.EmailSender;
 import lombok.NoArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -121,7 +119,7 @@ public abstract class AbstractController {
             throws NotFoundException,
             InvalidRequestDataException {
 
-        long idL = parseNumber(id);
+        long idL = parseLong(id);
         Optional<T> t = repo.findById(idL);
         return checkIfOptionalPresent(c,t);
     }
@@ -140,9 +138,17 @@ public abstract class AbstractController {
         return mapper.writeValueAsString(u);
     }
 
-    public Long parseNumber(String num) throws InvalidRequestDataException {
+    public Long parseLong(String num) throws InvalidRequestDataException {
         try {
             return Long.parseLong(num);
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidRequestDataException("Non-numeric value given.");
+        }
+    }
+
+    public Double parseDouble(String num) throws InvalidRequestDataException {
+        try {
+            return Double.parseDouble(num);
         } catch (IllegalArgumentException ex) {
             throw new InvalidRequestDataException("Non-numeric value given.");
         }
@@ -167,11 +173,7 @@ public abstract class AbstractController {
             JsonParseException.class,
             JsonEOFException.class,
             HttpMessageNotReadableException.class,
-            RegistrationValidationException.class,
-            InvalidLoginInfoException.class,
-            PasswordValidationException.class,
-            CategoryException.class,
-            ImageNotFoundException.class})  //400
+            EmailSender.EmailAlreadyConfirmedException.class})  //400
     public ErrMsg MyExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.BAD_REQUEST.value());
         return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(),new Date());
@@ -185,8 +187,7 @@ public abstract class AbstractController {
         return new ErrMsg(HttpStatus.UNAUTHORIZED.value(), e.getMessage(),new Date());
     }
 
-    @ExceptionHandler({
-            ForbiddenRequestException.class})  //403
+    @ExceptionHandler({ForbiddenRequestException.class})  //403
     public ErrMsg MyForbiddenExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.FORBIDDEN.value());
         return new ErrMsg(HttpStatus.FORBIDDEN.value(), e.getMessage(),new Date());
@@ -196,6 +197,12 @@ public abstract class AbstractController {
     public ErrMsg MyNotFoundExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.NOT_FOUND.value());
         return new ErrMsg(HttpStatus.NOT_FOUND.value(), e.getMessage(),new Date());
+    }
+
+    @ExceptionHandler({FailedActionException.class}) // 417
+    public ErrMsg expectationFailedHandler(Exception e, HttpServletResponse resp) {
+        resp.setStatus(HttpStatus.EXPECTATION_FAILED.value());
+        return new ErrMsg(HttpStatus.EXPECTATION_FAILED.value(), e.getMessage(),new Date());
     }
 
     @ExceptionHandler({Exception.class,SQLException.class, DataAccessException.class,IOException.class}) //500

@@ -60,7 +60,7 @@ public class EmailSender {
     }
 
     @ResponseStatus(value = HttpStatus.BAD_REQUEST) // 400
-    private static class EmailAlreadyConfirmedException extends RuntimeException {
+    public static class EmailAlreadyConfirmedException extends RuntimeException {
         private EmailAlreadyConfirmedException() {
             super("Email has already been confirmed.");
         }

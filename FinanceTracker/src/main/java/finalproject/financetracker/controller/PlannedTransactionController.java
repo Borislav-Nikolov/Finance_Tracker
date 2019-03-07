@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import javax.swing.text.DateFormatter;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -129,7 +128,7 @@ public class PlannedTransactionController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess, request);
         if (accId != null) {
-            long accIdLong = parseNumber(accId);
+            long accIdLong = parseLong(accId);
             return listEntitiesToListDTOs(repo.findAllByAccountIdAndUserId(accIdLong, u.getUserId()), u);
         }
         return listEntitiesToListDTOs(repo.findAllByUserId(u.getUserId()), u);

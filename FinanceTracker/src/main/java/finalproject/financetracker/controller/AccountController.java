@@ -25,7 +25,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import javax.accessibility.AccessibleValue;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -119,7 +118,7 @@ public class AccountController extends AbstractController {
             ForbiddenRequestException,
             UnauthorizedAccessException {
 
-        long idL = parseNumber(accId);
+        long idL = parseLong(accId);
         return getAccByIdLong(idL, sess, request);
     }
 

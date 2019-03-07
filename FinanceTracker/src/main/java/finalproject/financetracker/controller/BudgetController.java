@@ -9,7 +9,6 @@ import finalproject.financetracker.model.dtos.budgetDTOs.BudgetCreationDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetInfoDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetsViewDTO;
 import finalproject.financetracker.exceptions.MyException;
-import finalproject.financetracker.exceptions.budget_exceptions.BudgetNotFoundException;
 import finalproject.financetracker.model.pojos.Budget;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.utils.TimeUtil;
@@ -39,6 +38,8 @@ public class BudgetController extends AbstractController {
     private TimeUtil timeUtil;
     @Autowired
     private UserDao userDao;
+    @Autowired
+    private CategoryController categoryController;
 
     @GetMapping(value = "/budgets")
     public BudgetsViewDTO viewBudgets(HttpSession session, HttpServletRequest request)
@@ -60,7 +61,7 @@ public class BudgetController extends AbstractController {
     public BudgetInfoDTO viewBudget(@PathVariable String budgetId, HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
-        Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
+        Budget budget = budgetRepository.findByBudgetId(parseLong(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         return this.getBudgetInfoDTO(budget);
     }
@@ -80,7 +81,6 @@ public class BudgetController extends AbstractController {
         this.validateDates(startingDate, endDate);
         Budget budget = new Budget(budgetName, amount, startingDate, endDate, userId, categoryId);
         budgetRepository.save(budget);
-        budget = budgetRepository.findByBudgetNameAndUserId(budgetName, userId);
         return getBudgetInfoDTO(budget);
     }
 
@@ -88,27 +88,30 @@ public class BudgetController extends AbstractController {
     public BudgetInfoDTO editBudget(
             @PathVariable String budgetId,
             @RequestParam(value = "budgetName", required = false) String budgetName,
-            @RequestParam(value = "amount", required = false) Double amount,
+            @RequestParam(value = "amount", required = false) String amount,
             @RequestParam(value = "endDate", required = false) String endDate,
-            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "categoryId", required = false) String categoryId,
             HttpSession session,
             HttpServletRequest request)
                                 throws IOException, MyException {
+        Double parsedAmount = parseDouble(amount);
+        Long parsedLong = parseLong(categoryId);
         User user = this.getLoggedValidUserFromSession(session, request);
-        Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
+        categoryController.getCategoryById(parsedLong, session, request);
+        Budget budget = budgetRepository.findByBudgetId(parseLong(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         if (budgetName != null) {
             budget.setBudgetName(budgetName);
         }
         if (amount != null) {
-            budget.setAmount(amount);
+            budget.setAmount(parsedAmount);
         }
         if (endDate != null) {
             this.validateDates(budget.getStartingDate(), timeUtil.checkParseLocalDate(endDate));
             budget.setEndDate(timeUtil.checkParseLocalDate(endDate));
         }
         if (categoryId != null) {
-            budget.setCategoryId(categoryId);
+            budget.setCategoryId(parsedLong);
         }
         budgetRepository.save(budget);
         return getBudgetInfoDTO(budget);
@@ -118,7 +121,7 @@ public class BudgetController extends AbstractController {
     public BudgetInfoDTO deleteBudget(@PathVariable String budgetId, HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
-        Budget budget = budgetRepository.findByBudgetId(parseNumber(budgetId));
+        Budget budget = budgetRepository.findByBudgetId(parseLong(budgetId));
         this.validateBudgetOwnership(budget, user.getUserId());
         budgetRepository.delete(budget);
         return this.getBudgetInfoDTO(budget);
@@ -155,10 +158,8 @@ public class BudgetController extends AbstractController {
         }
     }
 
-    private void validateBudgetOwnership(Budget budget, long sessionUserId) throws MyException {
-        if (budget == null){
-            throw new BudgetNotFoundException();
-        } else if (budget.getUserId() != sessionUserId) {
+    private void validateBudgetOwnership(Budget budget, long sessionUserId) throws NotFoundException {
+        if (budget == null || budget.getUserId() != sessionUserId) {
             throw new NotFoundException("Budget not found.");
         }
     }

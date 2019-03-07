@@ -46,7 +46,7 @@ public class CategoryController extends AbstractController {
     public CategoryInfoDTO viewCategory(@PathVariable String categoryId, HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
-        Category category = categoryRepository.findByCategoryId(parseNumber(categoryId));
+        Category category = categoryRepository.findByCategoryId(parseLong(categoryId));
         this.validateCategoryAndUserOwnership(user, category);
         return this.getCategoryInfoDTO(category);
     }
