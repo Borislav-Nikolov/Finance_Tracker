@@ -16,10 +16,9 @@ public class PlannedTransactionDao extends AbstractDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<PlannedTransaction> getAllWhereExecDateEqualsToday() {
+    public List<PlannedTransaction> getAllWhereExecDateBeofreNext24Hours() {
         String sql = "SELECT * FROM final_project.planned_transactions " +
-                "WHERE next_execution_date >= CURRENT_TIMESTAMP " +
-                "AND next_execution_date < DATE(NOW()+ INTERVAL 24 HOUR)";
+                "WHERE next_execution_date < DATE(NOW()+ INTERVAL 24 HOUR)";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(PlannedTransaction.class));
     }
 

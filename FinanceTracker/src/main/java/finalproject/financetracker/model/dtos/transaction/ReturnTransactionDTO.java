@@ -44,23 +44,31 @@ public class ReturnTransactionDTO {
     }
 
     public ReturnTransactionDTO withUser(User u) {
-        this.username = u.getUsername();
+        if (u!=null) {
+            this.username = u.getUsername();
+        }
         return this;
     }
 
     public ReturnTransactionDTO withCategory(Category c) {
-        this.categoryName = c.getCategoryName();
-        this.isIncome = c.isIncome();
+        if (c!=null) {
+            this.categoryName = c.getCategoryName();
+            this.isIncome = c.isIncome();
+        }
         return this;
     }
 
     public ReturnTransactionDTO withAccount(ReturnAccountDTO a) {
-        this.accountName = a.getAccountName();
-        return this;
+        if (a!=null) {
+            this.accountName = a.getAccountName();
+        }
+            return this;
     }
 
     public ReturnTransactionDTO withAccount(Account a) {
-        this.accountName = a.getAccountName();
+        if (a!=null) {
+            this.accountName = a.getAccountName();
+        }
         return this;
     }
 }

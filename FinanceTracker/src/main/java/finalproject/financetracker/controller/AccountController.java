@@ -25,6 +25,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -136,12 +137,8 @@ public class AccountController extends AbstractController {
         Account account = dao.getById(accId);
         checkIfNotNull(Account.class, account);
         checkIfBelongsToLoggedUser(account.getUserId(), u);
-        List<Transaction> transactions = tRepo.findAllByAccountId(accId);
-        List<PlannedTransaction> plannedTransactions = ptRepo.findAllByAccountId(accId);
         return new ReturnAccountDTO(account)
-                .withUser(u)
-                .withTransactions(transactionController.listEntitiesToListDTOs(transactions, u))
-                .withPlannedTransactions(plannedTransactionController.listEntitiesToListDTOs(plannedTransactions, u));
+                .withUser(u);
     }
 
     //--------------delete account---------------------//
@@ -161,7 +158,7 @@ public class AccountController extends AbstractController {
             UnauthorizedAccessException {
 
         ReturnAccountDTO a = getAccById(accId, sess, request);
-        ptRepo.deleteAllByAccountId(a.getAccountId());   //   "/accounts/{accId}  Web Service
+        ptRepo.deleteAllByAccountId(a.getAccountId());
         tRepo.deleteByAccountId(a.getAccountId());
         accountRepo.deleteById(a.getAccountId());
         return a;
@@ -207,7 +204,7 @@ public class AccountController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess, request);
         List<Account> result;
-        if (order!= null && order == true) {
+        if (order != null && order == true) {
             result = dao.getAllAccountsDesc(u.getUserId());
         } else {
             result = dao.getAllAccountsAsc(u.getUserId());
@@ -216,14 +213,8 @@ public class AccountController extends AbstractController {
                 .stream()
                 .map(account ->
                         new ReturnAccountDTO(account)
-                                .withUser(u)
-                                .withPlannedTransactions(
-                                        plannedTransactionController.listEntitiesToListDTOs(
-                                                ptRepo.findAllByAccountId(account.getAccountId()), u))
-                                .withTransactions(
-                                        transactionController.listEntitiesToListDTOs(
-                                                tRepo.findAllByAccountId(account.getAccountId()), u))
-                ).collect(Collectors.toList());
+                                .withUser(u))
+                .collect(Collectors.toList());
     }
 
     //--------------get total account number for a given userId---------------------//
@@ -261,24 +252,45 @@ public class AccountController extends AbstractController {
 
 
     //-----------------------< Account scheduled Task >----------------------//
-    @Scheduled(cron = "0 0/35 12 * * *")
+    @PostConstruct
+    @Scheduled(cron = "0 0 0 * * *")
     //<second> <minute> <hour> <day-of-month> <month> <day-of-week> {optional}<year>
     void executePlannedTransactions() {
         logInfo("Scheduled planned transactions check.");
-        List<PlannedTransaction> plannedTransactions = ptDao.getAllWhereExecDateEqualsToday();
+        List<PlannedTransaction> plannedTransactions = ptDao.getAllWhereExecDateBeofreNext24Hours();
 
         for (PlannedTransaction pt : plannedTransactions) {
             new Thread(
                     () -> {
-                        logInfo("Scheduler started..." + pt.getPtName() + "/" + pt.getUserId() + "/" + pt.getAccountId());
+                        logInfo("Scheduler started..." + pt.getPtName()
+                                + "|>userId{" + pt.getUserId() + "}"
+                                + "|>accId{" + pt.getAccountId() + "}");
+                            while (pt.getNextExecutionDate().isBefore(LocalDateTime.now())) {
+                                try {
+                                    PlannedTransaction temp;
+                                    synchronized (TransactionController.concurrentLock) {
+                                        temp = plannedTransactionController
+                                                .execute(pt);
+                                    }
+                                    pt.setNextExecutionDate(temp.getNextExecutionDate());
+                                    logInfo(pt.getPtName()
+                                            + "|>userId{" + pt.getUserId() + "}"
+                                            + "|>accId{" + pt.getAccountId() + "} executed."
+                                            + pt.getNextExecutionDate().toString());
+                                } catch (Exception e) {
+                                    logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                                }
+                            }
                         try {
-                            Thread.sleep(
-                                    pt.getNextExecutionDate().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
-                                            -
-                                            LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
-                            logInfo("Scheduler executing planned transaction " + pt.getPtName());
-                            plannedTransactionController.execute(pt);
-                            logInfo(pt.getPtName() + " executed.");
+                            if (pt.getNextExecutionDate().isBefore(LocalDateTime.now().plusDays(1))) {
+                                Thread.sleep(
+                                        pt.getNextExecutionDate().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
+                                                -
+                                                LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
+                                logInfo("Scheduler executing planned transaction " + pt.getPtName());
+                                    plannedTransactionController.execute(pt);
+                                logInfo(pt.getPtName() + " executed.");
+                            }
                         } catch (Exception e) {
                             logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
                         }

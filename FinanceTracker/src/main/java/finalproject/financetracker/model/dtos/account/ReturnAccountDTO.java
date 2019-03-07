@@ -21,8 +21,6 @@ public class ReturnAccountDTO{
     private double amount;
     private long userId;
     private String username;
-    private List<ReturnTransactionDTO> transactions;
-    private List<ReturnPlannedTransactionDTO> plannedTransactions;
 
     public ReturnAccountDTO(Account a){
         this.accountId = a.getAccountId();
@@ -33,16 +31,6 @@ public class ReturnAccountDTO{
 
     public ReturnAccountDTO withUser(User u){
         this.username = u.getUsername();
-        return this;
-    }
-
-    public ReturnAccountDTO withTransactions(List<ReturnTransactionDTO> transactions){
-        this.transactions = transactions;
-        return this;
-    }
-
-    public ReturnAccountDTO withPlannedTransactions(List<ReturnPlannedTransactionDTO> plannedTransactions){
-        this.plannedTransactions = plannedTransactions;
         return this;
     }
 }

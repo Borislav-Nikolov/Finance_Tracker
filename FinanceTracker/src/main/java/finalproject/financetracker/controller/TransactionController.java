@@ -9,9 +9,11 @@ import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.transaction.AddTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.UpdateTransactionDTO;
-import finalproject.financetracker.model.pojos.*;
+import finalproject.financetracker.model.pojos.Account;
+import finalproject.financetracker.model.pojos.Category;
+import finalproject.financetracker.model.pojos.Transaction;
+import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.repositories.AccountRepo;
-import finalproject.financetracker.model.repositories.BudgetRepository;
 import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +28,15 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @RequestMapping(value = "/profile")
 @Controller
-@Transactional(rollbackFor = Exception.class)
+//@Transactional(rollbackFor = Exception.class)
 @ResponseBody
 public class TransactionController extends AbstractController {
+    static final ReentrantLock concurrentLock = new ReentrantLock();
 
     @Autowired
     private TransactionRepo repo;
@@ -53,6 +57,7 @@ public class TransactionController extends AbstractController {
 
     //--------------add transaction for given account---------------------//
     @RequestMapping(value = "/transactions", method = RequestMethod.POST)
+    @Transactional(rollbackFor = Exception.class)
     public ReturnTransactionDTO addTransaction(@RequestBody AddTransactionDTO addTransactionDTO,
                                                HttpSession sess, HttpServletRequest request)
             throws InvalidRequestDataException,
@@ -129,22 +134,22 @@ public class TransactionController extends AbstractController {
         Long accIdLong = null;
         if (accId != null) {
             accIdLong = parseLong(accId);
-            ReturnAccountDTO a = accountController.getAccByIdLong(accIdLong,session,request);
+            ReturnAccountDTO a = accountController.getAccByIdLong(accIdLong, session, request);
         }
         Category c = null;
         Long catIdLong = null;
         if (catId != null) {
             catIdLong = parseLong(catId);
-            c = categoryController.getCategoryById(catIdLong,session,request);
+            c = categoryController.getCategoryById(catIdLong, session, request);
         }
-        Long startDateMillis = (startDate != null)? parseLong(startDate): 0L;
-        Long endDateMillis = (endDate != null)? parseLong(endDate): System.currentTimeMillis();
+        Long startDateMillis = (startDate != null) ? parseLong(startDate) : 0L;
+        Long endDateMillis = (endDate != null) ? parseLong(endDate) : System.currentTimeMillis();
 
         Boolean isIncome = null;
         if (income != null) {
             if (income.equalsIgnoreCase("true")) isIncome = true;
             if (income.equalsIgnoreCase("false")) isIncome = false;
-            if (c!=null){
+            if (c != null) {
                 isIncome = c.isIncome();
             }
         }
@@ -226,7 +231,8 @@ public class TransactionController extends AbstractController {
         repo.deleteByTransactionId(t.getTransactionId());
         return t;
     }
-//    @Transactional(rollbackFor = Exception.class)
+
+    //    @Transactional(rollbackFor = Exception.class)
     Transaction calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
         double transactionAmount = 0;
         Account a = accountDao.getById(t.getAccountId());
@@ -236,11 +242,12 @@ public class TransactionController extends AbstractController {
             transactionAmount = t.getAmount();
         } else {
             transactionAmount = t.getAmount() * -1;
-            budgetController.subtractFromBudgets(t.getAmount(),t.getUserId(),c.getCategoryId());
+                budgetController.subtractFromBudgets(t.getAmount(), t.getUserId(), c.getCategoryId());
+
             t.setAmount(Math.abs(transactionAmount));
         }
         a.setAmount(a.getAmount() + transactionAmount);
-        accountRepo.save(a);
+            accountRepo.save(a);
         return t;
     }
 
