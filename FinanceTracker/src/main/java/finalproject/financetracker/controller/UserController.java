@@ -85,9 +85,8 @@ public class UserController extends AbstractController {
             }
             throw new FailedActionException("User registration failed.");
         }
-        CommonMsgDTO msg = new CommonMsgDTO("User registered. Verification email successfully sent.", new Date());
         ProfileInfoDTO profile = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO(msg, profile);
+        return new MsgObjectDTO("User registered. Verification email successfully sent.", new Date(), profile);
     }
     @PostMapping(value = "/login")
     public MsgObjectDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session, HttpServletRequest request)
@@ -101,9 +100,8 @@ public class UserController extends AbstractController {
             this.setupSession(session, user, request);
             user.setLastLogin(new Date());
             userRepository.save(user);
-            CommonMsgDTO msg = new CommonMsgDTO("Login successful.", new Date());
             ProfileInfoDTO profile = this.getProfileInfoDTO(user);
-            return new MsgObjectDTO(msg, profile);
+            return new MsgObjectDTO("Login successful.", new Date(), profile);
         } else {
             this.validateIpAddr(session, request);
             throw new AlreadyLoggedInException();
@@ -114,12 +112,11 @@ public class UserController extends AbstractController {
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
         session.invalidate();
-        CommonMsgDTO msg = new CommonMsgDTO("Logout successful.", new Date());
         ProfileInfoDTO profile = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO(msg, profile);
+        return new MsgObjectDTO("Logout successful.", new Date(), profile);
     }
     @GetMapping(value = "/confirm")
-    public CommonMsgDTO confirmEmail(@RequestParam(value = "token") String token,
+    public MsgObjectDTO confirmEmail(@RequestParam(value = "token") String token,
                                      HttpSession session,
                                      HttpServletRequest request)
             throws MyException, JsonProcessingException {
@@ -129,20 +126,26 @@ public class UserController extends AbstractController {
         user.setEmailConfirmed(true);
         this.setupSession(session, user, request);
         userDao.verifyUserEmail(user, verToken);
-        return new CommonMsgDTO("Email " + user.getEmail() + " was confirmed.", new Date());
+        ProfileInfoDTO profile = getProfileInfoDTO(user);
+        return new MsgObjectDTO("Email " + user.getEmail() + " was confirmed.", new Date(), profile);
     }
-    // TODO consider if cannot be abused
     @GetMapping(value = "/new_token")
-    public void sendNewToken(HttpSession session, HttpServletRequest request) throws IOException, MyException {
+    public CommonMsgDTO sendNewToken(HttpSession session, HttpServletRequest request) throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
+        if ((System.currentTimeMillis() - user.getLastNotified().getTime()) < TokenDao.NEW_TOKEN_INTERVAL) {
+            throw new BadRequestException("Cannot send new token yet. Time between new token sending is " +
+                    (TokenDao.NEW_TOKEN_INTERVAL / 60 / 1000) + " minutes.");
+        }
+        user.setLastNotified(new Date());
+        this.setupSession(session, user, request);
         this.sendVerificationTokenToUser(user, request);
+        return new CommonMsgDTO("Confirmation email sent successfully to " + user.getEmail()  + ".", new Date());
     }
 
     /* ----- PROFILE ACTIONS ----- */
 
-    // TODO maybe gather editing into one method
     @PutMapping(value = "/profile/edit/password")
-    public CommonMsgDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session,
+    public MsgObjectDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session,
                                        HttpServletRequest request)
             throws IOException, MyException {
         passChange.checkValid();
@@ -154,11 +157,11 @@ public class UserController extends AbstractController {
         user.setPassword(passCrypter.crypt(newPass));
         this.setupSession(session, user, request);
         userDao.updateUser(user);
-        return new CommonMsgDTO("Password changed successfully.", new Date());
+        ProfileInfoDTO profile = getProfileInfoDTO(user);
+        return new MsgObjectDTO("Password changed successfully.", new Date(), profile);
     }
-    // TODO check why if you try to ask for new token after email change it says "already confirmed"
     @PutMapping(value = "/profile/edit/email")
-    public ProfileInfoDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session,
+    public MsgObjectDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session,
                                       HttpServletRequest request)
             throws IOException, MyException {
         emailChange.checkValid();
@@ -171,18 +174,19 @@ public class UserController extends AbstractController {
         this.setupSession(session, user, request);
         this.sendVerificationTokenToUser(user, request);
         userDao.updateUser(user);
-        return this.getProfileInfoDTO(user);
+        ProfileInfoDTO profile = getProfileInfoDTO(user);
+        return new MsgObjectDTO("Email changed successfully.", new Date(), profile);
     }
     @DeleteMapping(value = "/profile")
-    public ProfileInfoDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session,
+    public MsgObjectDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session,
                                         HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
         this.validateUserPasswordInput(password.get("password"), (user.getPassword()));
         userDao.deleteUser(user);
         session.invalidate();
-        // TODO make with MsgObjectDTO
-        return getProfileInfoDTO(user);
+        ProfileInfoDTO profile = getProfileInfoDTO(user);
+        return new MsgObjectDTO("User deleted successfully.", new Date(), profile);
     }
     /* ----- VALIDATIONS ----- */
 
