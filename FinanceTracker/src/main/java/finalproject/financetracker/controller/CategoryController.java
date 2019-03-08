@@ -110,10 +110,7 @@ public class CategoryController extends AbstractController {
 
     public Category getCategoryById(long categoryId, HttpSession session, HttpServletRequest request)
             throws IOException,
-            UnauthorizedAccessException,
-            NotLoggedInException,
-            ForbiddenRequestException,
-            NotFoundException {
+            MyException {
 
         Category category = validateDataAndGetByIdFromRepo(categoryId,categoryRepository,Category.class);
         User user = getLoggedValidUserFromSession(session, request);

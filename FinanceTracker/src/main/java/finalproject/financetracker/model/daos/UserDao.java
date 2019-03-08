@@ -66,22 +66,26 @@ public class UserDao {
         deletedUser.setEmail(deletedUserValues);
         deletedUser.setEmailConfirmed(false);
         deletedUser.setSubscribed(false);
-        List<Transaction> transactions = transactionRepo.findAllByUserId(deletedUser.getUserId());
-        if (transactions != null && transactions.size() > 0) {
-            for (Transaction transaction : transactions) {
-                transactionRepo.delete(transaction);
-            }
-        }
-        List<PlannedTransaction> plannedTransactions = plannedTransactionRepo.findAllByUserId(deletedUser.getUserId());
-        if (plannedTransactions != null && plannedTransactions.size() > 0) {
-            for (PlannedTransaction plannedTransaction : plannedTransactions) {
-                plannedTransactionRepo.delete(plannedTransaction);
-            }
-        }
+
+
         List<Account> accounts = accountRepo.findAllByUserId(deletedUser.getUserId());
         if (accounts != null && accounts.size() > 0) {
             for (Account account : accounts) {
                 accountRepo.delete(account);
+                List<PlannedTransaction> plannedTransactions = plannedTransactionRepo
+                                              .findAllByAccountId(account.getAccountId());  //TODO find all by userId
+                if (plannedTransactions != null && plannedTransactions.size() > 0) {
+                    for (PlannedTransaction plannedTransaction : plannedTransactions) {
+                        plannedTransactionRepo.delete(plannedTransaction);
+                    }
+                }
+                List<Transaction> transactions = transactionRepo
+                                              .findAllByAccountId(account.getAccountId());
+                if (transactions != null && transactions.size() > 0) {
+                    for (Transaction transaction : transactions) {
+                        transactionRepo.delete(transaction);
+                    }
+                }
             }
         }
         List<Budget> budgets = budgetRepository.findAllByUserId(deletedUser.getUserId());
@@ -131,8 +135,9 @@ public class UserDao {
         Date loginReferenceDate = timeUtil.getDateByMonthChange(-2);
         List<Map<String, Object>> emails =  jdbcTemplate.queryForList(
                         "SELECT u.email AS email FROM final_project.users AS u " +
+                                "JOIN final_project.accounts AS a ON u.user_id = a.user_id " +
                                 "JOIN final_project.transactions AS t " +
-                                "ON (u.user_id = t.user_id) " +
+                                "ON (t.account_id = a.account_id) " +
                                 "WHERE u.last_notified < ? AND u.is_subscribed = 1 " +
                                 "AND u.is_email_confirmed = 1 AND NOT u.last_login < ? " +
                                 "GROUP BY u.user_id " +

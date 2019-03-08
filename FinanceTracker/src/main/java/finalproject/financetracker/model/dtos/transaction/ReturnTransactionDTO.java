@@ -38,7 +38,6 @@ public class ReturnTransactionDTO {
         this.transactionName = t.getTransactionName().trim();
         this.executionDate = t.getExecutionDate();
         this.amount = t.getAmount();
-        this.userId = t.getUserId();
         this.categoryId = t.getCategoryId();
         this.accountId = t.getAccountId();
     }
@@ -61,6 +60,7 @@ public class ReturnTransactionDTO {
     public ReturnTransactionDTO withAccount(ReturnAccountDTO a) {
         if (a!=null) {
             this.accountName = a.getAccountName();
+            this.userId=a.getUserId();
         }
             return this;
     }
@@ -68,6 +68,7 @@ public class ReturnTransactionDTO {
     public ReturnTransactionDTO withAccount(Account a) {
         if (a!=null) {
             this.accountName = a.getAccountName();
+            this.userId=a.getUserId();
         }
         return this;
     }

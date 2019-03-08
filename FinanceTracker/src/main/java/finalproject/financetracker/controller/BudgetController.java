@@ -4,8 +4,8 @@ import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.dtos.MsgObjectDTO;
-import finalproject.financetracker.model.pojos.Category;
-import finalproject.financetracker.model.pojos.Transaction;
+import finalproject.financetracker.model.pojos.*;
+import finalproject.financetracker.model.repositories.AccountRepo;
 import finalproject.financetracker.model.repositories.BudgetRepository;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import finalproject.financetracker.model.repositories.UserRepository;
@@ -13,8 +13,6 @@ import finalproject.financetracker.model.dtos.budgetDTOs.BudgetCreationDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetInfoDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetsViewDTO;
 import finalproject.financetracker.exceptions.MyException;
-import finalproject.financetracker.model.pojos.Budget;
-import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.utils.TimeUtil;
 import finalproject.financetracker.utils.emailing.EmailSender;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping(value = "/profile", produces = "application/json")
 public class BudgetController extends AbstractController {
-
+    @Autowired AccountRepo accountRepo;
     @Autowired
     private BudgetRepository budgetRepository;
     @Autowired
@@ -175,7 +173,11 @@ public class BudgetController extends AbstractController {
     // TODO will produce untrue results if repeated
     private void recalculateBudget(Budget budget) throws SQLException {
         // TODO get needed with query at TransactionDao
-        List<Transaction> transactions = transactionRepo.findAllByUserId(budget.getUserId());
+        List<Account> accounts = accountRepo.findAllByUserId(budget.getUserId());
+        List<Transaction> transactions = new ArrayList<>();
+        for (Account account: accounts) {
+            transactions.addAll(transactionRepo.findAllByAccountId(account.getAccountId()));
+        }
         double totalSum = 0;
         LocalDate startingDate = budget.getStartingDate();
         for (Transaction transaction : transactions) {

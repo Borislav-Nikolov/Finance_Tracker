@@ -2,7 +2,6 @@ package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.model.dtos.account.EditAccountDTO;
 import finalproject.financetracker.model.pojos.Account;
-import finalproject.financetracker.exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -16,9 +15,6 @@ import java.util.concurrent.locks.ReentrantLock;
 @Component
 public class AccountDao extends AbstractDao {
 
-    public static final int QUERY_RETURN_MAX_LIMIT = 1000;
-    public static final int QUERY_RETURN_LIMIT_DEFAULT = 20;
-    public static final int QUERY_RETURN_OFFSET_DEFAULT = 0;
     private Connection mySQLCon;
     private final JdbcTemplate jdbcTemplate;
     private static final ReentrantLock connLock = new ReentrantLock();

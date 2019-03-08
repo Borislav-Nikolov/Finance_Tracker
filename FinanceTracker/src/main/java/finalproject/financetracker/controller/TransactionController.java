@@ -1,7 +1,6 @@
 package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.*;
-import finalproject.financetracker.exceptions.runntime.ServerErrorException;
 import finalproject.financetracker.model.daos.AbstractDao;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.daos.TransactionDao;
@@ -17,7 +16,6 @@ import finalproject.financetracker.model.repositories.AccountRepo;
 import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -28,8 +26,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 @RequestMapping(value = "/profile")
 @Controller
@@ -81,9 +77,8 @@ public class TransactionController extends AbstractController {
                 addTransactionDTO.getAmount(),
                 LocalDateTime.now(),
                 addTransactionDTO.getAccountId(),
-                u.getUserId(),
                 addTransactionDTO.getCategoryId());
-        this.calculateBudgetAndAccountAmount(t);
+        this.calculateBudgetAndAccountAmount(t, u.getUserId());
         repo.save(t);
         return new ReturnTransactionDTO(t)
                 .withUser(u)
@@ -102,9 +97,9 @@ public class TransactionController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess, request);
         Transaction t = validateDataAndGetByIdFromRepo(transactionId, repo, Transaction.class);
-        checkIfBelongsToLoggedUser(t.getUserId(), u);
-        Category c = categoryController.getCategoryById(t.getCategoryId(), sess, request);
         ReturnAccountDTO a = accountController.getAccByIdLong(t.getAccountId(), sess, request);
+        checkIfBelongsToLoggedUser(a.getUserId(), u);
+        Category c = categoryController.getCategoryById(t.getCategoryId(), sess, request);
         return new ReturnTransactionDTO(t)
                 .withUser(u)
                 .withCategory(c)
@@ -121,6 +116,8 @@ public class TransactionController extends AbstractController {
                                                   @RequestParam(value = "income", required = false) String income,
                                                   @RequestParam(value = "order", required = false) String order,
                                                   @RequestParam(value = "desc", required = false) String desc,
+                                                  @RequestParam(value = "limit", required = false) String limit,
+                                                  @RequestParam(value = "offset", required = false) String offset,
                                                   HttpSession session, HttpServletRequest request)
             throws
             IOException,
@@ -128,6 +125,24 @@ public class TransactionController extends AbstractController {
             MyException {
 
         User u = getLoggedValidUserFromSession(session, request);
+        Integer limitInt = null;
+        if (limit != null) {
+            limitInt = parseInt(limit);
+            if (limitInt <=0) limitInt = null;
+        }
+        if (limitInt == null){
+            limitInt = AbstractDao.QUERY_RETURN_LIMIT_DEFAULT;
+        }
+
+        Integer offsetInt = null;
+        if (offset != null) {
+            offsetInt = parseInt(offset);
+            if (offsetInt <=0) offsetInt = null;
+        }
+        if (offsetInt == null){
+            offsetInt = AbstractDao.QUERY_RETURN_OFFSET_DEFAULT;
+        }
+
         Long accIdLong = null;
         if (accId != null) {
             accIdLong = parseLong(accId);
@@ -180,7 +195,9 @@ public class TransactionController extends AbstractController {
                 endDateMillis,
                 isIncome,
                 columnName,
-                orderBy);
+                orderBy,
+                limitInt,
+                offsetInt);
     }
 
     //-------------- edit transaction ---------------------//
@@ -196,8 +213,8 @@ public class TransactionController extends AbstractController {
         transactionDTO.checkValid();
         Transaction t = validateDataAndGetByIdFromRepo(transactionDTO.getTransactionId(), repo, Transaction.class);
         t.setTransactionName(transactionDTO.getTransactionName());
-        checkIfBelongsToLoggedUser(t.getUserId(), u);
         ReturnAccountDTO a = accountController.getAccByIdLong(t.getAccountId(), sess, request);
+        checkIfBelongsToLoggedUser(a.getUserId(),u);
         Category c = categoryController.getCategoryById(t.getCategoryId(), sess, request);
         repo.saveAndFlush(t);
         return new ReturnTransactionDTO(t)
@@ -220,8 +237,7 @@ public class TransactionController extends AbstractController {
         return t;
     }
 
-    //    @Transactional(rollbackFor = Exception.class)
-    void calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
+    void calculateBudgetAndAccountAmount(Transaction t, long userId) throws SQLException {
         double transactionAmount = 0;
         Account a = accountDao.getById(t.getAccountId());
         Category c = categoryRepository.findByCategoryId(t.getCategoryId());
@@ -230,25 +246,11 @@ public class TransactionController extends AbstractController {
             transactionAmount = t.getAmount();
         } else {
             transactionAmount = t.getAmount() * -1;
-                budgetController.subtractFromBudgets(t.getAmount(), t.getUserId(), c.getCategoryId());
+                budgetController.subtractFromBudgets(t.getAmount(), userId, c.getCategoryId());
 
             t.setAmount(Math.abs(transactionAmount));
         }
         a.setAmount(a.getAmount() + transactionAmount);
         accountRepo.save(a);
-    }
-
-    List<ReturnTransactionDTO> listEntitiesToListDTOs(List<Transaction> list, User u) {
-        return list.stream().map((Transaction t) -> {
-            try {
-                return new ReturnTransactionDTO(t)
-                        .withUser(u)
-                        .withCategory(categoryRepository.findByCategoryId(t.getCategoryId()))
-                        .withAccount(accountDao.getById(t.getAccountId()));
-            } catch (SQLException e) {
-                logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
-                throw new ServerErrorException();   //
-            }
-        }).collect(Collectors.toList());
     }
 }

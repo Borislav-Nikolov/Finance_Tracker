@@ -64,14 +64,12 @@ CREATE TABLE IF NOT EXISTS final_project.transactions (
     amount DOUBLE NOT NULL,
     execution_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     account_id INT NOT NULL,
-    user_id INT NOT NULL,
     category_id INT NOT NULL,
     INDEX acc_fk_idx (account_id ASC),
-    INDEX user_fk_idx (user_id ASC),
     INDEX category_fk_idx (category_id ASC),
     INDEX exec_date_idx (execution_date ASC),
-    CONSTRAINT trans_user_fk FOREIGN KEY (user_id)
-    REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX amount_idx (amount ASC),
+    INDEX tran_name_idx (transaction_name ASC),
     CONSTRAINT trans_category_fk FOREIGN KEY (category_id)
     REFERENCES categories(category_id) ON DELETE CASCADE,
     CONSTRAINT trans_account_fk FOREIGN KEY (account_id)
@@ -85,14 +83,12 @@ CREATE TABLE IF NOT EXISTS final_project.planned_transactions (
     next_execution_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     repeat_period LONG NOT NULL,
     account_id INT NOT NULL,
-    user_id INT NOT NULL,
     category_id INT NOT NULL,
     INDEX acc_fk_idx (account_id ASC),
-    INDEX user_fk_idx (user_id ASC),
     INDEX category_fk_idx (category_id ASC),
-    INDEX exec_date_idx (next_execution_date ASC),
-    CONSTRAINT pt_user_fk FOREIGN KEY (user_id)
-    REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX next_exec_date_idx (next_execution_date ASC),
+    INDEX pt_amount_idx (pt_amount ASC),
+    INDEX pt_name_idx (pt_name ASC),
     CONSTRAINT pt_category_fk FOREIGN KEY (category_id)
     REFERENCES categories(category_id) ON DELETE CASCADE,
     CONSTRAINT pt_account_fk FOREIGN KEY (account_id)

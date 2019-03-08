@@ -16,10 +16,22 @@ public class PlannedTransactionDao extends AbstractDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<PlannedTransaction> getAllWhereExecDateBeofreNext24Hours() {
-        String sql = "SELECT * FROM final_project.planned_transactions " +
+    public List<ReturnPlannedTransactionDTO> getAllWhereExecDateBeofreNext24Hours() {
+        String sql = "SELECT pt.pt_name, " +
+                "pt.next_execution_date, " +
+                "pt.pt_amount AS amount, " +
+                "pt.account_id, " +
+                "pt.category_id, " +
+                "pt.repeat_period, " +
+                "a.account_name, " +
+                "c.category_name, " +
+                "c.is_income, " +
+                "a.user_id AS user_id " +
+                "FROM final_project.planned_transactions AS pt " +
+                "JOIN accounts AS a ON pt.account_id = a.account_id " +
+                "JOIN categories AS c ON a.user_id = c.user_id " +  //TODO /////////////
                 "WHERE next_execution_date < DATE(NOW()+ INTERVAL 24 HOUR)";
-        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(PlannedTransaction.class));
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(ReturnPlannedTransactionDTO.class));
     }
 
     public List<ReturnPlannedTransactionDTO> getAllByAccIdIsIncomeOrder(

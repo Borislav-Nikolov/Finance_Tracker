@@ -77,13 +77,12 @@ public class PlannedTransactionController extends AbstractController {
                         .now()
                         .plusSeconds(addTransactionDTO.getExecutionOffset() / SEC_TO_MILLIS),
                 addTransactionDTO.getAccountId(),
-                u.getUserId(),
                 addTransactionDTO.getCategoryId(),
                 addTransactionDTO.getRepeatPeriod());
         new Thread(() -> {
             try {
                 Thread.sleep(waitMillisToExec);
-                execute(t);
+                execute(t,a.getUserId());
             } catch (Exception e) {
                 logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
             }
@@ -106,9 +105,10 @@ public class PlannedTransactionController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess, request);
         PlannedTransaction pt = validateDataAndGetByIdFromRepo(id, repo, PlannedTransaction.class);
-        checkIfBelongsToLoggedUser(pt.getUserId(), u);
-        Category c = categoryController.getCategoryById(pt.getCategoryId(), sess, request);
         ReturnAccountDTO a = accountController.getAccByIdLong(pt.getAccountId(), sess, request);
+        checkIfBelongsToLoggedUser(a.getUserId(), u);
+        Category c = categoryController.getCategoryById(pt.getCategoryId(), sess, request);
+
         return new ReturnPlannedTransactionDTO(pt)
                 .withUser(u)
                 .withCategory(c)
@@ -216,9 +216,10 @@ public class PlannedTransactionController extends AbstractController {
                             .minusSeconds((pt.getRepeatPeriod() - transactionDTO.getRepeatPeriod()) / SEC_TO_MILLIS));
         }
         pt.setRepeatPeriod(transactionDTO.getRepeatPeriod());
-        checkIfBelongsToLoggedUser(pt.getUserId(), u);
-        Category c = categoryController.getCategoryById(pt.getCategoryId(), sess, request);
         ReturnAccountDTO a = accountController.getAccByIdLong(pt.getAccountId(), sess, request);
+        checkIfBelongsToLoggedUser(a.getUserId(), u);
+        Category c = categoryController.getCategoryById(pt.getCategoryId(), sess, request);
+
         pt = repo.saveAndFlush(pt);
         return new ReturnPlannedTransactionDTO(pt)
                 .withUser(u)
@@ -242,7 +243,7 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void execute(PlannedTransaction pt) throws SQLException {
+    public void execute(PlannedTransaction pt, long userId) throws SQLException {
         Transaction t = new Transaction(
                 pt.getPtName()
                         .concat(LocalDateTime.now()
@@ -250,9 +251,8 @@ public class PlannedTransactionController extends AbstractController {
                 pt.getPtAmount(),
                 LocalDateTime.now(),
                 pt.getAccountId(),
-                pt.getUserId(),
                 pt.getCategoryId());
-        transactionController.calculateBudgetAndAccountAmount(t);
+        transactionController.calculateBudgetAndAccountAmount(t, userId);
         this.transactionRepo.save(t);
         reSchedule(pt);
     }
@@ -279,52 +279,58 @@ public class PlannedTransactionController extends AbstractController {
                 logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
             } finally {
                 logInfo("PlannedTransactionScheduler is performing check...");
-                List<PlannedTransaction> transactions = PlannedTransactionController.this.dao.getAllWhereExecDateBeofreNext24Hours();
+                List<ReturnPlannedTransactionDTO> transactions = PlannedTransactionController.this.dao.getAllWhereExecDateBeofreNext24Hours();
                 logInfo("Found " + transactions.size() + " overdue planned transactions.");
 
-                for (PlannedTransaction pt : transactions) {
+                for (ReturnPlannedTransactionDTO pt : transactions) {
                     new PlannedTransactionExecutor(pt).start();
                 }
             }
         }
 
         private class PlannedTransactionExecutor extends Thread {
-            private PlannedTransaction plannedTransaction;
+            private ReturnPlannedTransactionDTO plannedTransactionDTO;
 
-            PlannedTransactionExecutor(PlannedTransaction pt) {
-                this.plannedTransaction = pt;
+            PlannedTransactionExecutor(ReturnPlannedTransactionDTO pt) {
+                this.plannedTransactionDTO = pt;
             }
 
             @Override
             public void run() {
                 logInfo("New PlannedTransactionExecutor started for "
-                        + this.plannedTransaction);
+                        + this.plannedTransactionDTO);
+                PlannedTransaction pt = new PlannedTransaction(plannedTransactionDTO.getTransactionName(),
+                        plannedTransactionDTO.getAmount(),
+                        plannedTransactionDTO.getNextExecutionDate(),
+                        plannedTransactionDTO.getAccountId(),
+                        plannedTransactionDTO.getCategoryId(),
+                        plannedTransactionDTO.getRepeatPeriod());
+                while (this.plannedTransactionDTO.getNextExecutionDate().isBefore(LocalDateTime.now())) {
 
-                while (this.plannedTransaction.getNextExecutionDate().isBefore(LocalDateTime.now())) {
                     try {
                         synchronized (PlannedTransactionController.concurrentLock) {
-                            PlannedTransactionController.this.execute(this.plannedTransaction);
+                            PlannedTransactionController.this.execute(pt, plannedTransactionDTO.getUserId());
                         }
                     } catch (Exception e) {
                         logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
                     }
                 }
-                logInfo("Updated..... "+this.plannedTransaction);
+                logInfo("Updated..... "+this.plannedTransactionDTO);
                 logInfo("Checking for execution in next 24 hours.");
                 try {
-                    if (this.plannedTransaction.getNextExecutionDate().isBefore(LocalDateTime.now().plusDays(1))) {
-                        logInfo("Waiting..... "+plannedTransaction);
+                    if (this.plannedTransactionDTO.getNextExecutionDate().isBefore(LocalDateTime.now().plusDays(1))) {
+                        logInfo("Waiting..... "+ plannedTransactionDTO);
                         Thread.sleep(
-                                this.plannedTransaction.getNextExecutionDate()
+                                this.plannedTransactionDTO.getNextExecutionDate()
                                         .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILLIS
                                         -
                                         LocalDateTime.now()
                                                 .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILLIS);
-                        logInfo("Executing... " + this.plannedTransaction);
+                        logInfo("Executing... " + this.plannedTransactionDTO);
                         synchronized (PlannedTransactionController.concurrentLock) {
-                            PlannedTransactionController.this.execute(this.plannedTransaction);
+                            PlannedTransactionController.this.execute(pt, plannedTransactionDTO.getUserId());
                         }
-                        logInfo("Executed.... "+this.plannedTransaction);
+                        logInfo("Executed.... "+this.plannedTransactionDTO);
                     }
                 } catch (Exception e) {
                     logError(HttpStatus.INTERNAL_SERVER_ERROR, e);

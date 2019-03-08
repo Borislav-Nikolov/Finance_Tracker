@@ -23,7 +23,9 @@ public class TransactionDao {
             Long endDateTimestamp,
             Boolean isIncome,
             AbstractDao.SQLColumnName columnName,
-            AbstractDao.SQLOderBy order){
+            AbstractDao.SQLOderBy order,
+            Integer limitInt,
+            Integer offsetInt){
         String incomeQuery = (isIncome!=null)?("AND c.is_income = "+isIncome+" "):" ";
         String accIdQuery = (accId!=null)? ("AND a.account_id = "+accId+" "):" ";
         String catIdQuery = (catId!=null)? ("AND c.category_id = "+catId+" "):" ";
@@ -53,7 +55,10 @@ public class TransactionDao {
                  accIdQuery+
                  incomeQuery +
                  catIdQuery+
-                "ORDER BY "+columnName.toString()+" "+order.toString()+";";
+                "ORDER BY "+ columnName.toString()+" "+
+                 order.toString()+" " +
+                "LIMIT "+limitInt+" " +
+                "OFFSET "+offsetInt+" ;";
         System.out.println(sql);  //TODO {remove}show sql query in console
         return jdbcTemplate.query(
                 sql,

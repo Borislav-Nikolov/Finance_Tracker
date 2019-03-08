@@ -37,7 +37,6 @@ public class ReturnPlannedTransactionDTO {
         this.nextExecutionDate = t.getNextExecutionDate();
         this.repeatPeriod = t.getRepeatPeriod();
         this.amount = t.getPtAmount();
-        this.userId = t.getUserId();
         this.categoryId = t.getCategoryId();
         this.accountId = t.getAccountId();
     }
@@ -55,11 +54,13 @@ public class ReturnPlannedTransactionDTO {
 
     public ReturnPlannedTransactionDTO withAccount(ReturnAccountDTO a) {
         this.accountName = a.getAccountName();
+        this.userId=a.getUserId();
         return this;
     }
 
     public ReturnPlannedTransactionDTO withAccount(Account a) {
         this.accountName = a.getAccountName();
+        this.userId=a.getUserId();
         return this;
     }
 }

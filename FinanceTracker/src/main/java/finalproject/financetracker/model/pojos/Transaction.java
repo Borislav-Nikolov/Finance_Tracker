@@ -32,17 +32,13 @@ public class Transaction{
     private long accountId;
 
     @Column
-    private long userId;
-
-    @Column
     private long categoryId;
 
-    public Transaction(String transactionName, double amount, LocalDateTime executionDate,long accountId, long userId, long categoryId) {
+    public Transaction(String transactionName, double amount, LocalDateTime executionDate,long accountId, long categoryId) {
         this.transactionName = transactionName;
         this.amount = amount;
         this.executionDate = executionDate;
         this.accountId = accountId;
-        this.userId = userId;
         this.categoryId = categoryId;
     }
 }

@@ -30,20 +30,16 @@ public class PlannedTransaction{
     private long accountId;
 
     @Column
-    private long userId;
-
-    @Column
     private long categoryId;
 
     @Column
     private long repeatPeriod;
 
-    public PlannedTransaction(String ptName, double ptAmount, LocalDateTime nextExecutionDate, long accountId, long userId, long categoryId, long repeatPeriod) {
+    public PlannedTransaction(String ptName, double ptAmount, LocalDateTime nextExecutionDate, long accountId, long categoryId, long repeatPeriod) {
         this.ptName = ptName;
         this.ptAmount = ptAmount;
         this.nextExecutionDate = nextExecutionDate;
         this.accountId = accountId;
-        this.userId = userId;
         this.categoryId = categoryId;
         this.repeatPeriod = repeatPeriod;
     }

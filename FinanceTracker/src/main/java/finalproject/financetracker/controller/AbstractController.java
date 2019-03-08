@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import finalproject.financetracker.exceptions.*;
+import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.pojos.ErrMsg;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.utils.emailing.EmailSender;
@@ -67,9 +68,8 @@ public abstract class AbstractController {
 
     protected User getLoggedValidUserFromSession(HttpSession sess, HttpServletRequest request)
             throws
-            NotLoggedInException,
             IOException,
-            UnauthorizedAccessException {
+            MyException {
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -90,16 +90,23 @@ public abstract class AbstractController {
         }
     }
 
+    protected <T extends Account> void checkIfAccountBelongsToLoggedUser(Long resourceUserId, JpaRepository<T, Long> repo, Class<T> c, User u)
+            throws
+            MyException {
+        T t = validateDataAndGetByIdFromRepo(resourceUserId,repo,c);
+        if (t.getUserId() != u.getUserId() ) {
+            throw new ForbiddenRequestException();
+        }
+    }
+
     protected User checkIfBelongsToLoggedUserAndReturnUser(
             long resourceUserId,
             HttpSession session,
             HttpServletRequest request)
 
             throws
-            NotLoggedInException,
-            IOException,
-            ForbiddenRequestException,
-            UnauthorizedAccessException {
+            MyException,
+            IOException{
 
         User u = getLoggedValidUserFromSession(session, request);
         checkIfBelongsToLoggedUser(resourceUserId,u);
@@ -140,6 +147,14 @@ public abstract class AbstractController {
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(u);
+    }
+
+    public Integer parseInt(String num) throws InvalidRequestDataException {
+        try {
+            return Integer.parseInt(num);
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidRequestDataException("Non-numeric value given.");
+        }
     }
 
     public Long parseLong(String num) throws InvalidRequestDataException {
