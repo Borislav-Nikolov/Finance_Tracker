@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS final_project.users (
     email VARCHAR(60) NOT NULL UNIQUE,
     is_email_confirmed TINYINT(1) NOT NULL,
     is_subscribed TINYINT(1) NOT NULL,
+    is_eligible_for_password_reset TINYINT(1) NOT NULL,
     last_notified TIMESTAMP,
     last_login TIMESTAMP,
     INDEX username_idx (username ASC),
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS final_project.verification_tokens (
     user_id INT,
     token VARCHAR(255) NOT NULL,
     expiry_date TIMESTAMP NOT NULL,
+    is_password_reset TINYINT(1) NOT NULL,
     INDEX user_fk_inx (user_id ASC),
     INDEX token_idx (token ASC),
     CONSTRAINT token_user_fk FOREIGN KEY (user_id)
@@ -66,7 +68,8 @@ CREATE TABLE IF NOT EXISTS final_project.transactions (
     category_id INT NOT NULL,
     INDEX acc_fk_idx (account_id ASC),
     INDEX user_fk_idx (user_id ASC),
-    INDEX category_fk_idx (category_id ASC) ,
+    INDEX category_fk_idx (category_id ASC),
+    INDEX exec_date_idx (execution_date ASC),
     CONSTRAINT trans_user_fk FOREIGN KEY (user_id)
     REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT trans_category_fk FOREIGN KEY (category_id)
@@ -87,6 +90,7 @@ CREATE TABLE IF NOT EXISTS final_project.planned_transactions (
     INDEX acc_fk_idx (account_id ASC),
     INDEX user_fk_idx (user_id ASC),
     INDEX category_fk_idx (category_id ASC),
+    INDEX exec_date_idx (next_execution_date ASC),
     CONSTRAINT pt_user_fk FOREIGN KEY (user_id)
     REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT pt_category_fk FOREIGN KEY (category_id)

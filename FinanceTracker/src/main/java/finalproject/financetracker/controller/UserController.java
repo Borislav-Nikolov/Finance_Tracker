@@ -12,10 +12,10 @@ import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.dtos.userDTOs.*;
 import finalproject.financetracker.model.pojos.VerificationToken;
 import finalproject.financetracker.utils.emailing.EmailSender;
-import finalproject.financetracker.utils.emailing.OnRegistrationCompleteEvent;
 import finalproject.financetracker.utils.passCrypt.PassCrypter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.mail.internet.AddressException;
@@ -51,9 +51,6 @@ public class UserController extends AbstractController {
     public MsgObjectDTO registerUser(@RequestBody RegistrationDTO regInfo,
                                      HttpServletRequest request, HttpSession session)
             throws InvalidRequestDataException, FailedActionException, AlreadyLoggedInException {
-        if (isLoggedIn(session)) {
-            throw new AlreadyLoggedInException("Must not be logged in to create new user.");
-        }
         regInfo.checkValid();
         String username = regInfo.getUsername().trim();
         String password = regInfo.getPassword().trim();
@@ -76,8 +73,7 @@ public class UserController extends AbstractController {
         user.setLastNotified(new Date());
         try {
             userRepository.save(user);
-            String appUrl = request.getContextPath();
-            applicationEventPublisher.publishEvent(new OnRegistrationCompleteEvent(user, request.getLocale(), appUrl));
+            this.sendVerificationTokenToUser(user);
         } catch (Exception ex) {
             user = userRepository.findByUsername(user.getUsername());
             if (user != null) {
@@ -130,7 +126,8 @@ public class UserController extends AbstractController {
         return new MsgObjectDTO("Email " + user.getEmail() + " was confirmed.", new Date(), profile);
     }
     @GetMapping(value = "/new_token")
-    public CommonMsgDTO sendNewToken(HttpSession session, HttpServletRequest request) throws IOException, MyException {
+    public CommonMsgDTO sendNewToken(HttpSession session, HttpServletRequest request)
+            throws IOException, MyException, EmailSender.EmailAlreadyConfirmedException {
         User user = this.getLoggedValidUserFromSession(session, request);
         if ((System.currentTimeMillis() - user.getLastNotified().getTime()) < TokenDao.NEW_TOKEN_INTERVAL) {
             throw new BadRequestException("Cannot send new token yet. Time between new token sending is " +
@@ -138,13 +135,39 @@ public class UserController extends AbstractController {
         }
         user.setLastNotified(new Date());
         this.setupSession(session, user, request);
-        this.sendVerificationTokenToUser(user, request);
+        this.sendVerificationTokenToUser(user);
         return new CommonMsgDTO("Confirmation email sent successfully to " + user.getEmail()  + ".", new Date());
     }
 
     /* ----- PROFILE ACTIONS ----- */
     // TODO add subscribe
     // TODO add restore password
+    @PostMapping(value = "/reset_password")
+    public CommonMsgDTO sendPasswordResetEmail(HttpSession session, HttpServletRequest request)
+                        throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
+        if (!user.isEmailConfirmed()) {
+            throw new UnauthorizedAccessException("Email not confirmed");
+        }
+        this.sendPasswordResetTokenToUser(user);
+        return new CommonMsgDTO("Password reset link sent to " + user.getEmail() + ".", new Date());
+    }
+    @PutMapping(value = "/reset_password")
+    public CommonMsgDTO activatePasswordReset(@RequestParam(value = "token") String token) {
+        VerificationToken verToken = tokenRepository.findByToken(token);
+        User user = userRepository.getByUserId(verToken.getUserId());
+        new Thread(()->{
+            try {
+                Thread.sleep(VerificationToken.PASSWORD_RESET_EXPIRATION * SEC_TO_MILLIS);
+            } catch (InterruptedException ex) {
+                System.out.println("Password reset eligibility reverter interrupted.");
+                logError(HttpStatus.INTERNAL_SERVER_ERROR, ex);
+            }
+            // TODO finish later
+        }).start();
+        // TODO finish later
+        return null;
+    }
     @PutMapping(value = "/profile/edit/password")
     public MsgObjectDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session,
                                        HttpServletRequest request)
@@ -164,7 +187,7 @@ public class UserController extends AbstractController {
     @PutMapping(value = "/profile/edit/email")
     public MsgObjectDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session,
                                       HttpServletRequest request)
-            throws IOException, MyException {
+            throws IOException, MyException, EmailSender.EmailAlreadyConfirmedException {
         emailChange.checkValid();
         User user = this.getLoggedValidUserFromSession(session, request);
         this.validateUserPasswordInput(emailChange.getPassword(), user.getPassword());
@@ -173,7 +196,7 @@ public class UserController extends AbstractController {
         user.setEmail(newEmail);
         user.setEmailConfirmed(false);
         this.setupSession(session, user, request);
-        this.sendVerificationTokenToUser(user, request);
+        this.sendVerificationTokenToUser(user);
         userDao.updateUser(user);
         ProfileInfoDTO profile = getProfileInfoDTO(user);
         return new MsgObjectDTO("Email changed successfully.", new Date(), profile);
@@ -274,10 +297,14 @@ public class UserController extends AbstractController {
         }
         return name;
     }
-    private void sendVerificationTokenToUser(User user, HttpServletRequest request) {
-        String appUrl = request.getContextPath();
-        VerificationToken token = tokenDao.getNewToken(user);
-        emailSender.sendEmailConfirmationToken(appUrl, token, user);
+    private void sendVerificationTokenToUser(User user) throws EmailSender.EmailAlreadyConfirmedException {
+        VerificationToken token = tokenDao.getNewToken(user, false);
+        emailSender.sendEmailConfirmationToken(user, token);
+    }
+    private void sendPasswordResetTokenToUser(User user)
+            throws UnauthorizedAccessException, InvalidRequestDataException {
+        VerificationToken token = tokenDao.getNewToken(user, true);
+        emailSender.sendPasswordResetLink(user, token);
     }
     private ProfileInfoDTO getProfileInfoDTO(User user) {
         return new ProfileInfoDTO(user.getUserId(), user.getUsername(),

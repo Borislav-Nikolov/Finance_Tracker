@@ -24,6 +24,7 @@ public class User {
     private String email;
     private boolean isEmailConfirmed;
     private boolean isSubscribed;
+    private boolean isEligibleForPasswordReset;
     private Date lastNotified;
     private Date lastLogin;
 

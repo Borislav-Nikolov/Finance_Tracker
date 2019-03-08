@@ -16,9 +16,9 @@ public class TokenDao {
     @Autowired
     private TokenRepository tokenRepository;
 
-    public VerificationToken getNewToken(User user) {
+    public VerificationToken getNewToken(User user, boolean isPasswordReset) {
         String token = UUID.randomUUID().toString();
-        VerificationToken verToken = new VerificationToken(token, user.getUserId());
+        VerificationToken verToken = new VerificationToken(token, user.getUserId(), isPasswordReset);
         tokenRepository.save(verToken);
         return verToken;
     }

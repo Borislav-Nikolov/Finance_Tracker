@@ -15,11 +15,6 @@ import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,7 +75,7 @@ public class PlannedTransactionController extends AbstractController {
                 addTransactionDTO.getAmount(),
                 LocalDateTime
                         .now()
-                        .plusSeconds(addTransactionDTO.getExecutionOffset() / SEC_TO_MILIS),
+                        .plusSeconds(addTransactionDTO.getExecutionOffset() / SEC_TO_MILLIS),
                 addTransactionDTO.getAccountId(),
                 u.getUserId(),
                 addTransactionDTO.getCategoryId(),
@@ -214,11 +209,11 @@ public class PlannedTransactionController extends AbstractController {
             pt.setNextExecutionDate(
                     pt.getNextExecutionDate()
                             .plusSeconds(
-                                    (transactionDTO.getRepeatPeriod() - pt.getRepeatPeriod()) / SEC_TO_MILIS));
+                                    (transactionDTO.getRepeatPeriod() - pt.getRepeatPeriod()) / SEC_TO_MILLIS));
         } else {
             pt.setNextExecutionDate(
                     pt.getNextExecutionDate()
-                            .minusSeconds((pt.getRepeatPeriod() - transactionDTO.getRepeatPeriod()) / SEC_TO_MILIS));
+                            .minusSeconds((pt.getRepeatPeriod() - transactionDTO.getRepeatPeriod()) / SEC_TO_MILLIS));
         }
         pt.setRepeatPeriod(transactionDTO.getRepeatPeriod());
         checkIfBelongsToLoggedUser(pt.getUserId(), u);
@@ -263,7 +258,7 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     private void reSchedule(PlannedTransaction pt) {
-        pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(pt.getRepeatPeriod() / SEC_TO_MILIS));
+        pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(pt.getRepeatPeriod() / SEC_TO_MILLIS));
         repo.save(pt);
     }
 
@@ -321,10 +316,10 @@ public class PlannedTransactionController extends AbstractController {
                         logInfo("Waiting..... "+plannedTransaction);
                         Thread.sleep(
                                 this.plannedTransaction.getNextExecutionDate()
-                                        .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
+                                        .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILLIS
                                         -
                                         LocalDateTime.now()
-                                                .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
+                                                .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILLIS);
                         logInfo("Executing... " + this.plannedTransaction);
                         synchronized (PlannedTransactionController.concurrentLock) {
                             PlannedTransactionController.this.execute(this.plannedTransaction);

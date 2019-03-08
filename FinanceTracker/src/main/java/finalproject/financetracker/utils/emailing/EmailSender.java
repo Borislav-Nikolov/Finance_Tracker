@@ -1,5 +1,7 @@
 package finalproject.financetracker.utils.emailing;
 
+import finalproject.financetracker.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.exceptions.UnauthorizedAccessException;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.pojos.Budget;
 import finalproject.financetracker.model.pojos.User;
@@ -46,21 +48,37 @@ public class EmailSender {
                 mailUtil.sendSimpleMessage(user.getEmail(), "noreply@traxter.com", subject, message)).start();
     }
 
-    public void sendEmailConfirmationToken(String appUrl, VerificationToken verToken, User user) {
+    public void sendEmailConfirmationToken(User user, VerificationToken verToken)
+            throws EmailAlreadyConfirmedException {
         if (user.isEmailConfirmed()) {
             throw new EmailAlreadyConfirmedException();
         }
         String recipientAddress = user.getEmail();
         String token = verToken.getToken();
         String subject = "Confirm Email";
-        String confirmationUrl = "http://localhost:8888" + appUrl + "/confirm?token=" + token;
+        String confirmationUrl = "http://localhost:8888/confirm?token=" + token;
         String message = "Please, click the following link to confirm your email:\n" + confirmationUrl;
+        new Thread(() -> mailUtil.sendSimpleMessage(recipientAddress, "noreply@traxter.com", subject, message))
+                .start();
+    }
+    public void sendPasswordResetLink(User user, VerificationToken verToken)
+            throws UnauthorizedAccessException, InvalidRequestDataException {
+        if (!user.isEmailConfirmed()) {
+            throw new UnauthorizedAccessException("Email is not confirmed.");
+        } else if (!verToken.isPasswordReset()) {
+            throw new InvalidRequestDataException(
+                    "Verification token at password reset is not marked as password resetting token.");
+        }
+        String recipientAddress = user.getEmail();
+        String token = verToken.getToken();
+        String subject = "Reset Password Link";
+        String message = "Please, user the following key to reset your password:\n" + token;
         new Thread(() -> mailUtil.sendSimpleMessage(recipientAddress, "noreply@traxter.com", subject, message))
                 .start();
     }
 
     @ResponseStatus(value = HttpStatus.BAD_REQUEST) // 400
-    public static class EmailAlreadyConfirmedException extends RuntimeException {
+    public static class EmailAlreadyConfirmedException extends Exception {
         private EmailAlreadyConfirmedException() {
             super("Email has already been confirmed.");
         }

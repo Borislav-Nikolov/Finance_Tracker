@@ -60,8 +60,8 @@ public class TransactionDao {
                 new Object[]
                     {
                         userId,
-                        startDateTimestamp/ AbstractController.SEC_TO_MILIS,
-                        endDateTimestamp/AbstractController.SEC_TO_MILIS
+                        startDateTimestamp/ AbstractController.SEC_TO_MILLIS,
+                        endDateTimestamp/AbstractController.SEC_TO_MILLIS
                     },
                 new BeanPropertyRowMapper<>(ReturnTransactionDTO.class));
     }

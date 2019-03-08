@@ -31,7 +31,7 @@ import java.util.Optional;
 @NoArgsConstructor
 @RestController
 public abstract class AbstractController {
-    public static final int SEC_TO_MILIS = 1000;
+    public static final int SEC_TO_MILLIS = 1000;
     static final String SESSION_USERNAME_KEY = "Username";
     static final String SESSION_USER_KEY = "User";
     static final String SESSION_IP_ADDR_KEY = "IpAddr";
