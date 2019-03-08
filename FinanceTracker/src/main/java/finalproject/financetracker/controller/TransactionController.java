@@ -33,10 +33,9 @@ import java.util.stream.Collectors;
 
 @RequestMapping(value = "/profile")
 @Controller
-//@Transactional(rollbackFor = Exception.class)
 @ResponseBody
 public class TransactionController extends AbstractController {
-    static final ReentrantLock concurrentLock = new ReentrantLock();
+
 
     @Autowired
     private TransactionRepo repo;

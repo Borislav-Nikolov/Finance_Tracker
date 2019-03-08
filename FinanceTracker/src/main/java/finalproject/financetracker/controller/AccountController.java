@@ -4,7 +4,8 @@ package finalproject.financetracker.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import finalproject.financetracker.exceptions.*;
+import finalproject.financetracker.exceptions.ForbiddenRequestException;
+import finalproject.financetracker.exceptions.MyException;
 import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.daos.PlannedTransactionDao;
 import finalproject.financetracker.model.dtos.account.AddAccountDTO;
@@ -12,13 +13,11 @@ import finalproject.financetracker.model.dtos.account.EditAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnUserBalanceDTO;
 import finalproject.financetracker.model.pojos.Account;
-import finalproject.financetracker.model.pojos.PlannedTransaction;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.repositories.AccountRepo;
 import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,8 +28,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -107,7 +104,7 @@ public class AccountController extends AbstractController {
             throws
             SQLException,
             IOException,
-            MyException{
+            MyException {
 
         long idL = parseLong(accId);
         return getAccByIdLong(idL, sess, request);
@@ -219,7 +216,7 @@ public class AccountController extends AbstractController {
             throws
             SQLException,
             MyException,
-            IOException{
+            IOException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         return new ReturnUserBalanceDTO(u).withBalance(dao.getUserBalanceByUserId(u.getUserId()));
@@ -229,45 +226,10 @@ public class AccountController extends AbstractController {
 
     //-----------------------< Account scheduled Task >----------------------//
     @PostConstruct
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0/45 0/59 23 * * *")
     //<second> <minute> <hour> <day-of-month> <month> <day-of-week> {optional}<year>
     void executePlannedTransactions() {
-        new Thread(
-                () -> {
-                    logInfo("Scheduled planned transactions check."); //todo start new Thread to free up the Scheduler
-                    List<PlannedTransaction> plannedTransactions = ptDao.getAllWhereExecDateBeofreNext24Hours();
-
-                    for (PlannedTransaction pt : plannedTransactions) {
-                        new Thread(
-                                () -> {
-                                    while (pt.getNextExecutionDate().isBefore(LocalDateTime.now())) {
-                                        try {
-                                            synchronized (TransactionController.concurrentLock) {
-                                                plannedTransactionController.execute(pt);
-                                            }
-                                        } catch (Exception e) {
-                                            logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
-                                        }
-                                    }
-                                    try {
-                                        if (pt.getNextExecutionDate().isBefore(LocalDateTime.now().plusDays(1))) {
-                                            Thread.sleep(
-                                                    pt.getNextExecutionDate()
-                                                            .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
-                                                            -
-                                                          LocalDateTime.now()
-                                                            .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
-                                            logInfo("Scheduler executing planned transaction " + pt.getPtName());
-                                            plannedTransactionController.execute(pt);
-                                            logInfo(pt.getPtName() + " executed.");
-                                        }
-                                    } catch (Exception e) {
-                                        logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
-                                    }
-                                }
-                        ).start();
-                    }
-                }).start();
+        plannedTransactionController.startScheduledCheck();
     }
 
     //-----------------------< /Scheduled Task >----------------------//

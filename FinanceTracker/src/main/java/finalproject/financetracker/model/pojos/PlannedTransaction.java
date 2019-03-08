@@ -1,15 +1,13 @@
 package finalproject.financetracker.model.pojos;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "planned_transactions")
@@ -37,7 +35,7 @@ public class PlannedTransaction{
     @Column
     private long categoryId;
 
-    @Column()
+    @Column
     private long repeatPeriod;
 
     public PlannedTransaction(String ptName, double ptAmount, LocalDateTime nextExecutionDate, long accountId, long userId, long categoryId, long repeatPeriod) {

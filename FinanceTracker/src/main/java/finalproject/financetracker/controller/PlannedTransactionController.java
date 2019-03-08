@@ -1,9 +1,8 @@
 package finalproject.financetracker.controller;
 
-import finalproject.financetracker.exceptions.*;
-import finalproject.financetracker.exceptions.runntime.ServerErrorException;
+import finalproject.financetracker.exceptions.ForbiddenRequestException;
+import finalproject.financetracker.exceptions.MyException;
 import finalproject.financetracker.model.daos.AbstractDao;
-import finalproject.financetracker.model.daos.AccountDao;
 import finalproject.financetracker.model.daos.PlannedTransactionDao;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.plannedTransaction.AddPlannedTransactionDTO;
@@ -13,10 +12,14 @@ import finalproject.financetracker.model.pojos.Category;
 import finalproject.financetracker.model.pojos.PlannedTransaction;
 import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.pojos.User;
-import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +30,15 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 @RequestMapping(value = "/profile")
 @Controller
 public class PlannedTransactionController extends AbstractController {
-
+    static final ReentrantLock concurrentLock = new ReentrantLock();
     @Autowired
     private PlannedTransactionRepo repo;
     @Autowired
@@ -43,11 +46,7 @@ public class PlannedTransactionController extends AbstractController {
     @Autowired
     private AccountController accountController;
     @Autowired
-    private AccountDao accountDao;
-    @Autowired
     private CategoryController categoryController;
-    @Autowired
-    private CategoryRepository categoryRepository;
     @Autowired
     private TransactionController transactionController;
     @Autowired
@@ -134,7 +133,7 @@ public class PlannedTransactionController extends AbstractController {
             throws
             IOException,
             SQLException,
-            MyException{
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         Long accIdL = null;
@@ -248,7 +247,7 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void execute(PlannedTransaction pt) throws SQLException{
+    public void execute(PlannedTransaction pt) throws SQLException {
         Transaction t = new Transaction(
                 pt.getPtName()
                         .concat(LocalDateTime.now()
@@ -258,13 +257,86 @@ public class PlannedTransactionController extends AbstractController {
                 pt.getAccountId(),
                 pt.getUserId(),
                 pt.getCategoryId());
-            transactionController.calculateBudgetAndAccountAmount(t);
-            this.transactionRepo.save(t);
-            reSchedule(pt);
+        transactionController.calculateBudgetAndAccountAmount(t);
+        this.transactionRepo.save(t);
+        reSchedule(pt);
     }
 
     private void reSchedule(PlannedTransaction pt) {
         pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(pt.getRepeatPeriod() / SEC_TO_MILIS));
         repo.save(pt);
     }
+
+    void startScheduledCheck() {
+        new PlannedTransactionScheduler().start();
+    }
+
+
+    private class PlannedTransactionScheduler extends Thread {
+
+        private final int delay = 30000;
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+            } finally {
+                logInfo("PlannedTransactionScheduler is performing check...");
+                List<PlannedTransaction> transactions = PlannedTransactionController.this.dao.getAllWhereExecDateBeofreNext24Hours();
+                logInfo("Found " + transactions.size() + " overdue planned transactions.");
+
+                for (PlannedTransaction pt : transactions) {
+                    new PlannedTransactionExecutor(pt).start();
+                }
+            }
+        }
+
+        private class PlannedTransactionExecutor extends Thread {
+            private PlannedTransaction plannedTransaction;
+
+            PlannedTransactionExecutor(PlannedTransaction pt) {
+                this.plannedTransaction = pt;
+            }
+
+            @Override
+            public void run() {
+                logInfo("New PlannedTransactionExecutor started for "
+                        + this.plannedTransaction);
+
+                while (this.plannedTransaction.getNextExecutionDate().isBefore(LocalDateTime.now())) {
+                    try {
+                        synchronized (PlannedTransactionController.concurrentLock) {
+                            PlannedTransactionController.this.execute(this.plannedTransaction);
+                        }
+                    } catch (Exception e) {
+                        logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    }
+                }
+                logInfo("Updated..... "+this.plannedTransaction);
+                logInfo("Checking for execution in next 24 hours.");
+                try {
+                    if (this.plannedTransaction.getNextExecutionDate().isBefore(LocalDateTime.now().plusDays(1))) {
+                        logInfo("Waiting..... "+plannedTransaction);
+                        Thread.sleep(
+                                this.plannedTransaction.getNextExecutionDate()
+                                        .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
+                                        -
+                                        LocalDateTime.now()
+                                                .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
+                        logInfo("Executing... " + this.plannedTransaction);
+                        synchronized (PlannedTransactionController.concurrentLock) {
+                            PlannedTransactionController.this.execute(this.plannedTransaction);
+                        }
+                        logInfo("Executed.... "+this.plannedTransaction);
+                    }
+                } catch (Exception e) {
+                    logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                }
+            }
+        }
+    }
 }
+
+
