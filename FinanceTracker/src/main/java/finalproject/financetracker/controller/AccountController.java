@@ -13,7 +13,6 @@ import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.account.ReturnUserBalanceDTO;
 import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.pojos.PlannedTransaction;
-import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.repositories.AccountRepo;
 import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
@@ -46,8 +45,6 @@ public class AccountController extends AbstractController {
     private AccountRepo accountRepo;
     @Autowired
     private TransactionRepo tRepo;
-    @Autowired
-    private TransactionController transactionController;
     @Autowired
     private PlannedTransactionRepo ptRepo;
     @Autowired
@@ -84,11 +81,8 @@ public class AccountController extends AbstractController {
                                    HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
-            InvalidRequestDataException,
-            ForbiddenRequestException,
-            NotLoggedInException,
             IOException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         a.checkValid();
@@ -113,11 +107,7 @@ public class AccountController extends AbstractController {
             throws
             SQLException,
             IOException,
-            NotLoggedInException,
-            NotFoundException,
-            InvalidRequestDataException,
-            ForbiddenRequestException,
-            UnauthorizedAccessException {
+            MyException{
 
         long idL = parseLong(accId);
         return getAccByIdLong(idL, sess, request);
@@ -128,10 +118,7 @@ public class AccountController extends AbstractController {
             throws
             SQLException,
             IOException,
-            NotLoggedInException,
-            NotFoundException,
-            ForbiddenRequestException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         Account account = dao.getById(accId);
@@ -151,11 +138,7 @@ public class AccountController extends AbstractController {
             throws
             SQLException,
             IOException,
-            NotLoggedInException,
-            NotFoundException,
-            InvalidRequestDataException,
-            ForbiddenRequestException,
-            UnauthorizedAccessException {
+            MyException {
 
         ReturnAccountDTO a = getAccById(accId, sess, request);
         ptRepo.deleteAllByAccountId(a.getAccountId());
@@ -171,13 +154,9 @@ public class AccountController extends AbstractController {
     public ReturnAccountDTO editAccount(@RequestBody EditAccountDTO a,
                                         HttpSession sess, HttpServletRequest request)
             throws
-            InvalidRequestDataException,
-            NotLoggedInException,
             IOException,
             SQLException,
-            ForbiddenRequestException,
-            NotFoundException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         a.checkValid();
@@ -197,10 +176,9 @@ public class AccountController extends AbstractController {
     public List<ReturnAccountDTO> allAccOrdered(@RequestParam(value = "desc", required = false) Boolean order,
                                                 HttpSession sess, HttpServletRequest request)
             throws
-            NotLoggedInException,
             IOException,
             SQLException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         List<Account> result;
@@ -222,9 +200,8 @@ public class AccountController extends AbstractController {
     public JsonNode allAccCount(HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
-            NotLoggedInException,
             IOException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         ObjectMapper mapper = new ObjectMapper();
@@ -241,9 +218,8 @@ public class AccountController extends AbstractController {
     public ReturnUserBalanceDTO getBalance(HttpSession sess, HttpServletRequest request)
             throws
             SQLException,
-            NotLoggedInException,
-            IOException,
-            UnauthorizedAccessException {
+            MyException,
+            IOException{
 
         User u = getLoggedValidUserFromSession(sess, request);
         return new ReturnUserBalanceDTO(u).withBalance(dao.getUserBalanceByUserId(u.getUserId()));
@@ -256,47 +232,42 @@ public class AccountController extends AbstractController {
     @Scheduled(cron = "0 0 0 * * *")
     //<second> <minute> <hour> <day-of-month> <month> <day-of-week> {optional}<year>
     void executePlannedTransactions() {
-        logInfo("Scheduled planned transactions check.");
-        List<PlannedTransaction> plannedTransactions = ptDao.getAllWhereExecDateBeofreNext24Hours();
+        new Thread(
+                () -> {
+                    logInfo("Scheduled planned transactions check."); //todo start new Thread to free up the Scheduler
+                    List<PlannedTransaction> plannedTransactions = ptDao.getAllWhereExecDateBeofreNext24Hours();
 
-        for (PlannedTransaction pt : plannedTransactions) {
-            new Thread(
-                    () -> {
-                        logInfo("Scheduler started..." + pt.getPtName()
-                                + "|>userId{" + pt.getUserId() + "}"
-                                + "|>accId{" + pt.getAccountId() + "}");
-                            while (pt.getNextExecutionDate().isBefore(LocalDateTime.now())) {
-                                try {
-                                    PlannedTransaction temp;
-                                    synchronized (TransactionController.concurrentLock) {
-                                        temp = plannedTransactionController
-                                                .execute(pt);
+                    for (PlannedTransaction pt : plannedTransactions) {
+                        new Thread(
+                                () -> {
+                                    while (pt.getNextExecutionDate().isBefore(LocalDateTime.now())) {
+                                        try {
+                                            synchronized (TransactionController.concurrentLock) {
+                                                plannedTransactionController.execute(pt);
+                                            }
+                                        } catch (Exception e) {
+                                            logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                                        }
                                     }
-                                    pt.setNextExecutionDate(temp.getNextExecutionDate());
-                                    logInfo(pt.getPtName()
-                                            + "|>userId{" + pt.getUserId() + "}"
-                                            + "|>accId{" + pt.getAccountId() + "} executed."
-                                            + pt.getNextExecutionDate().toString());
-                                } catch (Exception e) {
-                                    logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                                    try {
+                                        if (pt.getNextExecutionDate().isBefore(LocalDateTime.now().plusDays(1))) {
+                                            Thread.sleep(
+                                                    pt.getNextExecutionDate()
+                                                            .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
+                                                            -
+                                                          LocalDateTime.now()
+                                                            .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
+                                            logInfo("Scheduler executing planned transaction " + pt.getPtName());
+                                            plannedTransactionController.execute(pt);
+                                            logInfo(pt.getPtName() + " executed.");
+                                        }
+                                    } catch (Exception e) {
+                                        logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                                    }
                                 }
-                            }
-                        try {
-                            if (pt.getNextExecutionDate().isBefore(LocalDateTime.now().plusDays(1))) {
-                                Thread.sleep(
-                                        pt.getNextExecutionDate().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS
-                                                -
-                                                LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILIS);
-                                logInfo("Scheduler executing planned transaction " + pt.getPtName());
-                                    plannedTransactionController.execute(pt);
-                                logInfo(pt.getPtName() + " executed.");
-                            }
-                        } catch (Exception e) {
-                            logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
-                        }
+                        ).start();
                     }
-            ).start();
-        }
+                }).start();
     }
 
     //-----------------------< /Scheduled Task >----------------------//

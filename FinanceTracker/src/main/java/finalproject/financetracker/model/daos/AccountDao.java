@@ -67,21 +67,6 @@ public class AccountDao extends AbstractDao {
         }
     }
 
-    public void updateAccAmount(double amount, long accId) throws SQLException {
-        PreparedStatement ps = null;
-        checkConnAndReInitIfBad();
-        try {
-            String sql = "UPDATE final_project.accounts SET amount = ? WHERE account_id = ?;";
-            ps = mySQLCon.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setDouble(1, amount);
-            ps.setLong(2, accId);
-            ps.executeUpdate();
-        }
-        finally {
-            closeStatement(ps);
-        }
-    }
-
     public int getAllCount(long userId) throws SQLException {
         PreparedStatement ps = null;
         ResultSet rs = null;

@@ -2,9 +2,8 @@ package finalproject.financetracker.model.daos;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -12,7 +11,7 @@ import java.sql.Statement;
 @Component
 public abstract class AbstractDao {
 
-    protected Logger logger = LogManager.getLogger(Logger.class);
+    Logger logger = LogManager.getLogger(Logger.class);
 
     public enum SQLCompareOperator {
 
@@ -38,7 +37,7 @@ public abstract class AbstractDao {
         PT_NAME,
         NEXT_EXECUTION_DATE, CATEGORY_NAME, PT_AMOUNT;
 
-        SQLColumnName(){
+        SQLColumnName() {
         }
     }
 
@@ -46,14 +45,14 @@ public abstract class AbstractDao {
         ASC, DESC
     }
 
-    public void closeStatement(Statement s) throws SQLException {
-        if (s!=null){
+    void closeStatement(Statement s) throws SQLException {
+        if (s != null) {
             s.close();
         }
     }
 
-    protected void closeResultSet(ResultSet rs) throws SQLException{
-        if (rs!= null){
+    void closeResultSet(ResultSet rs) throws SQLException {
+        if (rs != null) {
             rs.close();
         }
     }

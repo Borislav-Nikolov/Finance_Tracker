@@ -59,13 +59,10 @@ public class PlannedTransactionController extends AbstractController {
     @ResponseBody
     public ReturnPlannedTransactionDTO addPlannedTransaction(@RequestBody AddPlannedTransactionDTO addTransactionDTO,
                                                              HttpSession sess, HttpServletRequest request)
-            throws InvalidRequestDataException,
-            NotLoggedInException,
+            throws
             IOException,
-            ForbiddenRequestException,
-            NotFoundException,
             SQLException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         addTransactionDTO.checkValid();
@@ -109,13 +106,9 @@ public class PlannedTransactionController extends AbstractController {
     public ReturnPlannedTransactionDTO getPlannedTransactionById(@PathVariable(value = "id") String id,
                                                                  HttpSession sess, HttpServletRequest request)
             throws
-            InvalidRequestDataException,
-            NotLoggedInException,
             IOException,
-            ForbiddenRequestException,
-            NotFoundException,
             SQLException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         PlannedTransaction pt = validateDataAndGetByIdFromRepo(id, repo, PlannedTransaction.class);
@@ -139,16 +132,15 @@ public class PlannedTransactionController extends AbstractController {
             @RequestParam(value = "income", required = false) String income,
             HttpSession sess, HttpServletRequest request)
             throws
-            NotLoggedInException,
             IOException,
-            InvalidRequestDataException,
-            UnauthorizedAccessException, ForbiddenRequestException, SQLException, NotFoundException {
+            SQLException,
+            MyException{
 
         User u = getLoggedValidUserFromSession(sess, request);
         Long accIdL = null;
         if (accId != null) {
             accIdL = parseLong(accId);
-            ReturnAccountDTO a = accountController.getAccByIdLong(accIdL, sess, request);
+            accountController.getAccByIdLong(accIdL, sess, request);
         }
         Category c = null;
         Long catIdL = null;
@@ -207,13 +199,9 @@ public class PlannedTransactionController extends AbstractController {
             HttpServletRequest request)
 
             throws
-            InvalidRequestDataException,
-            NotLoggedInException,
             IOException,
-            ForbiddenRequestException,
-            NotFoundException,
             SQLException,
-            UnauthorizedAccessException {
+            MyException {
 
         transactionDTO.checkValid();
         User u = getLoggedValidUserFromSession(sess, request);
@@ -250,13 +238,9 @@ public class PlannedTransactionController extends AbstractController {
     public ReturnPlannedTransactionDTO deletePlannedTransaction(@PathVariable(value = "id") String deleteId,
                                                                 HttpSession sess, HttpServletRequest request)
             throws
-            NotLoggedInException,
             IOException,
-            InvalidRequestDataException,
-            ForbiddenRequestException,
             SQLException,
-            NotFoundException,
-            UnauthorizedAccessException {
+            MyException {
 
         ReturnPlannedTransactionDTO t = getPlannedTransactionById(deleteId, sess, request);
         repo.deleteByPtId(t.getTransactionId());
@@ -264,7 +248,7 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public PlannedTransaction execute(PlannedTransaction pt) throws SQLException, NotFoundException {
+    public void execute(PlannedTransaction pt) throws SQLException{
         Transaction t = new Transaction(
                 pt.getPtName()
                         .concat(LocalDateTime.now()
@@ -274,30 +258,13 @@ public class PlannedTransactionController extends AbstractController {
                 pt.getAccountId(),
                 pt.getUserId(),
                 pt.getCategoryId());
-        PlannedTransaction returnPlannedTransaction;
-            t = transactionController.calculateBudgetAndAccountAmount(t);
+            transactionController.calculateBudgetAndAccountAmount(t);
             this.transactionRepo.save(t);
-            returnPlannedTransaction = reSchedule(pt.getPtId());
-        return returnPlannedTransaction;
+            reSchedule(pt);
     }
 
-    private PlannedTransaction reSchedule(long ptId) throws NotFoundException {
-        PlannedTransaction pt = validateDataAndGetByIdFromRepo(ptId, repo, PlannedTransaction.class);
+    private void reSchedule(PlannedTransaction pt) {
         pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(pt.getRepeatPeriod() / SEC_TO_MILIS));
-        return repo.save(pt);
-    }
-
-    List<ReturnPlannedTransactionDTO> listEntitiesToListDTOs(List<PlannedTransaction> list, User u) {
-        return list.stream().map((PlannedTransaction t) -> {
-            try {
-                return new ReturnPlannedTransactionDTO(t)
-                        .withUser(u)
-                        .withCategory(categoryRepository.findByCategoryId(t.getCategoryId()))
-                        .withAccount(accountDao.getById(t.getAccountId()));
-            } catch (SQLException e) {
-                logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
-                throw new ServerErrorException();
-            }
-        }).collect(Collectors.toList());
+        repo.save(pt);
     }
 }

@@ -60,13 +60,10 @@ public class TransactionController extends AbstractController {
     @Transactional(rollbackFor = Exception.class)
     public ReturnTransactionDTO addTransaction(@RequestBody AddTransactionDTO addTransactionDTO,
                                                HttpSession sess, HttpServletRequest request)
-            throws InvalidRequestDataException,
-            NotLoggedInException,
+            throws
             IOException,
-            ForbiddenRequestException,
-            NotFoundException,
             SQLException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         addTransactionDTO.checkValid();
@@ -87,8 +84,8 @@ public class TransactionController extends AbstractController {
                 addTransactionDTO.getAccountId(),
                 u.getUserId(),
                 addTransactionDTO.getCategoryId());
-        t = this.calculateBudgetAndAccountAmount(t);
-        t = repo.save(t);
+        this.calculateBudgetAndAccountAmount(t);
+        repo.save(t);
         return new ReturnTransactionDTO(t)
                 .withUser(u)
                 .withCategory(c)
@@ -100,13 +97,9 @@ public class TransactionController extends AbstractController {
     public ReturnTransactionDTO getTransactionById(@PathVariable(value = "transactionId") String transactionId,
                                                    HttpSession sess, HttpServletRequest request)
             throws
-            InvalidRequestDataException,
-            NotLoggedInException,
             IOException,
-            ForbiddenRequestException,
-            NotFoundException,
             SQLException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         Transaction t = validateDataAndGetByIdFromRepo(transactionId, repo, Transaction.class);
@@ -129,7 +122,12 @@ public class TransactionController extends AbstractController {
                                                   @RequestParam(value = "income", required = false) String income,
                                                   @RequestParam(value = "order", required = false) String order,
                                                   @RequestParam(value = "desc", required = false) String desc,
-                                                  HttpSession session, HttpServletRequest request) throws NotLoggedInException, UnauthorizedAccessException, IOException, InvalidRequestDataException, ForbiddenRequestException, SQLException, NotFoundException {
+                                                  HttpSession session, HttpServletRequest request)
+            throws
+            IOException,
+            SQLException,
+            MyException {
+
         User u = getLoggedValidUserFromSession(session, request);
         Long accIdLong = null;
         if (accId != null) {
@@ -191,13 +189,9 @@ public class TransactionController extends AbstractController {
     public ReturnTransactionDTO updateTransaction(@RequestBody UpdateTransactionDTO transactionDTO,
                                                   HttpSession sess, HttpServletRequest request)
             throws
-            InvalidRequestDataException,
-            NotLoggedInException,
             IOException,
-            ForbiddenRequestException,
-            NotFoundException,
             SQLException,
-            UnauthorizedAccessException {
+            MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
         transactionDTO.checkValid();
@@ -206,8 +200,7 @@ public class TransactionController extends AbstractController {
         checkIfBelongsToLoggedUser(t.getUserId(), u);
         ReturnAccountDTO a = accountController.getAccByIdLong(t.getAccountId(), sess, request);
         Category c = categoryController.getCategoryById(t.getCategoryId(), sess, request);
-
-        t = repo.saveAndFlush(t);
+        repo.saveAndFlush(t);
         return new ReturnTransactionDTO(t)
                 .withUser(u)
                 .withAccount(a)
@@ -219,13 +212,9 @@ public class TransactionController extends AbstractController {
     public ReturnTransactionDTO deleteTransaction(@PathVariable(value = "id") String deleteId,
                                                   HttpSession sess, HttpServletRequest request)
             throws
-            NotLoggedInException,
             IOException,
-            InvalidRequestDataException,
-            ForbiddenRequestException,
             SQLException,
-            NotFoundException,
-            UnauthorizedAccessException {
+            MyException {
 
         ReturnTransactionDTO t = getTransactionById(deleteId, sess, request);
         repo.deleteByTransactionId(t.getTransactionId());
@@ -233,7 +222,7 @@ public class TransactionController extends AbstractController {
     }
 
     //    @Transactional(rollbackFor = Exception.class)
-    Transaction calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
+    void calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
         double transactionAmount = 0;
         Account a = accountDao.getById(t.getAccountId());
         Category c = categoryRepository.findByCategoryId(t.getCategoryId());
@@ -247,8 +236,7 @@ public class TransactionController extends AbstractController {
             t.setAmount(Math.abs(transactionAmount));
         }
         a.setAmount(a.getAmount() + transactionAmount);
-            accountRepo.save(a);
-        return t;
+        accountRepo.save(a);
     }
 
     List<ReturnTransactionDTO> listEntitiesToListDTOs(List<Transaction> list, User u) {
