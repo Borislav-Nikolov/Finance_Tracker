@@ -147,7 +147,7 @@ public class CategoryController extends AbstractController {
             }
         }
     }
-    private void validateCategoryAndUserOwnership(User user, Category category) throws NotFoundException {
+    void validateCategoryAndUserOwnership(User user, Category category) throws NotFoundException {
         if (category == null || (category.getUserId() != null && user.getUserId() != category.getUserId())) {
             throw new NotFoundException("Category not found.");
         }

@@ -143,7 +143,8 @@ public class UserController extends AbstractController {
     }
 
     /* ----- PROFILE ACTIONS ----- */
-
+    // TODO add subscribe
+    // TODO add restore password
     @PutMapping(value = "/profile/edit/password")
     public MsgObjectDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session,
                                        HttpServletRequest request)

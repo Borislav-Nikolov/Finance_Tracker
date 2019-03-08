@@ -4,6 +4,7 @@ import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.dtos.MsgObjectDTO;
+import finalproject.financetracker.model.pojos.Category;
 import finalproject.financetracker.model.pojos.Transaction;
 import finalproject.financetracker.model.repositories.BudgetRepository;
 import finalproject.financetracker.model.repositories.TransactionRepo;
@@ -85,6 +86,8 @@ public class BudgetController extends AbstractController {
         LocalDate endDate = timeUtil.checkParseLocalDate(budgetCreationDTO.getEndDate());
         long userId = user.getUserId();
         long categoryId = budgetCreationDTO.getCategoryId();
+        Category category = categoryController.getCategoryById(categoryId, session, request);
+        categoryController.validateCategoryAndUserOwnership(user, category);
         Budget budget = new Budget(budgetName, amount, startingDate, endDate, userId, categoryId);
         this.validateDates(budget);
         budgetRepository.save(budget);
@@ -162,12 +165,12 @@ public class BudgetController extends AbstractController {
     /* ----- VALIDATIONS ----- */
 
     private void validateDates(Budget budget) throws InvalidRequestDataException, SQLException {
-        if (!budget.getStartingDate().isBefore(budget.getEndDate())) {
+        if (!budget.getStartingDate().isBefore(budget.getEndDate()) || budget.getStartingDate().isBefore(LocalDate.now())) {
             throw new InvalidRequestDataException("Incorrect date input.");
         }
-        if (budget.getStartingDate().isBefore(LocalDate.now())) {
-            this.recalculateBudget(budget);
-        }
+//        if () {
+//            this.recalculateBudget(budget);
+//        }
     }
     // TODO will produce untrue results if repeated
     private void recalculateBudget(Budget budget) throws SQLException {

@@ -1,5 +1,6 @@
 package finalproject.financetracker.model.daos;
 
+import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.model.pojos.Image;
 import finalproject.financetracker.model.repositories.ImageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +12,10 @@ import java.io.File;
 @Component
 public class ImageDao {
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-    @Autowired
     private ImageRepository imageRepository;
-
+    // TODO maybe use cloud storage
     private static String ICONS_RELATIVE_PATH = "src/main/resources/static/img/category_icons";
+
     public  Image getImageById(long id) {
         return imageRepository.findByImageId(id);
     }
@@ -30,8 +30,11 @@ public class ImageDao {
         imageRepository.save(image);
     }
 
-    public void addAllIcons() {
+    public void addAllIcons() throws NotFoundException {
         File dir = new File(ICONS_RELATIVE_PATH);
+        if (!dir.exists()) {
+            throw new NotFoundException("Images not found");
+        }
         for (File file : dir.listFiles()) {
             addImage(file.getName());
         }

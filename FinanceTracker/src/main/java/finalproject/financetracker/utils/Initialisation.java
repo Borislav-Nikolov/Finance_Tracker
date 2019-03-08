@@ -1,9 +1,12 @@
 package finalproject.financetracker.utils;
 
+import finalproject.financetracker.controller.AbstractController;
+import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.utils.emailing.EmailSender;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import finalproject.financetracker.model.daos.CategoryDao;
@@ -36,7 +39,12 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
         try {
             createSchemaIfNotExists();
             if (imageDao.getImageById(1) == null) {
-                imageDao.addAllIcons();
+                try {
+                    imageDao.addAllIcons();
+                } catch (NotFoundException ex) {
+                    // TODO handle better
+                    System.out.println("Images not found.");
+                }
             }
             if (categoryDao.getCategoryById(1) == null) {
                 categoryDao.addAllPredefinedCategories();
