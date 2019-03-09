@@ -126,7 +126,7 @@ public class TransactionController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(session, request);
         Integer limitInt = null;
-        if (limit != null) {
+        if (limit != null && !limit.isEmpty()) {
             limitInt = parseInt(limit);
             if (limitInt <=0) limitInt = null;
         }
@@ -135,7 +135,7 @@ public class TransactionController extends AbstractController {
         }
 
         Integer offsetInt = null;
-        if (offset != null) {
+        if (offset != null && !offset.isEmpty()) {
             offsetInt = parseInt(offset);
             if (offsetInt <=0) offsetInt = null;
         }
@@ -144,13 +144,13 @@ public class TransactionController extends AbstractController {
         }
 
         Long accIdLong = null;
-        if (accId != null) {
+        if (accId != null && !accId.isEmpty()) {
             accIdLong = parseLong(accId);
             ReturnAccountDTO a = accountController.getAccByIdLong(accIdLong, session, request);
         }
         Category c = null;
         Long catIdLong = null;
-        if (catId != null) {
+        if (catId != null && !catId.isEmpty()) {
             catIdLong = parseLong(catId);
             c = categoryController.getCategoryById(catIdLong, session, request);
         }
@@ -158,7 +158,7 @@ public class TransactionController extends AbstractController {
         Long endDateMillis = (endDate != null) ? parseLong(endDate) : System.currentTimeMillis();
 
         Boolean isIncome = null;
-        if (income != null) {
+        if (income != null && !income.isEmpty()) {
             if (income.equalsIgnoreCase("true")) isIncome = true;
             if (income.equalsIgnoreCase("false")) isIncome = false;
             if (c != null) {

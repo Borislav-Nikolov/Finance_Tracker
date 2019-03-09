@@ -226,7 +226,7 @@ public class AccountController extends AbstractController {
 
     //-----------------------< Account scheduled Task >----------------------//
     @PostConstruct
-    @Scheduled(cron = "0/45 0/59 23 * * *")
+    @Scheduled(cron = "0 0 0 * * *")
     //<second> <minute> <hour> <day-of-month> <month> <day-of-week> {optional}<year>
     void executePlannedTransactions() {
         plannedTransactionController.startScheduledCheck();

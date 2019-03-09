@@ -11,7 +11,7 @@ import java.sql.Statement;
 @Component
 public abstract class AbstractDao {
     public static final int QUERY_RETURN_MAX_LIMIT = 1000;
-    public static final int QUERY_RETURN_LIMIT_DEFAULT = 20;
+    public static final int QUERY_RETURN_LIMIT_DEFAULT = 100;
     public static final int QUERY_RETURN_OFFSET_DEFAULT = 0;
     Logger logger = LogManager.getLogger(Logger.class);
 

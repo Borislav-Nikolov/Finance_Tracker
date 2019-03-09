@@ -1,26 +1,46 @@
 package finalproject.financetracker.utils.pdfWriter;
 
 import com.itextpdf.text.*;
+import com.itextpdf.text.Font;
 import com.itextpdf.text.pdf.PdfWriter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
+import finalproject.financetracker.model.dtos.plannedTransaction.ReturnPlannedTransactionDTO;
+import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
+import finalproject.financetracker.model.pojos.Account;
+import finalproject.financetracker.model.pojos.PlannedTransaction;
+import finalproject.financetracker.model.pojos.Transaction;
+import finalproject.financetracker.model.pojos.User;
+import lombok.AllArgsConstructor;
 
-import javax.annotation.PostConstruct;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 
-@Component
+
+import java.io.ByteArrayOutputStream;
+
+import java.util.List;
+
+@AllArgsConstructor
 public class MyPdfWriter {
 
-    @PostConstruct
-    public void create() throws FileNotFoundException, DocumentException {
-        Document document = new Document();
-        PdfWriter.getInstance(document, new FileOutputStream("iTextHelloWorld.pdf"));
-        document.open();
-        Font font = FontFactory.getFont(FontFactory.COURIER, 16, BaseColor.BLACK);
-        Chunk chunk = new Chunk("Hello World", font);
+    private User user;
+    private List<ReturnAccountDTO> accounts;
+    private List<ReturnTransactionDTO> transactions;
+    private List<ReturnPlannedTransactionDTO> plannedTransactions;
 
-        document.add(chunk);
+    public byte[] create() throws DocumentException {
+        ByteArrayOutputStream cachedContent = new ByteArrayOutputStream();
+        Document document = new Document();
+        PdfWriter.getInstance(document, cachedContent);
+        document.open();
+        document.add(new Paragraph("Username: " + user.getUsername() +
+                "\nFirst name: " +  user.getFirstName() +
+                "\nLast name: " + user.getLastName() +
+                "\nEmail: " + user.getEmail()));
+        StringBuilder accountsText = new StringBuilder();
+        for (ReturnTransactionDTO transactionDTO: transactions){
+
+        }
+
         document.close();
+        return cachedContent.toByteArray();
     }
 }

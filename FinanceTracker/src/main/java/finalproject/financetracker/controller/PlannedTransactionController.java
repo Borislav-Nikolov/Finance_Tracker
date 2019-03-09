@@ -132,18 +132,18 @@ public class PlannedTransactionController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess, request);
         Long accIdL = null;
-        if (accId != null) {
+        if (accId != null && !accId.isEmpty()) {
             accIdL = parseLong(accId);
             accountController.getAccByIdLong(accIdL, sess, request);
         }
         Category c = null;
         Long catIdL = null;
-        if (catId != null) {
+        if (catId != null && !catId.isEmpty()) {
             catIdL = parseLong(catId);
             c = categoryController.getCategoryById(catIdL, sess, request);
         }
         Boolean isIncome = null;
-        if (income != null) {
+        if (income != null && !income.isEmpty()) {
             if (income.equalsIgnoreCase("true")) isIncome = true;
             if (income.equalsIgnoreCase("false")) isIncome = false;
             if (c != null) {
