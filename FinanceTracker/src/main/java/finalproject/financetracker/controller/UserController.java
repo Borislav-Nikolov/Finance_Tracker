@@ -15,7 +15,6 @@ import finalproject.financetracker.utils.emailing.EmailSender;
 import finalproject.financetracker.utils.passCrypt.PassCrypter;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -83,7 +82,6 @@ public class UserController extends AbstractController {
         ProfileInfoDTO profile = this.getProfileInfoDTO(user);
         return new MsgObjectDTO("User registered. Verification email successfully sent.", new Date(), profile);
     }
-
     @PostMapping(value = "/login")
     public MsgObjectDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session, HttpServletRequest request)
             throws MyException, JsonProcessingException {
@@ -103,7 +101,6 @@ public class UserController extends AbstractController {
             throw new AlreadyLoggedInException();
         }
     }
-
     @PutMapping(value = "/logout")
     public MsgObjectDTO logoutUser(HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
@@ -112,7 +109,12 @@ public class UserController extends AbstractController {
         ProfileInfoDTO profile = this.getProfileInfoDTO(user);
         return new MsgObjectDTO("Logout successful.", new Date(), profile);
     }
-
+    @GetMapping(value = "/profile")
+    public ProfileInfoDTO getLoggedUserProfile(HttpSession session, HttpServletRequest request)
+                                throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
+        return getProfileInfoDTO(user);
+    }
     @PutMapping(value = "/confirm")
     public MsgObjectDTO confirmEmail(@RequestParam(value = "token") String token,
                                      HttpSession session,
@@ -150,11 +152,16 @@ public class UserController extends AbstractController {
         if (user.isSubscribed()) {
             throw new BadRequestException("User is already subscribed.");
         }
-        user.setSubscribed(true);
-        userRepository.save(user);
-        this.setupSession(session, user, request);
-        ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO(user.getEmail() + " successfully subscribed.", new Date(), profileInfoDTO);
+        return this.setUserSubscriptionAndGetMessage(user, session, request, true);
+    }
+    @PutMapping(value = "/profile/unsubscribe")
+    public MsgObjectDTO unsubscribeEmail(HttpSession session, HttpServletRequest request)
+            throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
+        if (!user.isSubscribed()) {
+            throw new BadRequestException("User is already unsubscribed.");
+        }
+        return this.setUserSubscriptionAndGetMessage(user, session, request,false);
     }
 
     @PostMapping(value = "/reset_password")
@@ -361,7 +368,6 @@ public class UserController extends AbstractController {
             throws JsonProcessingException {
         session.setAttribute(SESSION_USER_KEY, AbstractController.toJson(user));
         session.setAttribute(SESSION_USERNAME_KEY, user.getUsername());
-        System.out.println(">>"+request.getRemoteAddr());
         session.setAttribute(SESSION_IP_ADDR_KEY, request.getRemoteAddr());
         session.setMaxInactiveInterval(-1);
     }
@@ -389,5 +395,16 @@ public class UserController extends AbstractController {
         return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
                 user.getFirstName(), user.getLastName(), user.getEmail(),
                 user.isEmailConfirmed(), user.isSubscribed());
+    }
+    private MsgObjectDTO setUserSubscriptionAndGetMessage(User user, HttpSession session,
+                                                          HttpServletRequest request, boolean isSubscribing)
+                            throws JsonProcessingException {
+        String text = "subscribed";
+        if (!isSubscribing) text = "unsubscribed";
+        user.setSubscribed(isSubscribing);
+        userRepository.save(user);
+        this.setupSession(session, user, request);
+        ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
+        return new MsgObjectDTO(user.getEmail() + " successfully " + text + ".", new Date(), profileInfoDTO);
     }
 }
