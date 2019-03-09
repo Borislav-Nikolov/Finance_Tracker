@@ -174,7 +174,8 @@ public abstract class AbstractController {
     }
 
     void validateIpAddr(HttpSession session, HttpServletRequest request) throws UnauthorizedAccessException {
-        if (!session.getAttribute(SESSION_IP_ADDR_KEY).equals(request.getRemoteAddr())) {
+        if (!session.getAttribute(SESSION_IP_ADDR_KEY)
+                .equals(request.getRemoteAddr())) {
             session.invalidate();
             throw new UnauthorizedAccessException("Attempt to access from another IP.");
         }
@@ -191,8 +192,7 @@ public abstract class AbstractController {
             JsonProcessingException.class,
             JsonParseException.class,
             JsonEOFException.class,
-            HttpMessageNotReadableException.class,
-            EmailSender.EmailAlreadyConfirmedException.class})  //400
+            HttpMessageNotReadableException.class})  //400
     public ErrMsg MyExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.BAD_REQUEST.value());
         return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(),new Date());

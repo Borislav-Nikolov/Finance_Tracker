@@ -15,8 +15,8 @@ import java.util.Date;
 @Entity
 @Table(name = "verification_tokens")
 public class VerificationToken {
-    private static final int EMAIL_VERIFICATION_EXPIRATION = 60 * 24;
-    public static final int PASSWORD_RESET_EXPIRATION = 15;
+    private static final int EMAIL_VERIFICATION_EXPIRATION_MIN = 60 * 24; // 24 hours
+    public static final int PASSWORD_RESET_EXPIRATION_MIN = 15; // 15 minutes
 
     @Id
     private Long userId;
@@ -30,18 +30,18 @@ public class VerificationToken {
     public VerificationToken(String token, long userId, boolean isPasswordReset) {
         this.token = token;
         this.userId = userId;
-        if (!isPasswordReset) {
-            this.expiryDate = this.calculateEmailVerificationExpiryDate();
-        } else {
-            // TODO finish later (set different with new method)
-        }
+        this.expiryDate = this.calculateEmailVerificationExpiryDate(isPasswordReset);
         this.isPasswordReset = isPasswordReset;
     }
 
-    private Date calculateEmailVerificationExpiryDate() {
+    private Date calculateEmailVerificationExpiryDate(boolean isPasswordReset) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(new Timestamp(cal.getTime().getTime()));
-        cal.add(Calendar.MINUTE, EMAIL_VERIFICATION_EXPIRATION);
+        if (isPasswordReset) {
+            cal.add(Calendar.MINUTE, PASSWORD_RESET_EXPIRATION_MIN);
+        } else {
+            cal.add(Calendar.MINUTE, EMAIL_VERIFICATION_EXPIRATION_MIN);
+        }
         return new Date(cal.getTime().getTime());
     }
 }

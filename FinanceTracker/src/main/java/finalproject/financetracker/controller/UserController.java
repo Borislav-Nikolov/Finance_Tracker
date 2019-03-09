@@ -13,6 +13,7 @@ import finalproject.financetracker.model.dtos.userDTOs.*;
 import finalproject.financetracker.model.pojos.VerificationToken;
 import finalproject.financetracker.utils.emailing.EmailSender;
 import finalproject.financetracker.utils.passCrypt.PassCrypter;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -32,8 +33,6 @@ public class UserController extends AbstractController {
 
     @Autowired
     private UserDao userDao;
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
     @Autowired
     private TokenRepository tokenRepository;
     @Autowired
@@ -84,6 +83,7 @@ public class UserController extends AbstractController {
         ProfileInfoDTO profile = this.getProfileInfoDTO(user);
         return new MsgObjectDTO("User registered. Verification email successfully sent.", new Date(), profile);
     }
+
     @PostMapping(value = "/login")
     public MsgObjectDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session, HttpServletRequest request)
             throws MyException, JsonProcessingException {
@@ -103,7 +103,8 @@ public class UserController extends AbstractController {
             throw new AlreadyLoggedInException();
         }
     }
-    @GetMapping(value = "/logout")
+
+    @PutMapping(value = "/logout")
     public MsgObjectDTO logoutUser(HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
@@ -111,7 +112,8 @@ public class UserController extends AbstractController {
         ProfileInfoDTO profile = this.getProfileInfoDTO(user);
         return new MsgObjectDTO("Logout successful.", new Date(), profile);
     }
-    @GetMapping(value = "/confirm")
+
+    @PutMapping(value = "/confirm")
     public MsgObjectDTO confirmEmail(@RequestParam(value = "token") String token,
                                      HttpSession session,
                                      HttpServletRequest request)
@@ -125,9 +127,10 @@ public class UserController extends AbstractController {
         ProfileInfoDTO profile = getProfileInfoDTO(user);
         return new MsgObjectDTO("Email " + user.getEmail() + " was confirmed.", new Date(), profile);
     }
-    @GetMapping(value = "/new_token")
+
+    @PutMapping(value = "/new_token")
     public CommonMsgDTO sendNewToken(HttpSession session, HttpServletRequest request)
-            throws IOException, MyException, EmailSender.EmailAlreadyConfirmedException {
+            throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
         if ((System.currentTimeMillis() - user.getLastNotified().getTime()) < TokenDao.NEW_TOKEN_INTERVAL) {
             throw new BadRequestException("Cannot send new token yet. Time between new token sending is " +
@@ -136,38 +139,97 @@ public class UserController extends AbstractController {
         user.setLastNotified(new Date());
         this.setupSession(session, user, request);
         this.sendVerificationTokenToUser(user);
-        return new CommonMsgDTO("Confirmation email sent successfully to " + user.getEmail()  + ".", new Date());
+        return new CommonMsgDTO("Confirmation email sent successfully to " + user.getEmail() + ".", new Date());
     }
 
     /* ----- PROFILE ACTIONS ----- */
-    // TODO add subscribe
-    // TODO add restore password
-    @PostMapping(value = "/reset_password")
-    public CommonMsgDTO sendPasswordResetEmail(HttpSession session, HttpServletRequest request)
-                        throws IOException, MyException {
+    @PutMapping(value = "/profile/subscribe")
+    public MsgObjectDTO subscribeEmail(HttpSession session, HttpServletRequest request)
+            throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
+        if (user.isSubscribed()) {
+            throw new BadRequestException("User is already subscribed.");
+        }
+        user.setSubscribed(true);
+        userRepository.save(user);
+        this.setupSession(session, user, request);
+        ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
+        return new MsgObjectDTO(user.getEmail() + " successfully subscribed.", new Date(), profileInfoDTO);
+    }
+
+    @PostMapping(value = "/reset_password")
+    public CommonMsgDTO sendPasswordResetEmail(@RequestBody Map<String, String> email)
+            throws MyException {
+        User user = userRepository.findByEmail(email.get("email"));
+        if (user == null) {
+            throw new NotFoundException("Email not found.");
+        }
         if (!user.isEmailConfirmed()) {
-            throw new UnauthorizedAccessException("Email not confirmed");
+            throw new UnauthorizedAccessException("Email not confirmed.");
         }
         this.sendPasswordResetTokenToUser(user);
-        return new CommonMsgDTO("Password reset link sent to " + user.getEmail() + ".", new Date());
+        return new CommonMsgDTO("Password reset key sent to " + user.getEmail() + ".", new Date());
     }
+
     @PutMapping(value = "/reset_password")
-    public CommonMsgDTO activatePasswordReset(@RequestParam(value = "token") String token) {
-        VerificationToken verToken = tokenRepository.findByToken(token);
-        User user = userRepository.getByUserId(verToken.getUserId());
-        new Thread(()->{
-            try {
-                Thread.sleep(VerificationToken.PASSWORD_RESET_EXPIRATION * SEC_TO_MILLIS);
-            } catch (InterruptedException ex) {
-                System.out.println("Password reset eligibility reverter interrupted.");
-                logError(HttpStatus.INTERNAL_SERVER_ERROR, ex);
+    public CommonMsgDTO activatePasswordReset(@RequestParam(value = "token") String token, HttpSession session,
+                                              HttpServletRequest request)
+            throws MyException, JsonProcessingException {
+        @AllArgsConstructor
+        class ResetPassInvalidator extends Thread {
+            private User u;
+            private HttpSession sess;
+            private String ipAddr;
+
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(VerificationToken.PASSWORD_RESET_EXPIRATION_MIN * 1000 * 60);
+                } catch (InterruptedException ex) {
+                    System.out.println("Password reset eligibility reverter interrupted.");
+                    logError(HttpStatus.INTERNAL_SERVER_ERROR, ex);
+                }
+                u.setEligibleForPasswordReset(false);
+                userRepository.save(u);
+                try {
+                    sess.setAttribute(SESSION_USER_KEY, AbstractController.toJson(u));
+                    sess.setAttribute(SESSION_USERNAME_KEY, u.getUsername());
+                    sess.setAttribute(SESSION_IP_ADDR_KEY, ipAddr);
+                } catch (JsonProcessingException e) {
+                    logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    sess.invalidate();
+                }
             }
-            // TODO finish later
-        }).start();
-        // TODO finish later
-        return null;
+        }
+        VerificationToken verToken = tokenRepository.findByToken(token);
+        validateToken(verToken);
+        User user = userRepository.getByUserId(verToken.getUserId());
+        user.setEligibleForPasswordReset(true);
+        userRepository.save(user);
+        this.setupSession(session, user, request);
+        new ResetPassInvalidator(user, session, request.getRemoteAddr()).start();
+        return new CommonMsgDTO("User set for password reset.", new Date());
     }
+    @PutMapping(value = "/profile/edit/reset_password")
+    public MsgObjectDTO resetPassword(@RequestBody PasswordResetDTO passwordResetDTO, HttpSession session,
+                                      HttpServletRequest request)
+            throws IOException, MyException {
+        User user = this.getLoggedValidUserFromSession(session, request);
+        if (!user.isEligibleForPasswordReset()) {
+            session.invalidate();
+            throw new UnauthorizedAccessException("User is not eligible for password reset.");
+        }
+        String password = passwordResetDTO.getPassword().trim();
+        String password2 = passwordResetDTO.getPassword2().trim();
+        this.validateNewPassword(password, password2);
+        user.setPassword(passCrypter.crypt(password));
+        user.setEligibleForPasswordReset(false);
+        userRepository.save(user);
+        this.setupSession(session, user, request);
+        ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
+        return new MsgObjectDTO("Password changed successfully.", new Date(), profileInfoDTO);
+    }
+
     @PutMapping(value = "/profile/edit/password")
     public MsgObjectDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session,
                                        HttpServletRequest request)
@@ -184,10 +246,11 @@ public class UserController extends AbstractController {
         ProfileInfoDTO profile = getProfileInfoDTO(user);
         return new MsgObjectDTO("Password changed successfully.", new Date(), profile);
     }
+
     @PutMapping(value = "/profile/edit/email")
     public MsgObjectDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session,
-                                      HttpServletRequest request)
-            throws IOException, MyException, EmailSender.EmailAlreadyConfirmedException {
+                                    HttpServletRequest request)
+            throws IOException, MyException {
         emailChange.checkValid();
         User user = this.getLoggedValidUserFromSession(session, request);
         this.validateUserPasswordInput(emailChange.getPassword(), user.getPassword());
@@ -201,9 +264,10 @@ public class UserController extends AbstractController {
         ProfileInfoDTO profile = getProfileInfoDTO(user);
         return new MsgObjectDTO("Email changed successfully.", new Date(), profile);
     }
+
     @DeleteMapping(value = "/profile")
     public MsgObjectDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session,
-                                        HttpServletRequest request)
+                                      HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
         this.validateUserPasswordInput(password.get("password"), (user.getPassword()));
@@ -214,10 +278,11 @@ public class UserController extends AbstractController {
     }
     /* ----- VALIDATIONS ----- */
 
-    public static boolean isLoggedIn (HttpSession session){
+    public static boolean isLoggedIn(HttpSession session) {
         return !(session.isNew() || session.getAttribute("Username") == null);
     }
-    private void validateEmail (String email) throws InvalidRequestDataException {
+
+    private void validateEmail(String email) throws InvalidRequestDataException {
         try {
             InternetAddress emailAddr = new InternetAddress(email);
             emailAddr.validate();
@@ -228,6 +293,7 @@ public class UserController extends AbstractController {
             throw new InvalidRequestDataException("Email is already taken.");
         }
     }
+
     private void validatePasswordsAtRegistration(String password, String password2)
             throws InvalidRequestDataException {
         if (password == null || password2 == null) {
@@ -238,6 +304,7 @@ public class UserController extends AbstractController {
         }
         validatePasswordFormat(password);
     }
+
     private void validateNewPassword(String newPass, String newPass2)
             throws InvalidRequestDataException {
         if (newPass == null || newPass2 == null) {
@@ -248,6 +315,7 @@ public class UserController extends AbstractController {
         }
         validatePasswordFormat(newPass);
     }
+
     private void validatePasswordFormat(String password) throws InvalidRequestDataException {
         if (!password.matches("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$")) {
             throw new InvalidRequestDataException("Invalid password format: must contain at least 8 characters, " +
@@ -255,6 +323,7 @@ public class UserController extends AbstractController {
                     "character");
         }
     }
+
     private void validateUsername(String username) throws InvalidRequestDataException {
         if (username.isEmpty() || username.equals(UserDao.DEFAULT_USER_USERNAME)) {
             throw new InvalidRequestDataException("Invalid username input.");
@@ -263,12 +332,14 @@ public class UserController extends AbstractController {
             throw new InvalidRequestDataException("Username already taken.");
         }
     }
+
     private void validateLoginAttempt(String username, String password) throws InvalidRequestDataException {
         User user = userDao.getUserByUsername(username);
         if (user == null || !passCrypter.check(password, user.getPassword())) {
             throw new InvalidRequestDataException("Wrong user or password.");
         }
     }
+
     private void validateToken(VerificationToken token) throws MyException {
         if (token == null) {
             throw new NotFoundException("Token was not found.");
@@ -278,34 +349,42 @@ public class UserController extends AbstractController {
             throw new InvalidRequestDataException("That token has already expired.");
         }
     }
+
     private void validateUserPasswordInput(String givenPass, String userPass) throws InvalidRequestDataException {
         if (!passCrypter.check(givenPass, userPass)) {
             throw new InvalidRequestDataException("Wrong password.");
         }
     }
+
     /* ----- OTHER METHODS ----- */
     private void setupSession(HttpSession session, User user, HttpServletRequest request)
             throws JsonProcessingException {
         session.setAttribute(SESSION_USER_KEY, AbstractController.toJson(user));
         session.setAttribute(SESSION_USERNAME_KEY, user.getUsername());
+        System.out.println(">>"+request.getRemoteAddr());
         session.setAttribute(SESSION_IP_ADDR_KEY, request.getRemoteAddr());
         session.setMaxInactiveInterval(-1);
     }
+
     private String formatName(String name) {
         if (name != null && name.isEmpty()) {
             return null;
         }
         return name;
     }
-    private void sendVerificationTokenToUser(User user) throws EmailSender.EmailAlreadyConfirmedException {
+
+    private void sendVerificationTokenToUser(User user)
+            throws EmailSender.EmailAlreadyConfirmedException, InvalidRequestDataException {
         VerificationToken token = tokenDao.getNewToken(user, false);
         emailSender.sendEmailConfirmationToken(user, token);
     }
+
     private void sendPasswordResetTokenToUser(User user)
             throws UnauthorizedAccessException, InvalidRequestDataException {
         VerificationToken token = tokenDao.getNewToken(user, true);
         emailSender.sendPasswordResetLink(user, token);
     }
+
     private ProfileInfoDTO getProfileInfoDTO(User user) {
         return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
                 user.getFirstName(), user.getLastName(), user.getEmail(),

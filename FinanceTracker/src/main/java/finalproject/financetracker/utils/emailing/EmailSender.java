@@ -1,6 +1,7 @@
 package finalproject.financetracker.utils.emailing;
 
 import finalproject.financetracker.exceptions.InvalidRequestDataException;
+import finalproject.financetracker.exceptions.MyException;
 import finalproject.financetracker.exceptions.UnauthorizedAccessException;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.pojos.Budget;
@@ -49,9 +50,12 @@ public class EmailSender {
     }
 
     public void sendEmailConfirmationToken(User user, VerificationToken verToken)
-            throws EmailAlreadyConfirmedException {
+            throws EmailAlreadyConfirmedException, InvalidRequestDataException {
         if (user.isEmailConfirmed()) {
             throw new EmailAlreadyConfirmedException();
+        } else if (verToken.isPasswordReset()) {
+            throw new InvalidRequestDataException(
+                    "Verification token at confirmation is marked as password resetting token.");
         }
         String recipientAddress = user.getEmail();
         String token = verToken.getToken();
@@ -71,14 +75,14 @@ public class EmailSender {
         }
         String recipientAddress = user.getEmail();
         String token = verToken.getToken();
-        String subject = "Reset Password Link";
-        String message = "Please, user the following key to reset your password:\n" + token;
+        String subject = "Reset Password Key";
+        String message = "Please, use the following key to reset your password:\n" + token;
         new Thread(() -> mailUtil.sendSimpleMessage(recipientAddress, "noreply@traxter.com", subject, message))
                 .start();
     }
 
     @ResponseStatus(value = HttpStatus.BAD_REQUEST) // 400
-    public static class EmailAlreadyConfirmedException extends Exception {
+    public static class EmailAlreadyConfirmedException extends MyException {
         private EmailAlreadyConfirmedException() {
             super("Email has already been confirmed.");
         }
