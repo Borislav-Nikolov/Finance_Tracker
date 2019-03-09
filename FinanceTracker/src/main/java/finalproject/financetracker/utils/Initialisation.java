@@ -36,6 +36,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
             createSchemaIfNotExists();
             if (imageDao.getImageById(1) == null) {
                 imageDao.addAllIcons();
+
             }
             if (categoryDao.getCategoryById(1) == null) {
                 categoryDao.addAllPredefinedCategories();
