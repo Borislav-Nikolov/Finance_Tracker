@@ -17,12 +17,12 @@ public class TransactionDao {
 
     public List<ReturnTransactionDTO> getAllByAccIdStartDateEndDateIsIncome(
             Long userId,
-            Long accId,
-            Long catId,
+            Long accId,//null deafault
+            Long catId,//null deafault
             Long startDateTimestamp,
             Long endDateTimestamp,
-            Boolean isIncome,
-            AbstractDao.SQLColumnName columnName,
+            Boolean isIncome,//null default
+            AbstractDao.SQLColumnName orderBy,
             AbstractDao.SQLOderBy order,
             Integer limitInt,
             Integer offsetInt){
@@ -55,7 +55,7 @@ public class TransactionDao {
                  accIdQuery+
                  incomeQuery +
                  catIdQuery+
-                "ORDER BY "+ columnName.toString()+" "+
+                "ORDER BY "+ orderBy.toString()+" "+
                  order.toString()+" " +
                 "LIMIT "+limitInt+" " +
                 "OFFSET "+offsetInt+" ;";
