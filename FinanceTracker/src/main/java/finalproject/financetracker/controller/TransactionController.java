@@ -27,7 +27,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@RequestMapping(value = "/profile")
+@RequestMapping(value = "/profile", produces = "application/json")
 @Controller
 @ResponseBody
 public class TransactionController extends AbstractController {

@@ -2,12 +2,11 @@ package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.exceptions.NotFoundException;
+import finalproject.financetracker.model.daos.TransactionDao;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.dtos.MsgObjectDTO;
 import finalproject.financetracker.model.pojos.*;
-import finalproject.financetracker.model.repositories.AccountRepo;
 import finalproject.financetracker.model.repositories.BudgetRepository;
-import finalproject.financetracker.model.repositories.TransactionRepo;
 import finalproject.financetracker.model.repositories.UserRepository;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetCreationDTO;
 import finalproject.financetracker.model.dtos.budgetDTOs.BudgetInfoDTO;
@@ -23,7 +22,6 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,13 +29,10 @@ import java.util.List;
 @RestController
 @RequestMapping(value = "/profile", produces = "application/json")
 public class BudgetController extends AbstractController {
-    @Autowired AccountRepo accountRepo;
     @Autowired
     private BudgetRepository budgetRepository;
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private TransactionRepo transactionRepo;
     @Autowired
     private EmailSender emailSender;
     @Autowired
@@ -46,6 +41,8 @@ public class BudgetController extends AbstractController {
     private UserDao userDao;
     @Autowired
     private CategoryController categoryController;
+    @Autowired
+    private TransactionDao transactionDao;
 
     @GetMapping(value = "/budgets")
     public BudgetsViewDTO viewBudgets(HttpSession session, HttpServletRequest request)
@@ -75,7 +72,7 @@ public class BudgetController extends AbstractController {
     @PostMapping(value = "/budgets")
     public MsgObjectDTO createBudget(@RequestBody BudgetCreationDTO budgetCreationDTO, HttpSession session,
                                      HttpServletRequest request)
-                                    throws IOException, MyException, SQLException {
+                                    throws IOException, MyException {
         budgetCreationDTO.checkValid();
         User user = this.getLoggedValidUserFromSession(session, request);
         String budgetName = budgetCreationDTO.getBudgetName();
@@ -143,14 +140,17 @@ public class BudgetController extends AbstractController {
         List<Budget> budgets = budgetRepository.findAllByUserId(userId);
         for (Budget budget : budgets) {
             if (budget.getCategoryId() == categoryId && budget.getEndDate().isAfter(LocalDate.now())) {
-                budget.setAmount(budget.getAmount() - amount);
-                User user = userRepository.getByUserId(userId);
-                if (budget.getAmount() <= 50 && userDao.isEligibleForReceivingEmail(user.getEmail())) {
-                    emailSender.sendBudgetNearLimitEmail(user, budget);
-                }
-                budgetRepository.save(budget);
+                subtractFromASingleBudget(budget, userId, amount);
             }
         }
+    }
+    private void subtractFromASingleBudget(Budget budget, long userId, double amount) throws SQLException {
+        budget.setAmount(budget.getAmount() - amount);
+        User user = userRepository.getByUserId(userId);
+        if (budget.getAmount() <= 50 && userDao.isEligibleForReceivingEmail(user.getEmail())) {
+            emailSender.sendBudgetNearLimitEmail(user, budget);
+        }
+        budgetRepository.save(budget);
     }
 
     private BudgetInfoDTO getBudgetInfoDTO(Budget budget) {
@@ -162,33 +162,13 @@ public class BudgetController extends AbstractController {
 
     /* ----- VALIDATIONS ----- */
 
-    private void validateDates(Budget budget) throws InvalidRequestDataException, SQLException {
+    private void validateDates(Budget budget)
+            throws InvalidRequestDataException {
         if (!budget.getStartingDate().isBefore(budget.getEndDate()) || budget.getStartingDate().isBefore(LocalDate.now())) {
             throw new InvalidRequestDataException("Incorrect date input.");
         }
-//        if () {
-//            this.recalculateBudget(budget);
-//        }
     }
-    // TODO will produce untrue results if repeated
-    private void recalculateBudget(Budget budget) throws SQLException {
-        // TODO get needed with query at TransactionDao
-        List<Account> accounts = accountRepo.findAllByUserId(budget.getUserId());
-        List<Transaction> transactions = new ArrayList<>();
-        for (Account account: accounts) {
-            transactions.addAll(transactionRepo.findAllByAccountId(account.getAccountId()));
-        }
-        double totalSum = 0;
-        LocalDate startingDate = budget.getStartingDate();
-        for (Transaction transaction : transactions) {
-            LocalDateTime execDate = transaction.getExecutionDate();
-            LocalDateTime startingDateTime = startingDate.atTime(0, 0, 0, 0);
-            if (execDate.isAfter(startingDateTime)) {
-                totalSum += transaction.getAmount();
-            }
-        }
-        subtractFromBudgets(totalSum, budget.getUserId(), budget.getCategoryId());
-    }
+
     private void validateBudgetOwnership(Budget budget, long sessionUserId) throws NotFoundException {
         if (budget == null || budget.getUserId() != sessionUserId) {
             throw new NotFoundException("Budget not found.");

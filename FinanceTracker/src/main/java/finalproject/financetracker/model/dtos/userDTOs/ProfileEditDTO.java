@@ -9,15 +9,18 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class EmailChangeDTO implements IRequestDTO {
+public class ProfileEditDTO implements IRequestDTO {
     private String password;
     private String newEmail;
+    private String newPassword;
+    private String newPassword2;
+    private String firstName;
+    private String lastName;
 
     @Override
     public void checkValid() throws InvalidRequestDataException {
-        if (this.password == null ||
-            this.newEmail == null) {
-            throw new InvalidRequestDataException("Null values given at email change.");
+        if (password == null) {
+            throw new InvalidRequestDataException("Null password input");
         }
     }
 }

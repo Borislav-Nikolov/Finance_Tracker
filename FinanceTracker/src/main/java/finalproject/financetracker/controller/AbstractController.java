@@ -9,7 +9,6 @@ import finalproject.financetracker.exceptions.*;
 import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.pojos.ErrMsg;
 import finalproject.financetracker.model.pojos.User;
-import finalproject.financetracker.utils.emailing.EmailSender;
 import lombok.NoArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;

@@ -163,7 +163,6 @@ public class UserController extends AbstractController {
         }
         return this.setUserSubscriptionAndGetMessage(user, session, request,false);
     }
-
     @PostMapping(value = "/reset_password")
     public CommonMsgDTO sendPasswordResetEmail(@RequestBody Map<String, String> email)
             throws MyException {
@@ -177,7 +176,6 @@ public class UserController extends AbstractController {
         this.sendPasswordResetTokenToUser(user);
         return new CommonMsgDTO("Password reset key sent to " + user.getEmail() + ".", new Date());
     }
-
     @PutMapping(value = "/reset_password")
     public CommonMsgDTO activatePasswordReset(@RequestParam(value = "token") String token, HttpSession session,
                                               HttpServletRequest request)
@@ -221,6 +219,7 @@ public class UserController extends AbstractController {
     public MsgObjectDTO resetPassword(@RequestBody PasswordResetDTO passwordResetDTO, HttpSession session,
                                       HttpServletRequest request)
             throws IOException, MyException {
+        passwordResetDTO.checkValid();
         User user = this.getLoggedValidUserFromSession(session, request);
         if (!user.isEligibleForPasswordReset()) {
             session.invalidate();
@@ -236,42 +235,32 @@ public class UserController extends AbstractController {
         ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
         return new MsgObjectDTO("Password changed successfully.", new Date(), profileInfoDTO);
     }
-
-    @PutMapping(value = "/profile/edit/password")
-    public MsgObjectDTO changePassword(@RequestBody PassChangeDTO passChange, HttpSession session,
-                                       HttpServletRequest request)
-            throws IOException, MyException {
-        passChange.checkValid();
+    @PutMapping(value = "/profile/edit")
+    public MsgObjectDTO editProfile(@RequestBody ProfileEditDTO profileEditDTO,
+                                    HttpSession session, HttpServletRequest request)
+                    throws MyException, IOException {
+        String dtoMessage = "Profile edited successfully: ";
+        profileEditDTO.checkValid();
         User user = this.getLoggedValidUserFromSession(session, request);
-        this.validateUserPasswordInput(passChange.getOldPass(), user.getPassword());
-        String newPass = passChange.getNewPass().trim();
-        String newPass2 = passChange.getNewPass2().trim();
-        validateNewPassword(newPass, newPass2);
-        user.setPassword(passCrypter.crypt(newPass));
+        String password = profileEditDTO.getPassword();
+        String newEmail = profileEditDTO.getNewEmail();
+        String newPassword = profileEditDTO.getNewPassword();
+        String newPassword2 = profileEditDTO.getNewPassword2();
+        String firstName = profileEditDTO.getFirstName();
+        String lastName = profileEditDTO.getLastName();
+        this.validateUserPasswordInput(password, user.getPassword());
+        if (newEmail != null && !newEmail.isEmpty()) {
+            dtoMessage = dtoMessage.concat(this.changeEmail(user, newEmail));
+        }
+        if (profileEditDTO.getNewPassword() != null && !profileEditDTO.getNewPassword().isEmpty()) {
+            dtoMessage = dtoMessage.concat(this.changePassword(user, newPassword, newPassword2));
+        }
+        dtoMessage = dtoMessage.concat(this.changeNames(user, firstName, lastName));
         this.setupSession(session, user, request);
         userDao.updateUser(user);
-        ProfileInfoDTO profile = getProfileInfoDTO(user);
-        return new MsgObjectDTO("Password changed successfully.", new Date(), profile);
+        ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
+        return new MsgObjectDTO(dtoMessage, new Date(), profileInfoDTO);
     }
-
-    @PutMapping(value = "/profile/edit/email")
-    public MsgObjectDTO changeEmail(@RequestBody EmailChangeDTO emailChange, HttpSession session,
-                                    HttpServletRequest request)
-            throws IOException, MyException {
-        emailChange.checkValid();
-        User user = this.getLoggedValidUserFromSession(session, request);
-        this.validateUserPasswordInput(emailChange.getPassword(), user.getPassword());
-        String newEmail = emailChange.getNewEmail().trim();
-        this.validateEmail(newEmail);
-        user.setEmail(newEmail);
-        user.setEmailConfirmed(false);
-        this.setupSession(session, user, request);
-        this.sendVerificationTokenToUser(user);
-        userDao.updateUser(user);
-        ProfileInfoDTO profile = getProfileInfoDTO(user);
-        return new MsgObjectDTO("Email changed successfully.", new Date(), profile);
-    }
-
     @DeleteMapping(value = "/profile")
     public MsgObjectDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session,
                                       HttpServletRequest request)
@@ -300,7 +289,6 @@ public class UserController extends AbstractController {
             throw new InvalidRequestDataException("Email is already taken.");
         }
     }
-
     private void validatePasswordsAtRegistration(String password, String password2)
             throws InvalidRequestDataException {
         if (password == null || password2 == null) {
@@ -311,7 +299,6 @@ public class UserController extends AbstractController {
         }
         validatePasswordFormat(password);
     }
-
     private void validateNewPassword(String newPass, String newPass2)
             throws InvalidRequestDataException {
         if (newPass == null || newPass2 == null) {
@@ -322,7 +309,6 @@ public class UserController extends AbstractController {
         }
         validatePasswordFormat(newPass);
     }
-
     private void validatePasswordFormat(String password) throws InvalidRequestDataException {
         if (!password.matches("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$")) {
             throw new InvalidRequestDataException("Invalid password format: must contain at least 8 characters, " +
@@ -330,23 +316,22 @@ public class UserController extends AbstractController {
                     "character");
         }
     }
-
     private void validateUsername(String username) throws InvalidRequestDataException {
         if (username.isEmpty() || username.equals(UserDao.DEFAULT_USER_USERNAME)) {
             throw new InvalidRequestDataException("Invalid username input.");
+        } else if (username.contains(" ")) {
+            throw new InvalidRequestDataException("Username must not contain empty spaces.");
         }
         if (userDao.getUserByUsername(username) != null) {
             throw new InvalidRequestDataException("Username already taken.");
         }
     }
-
     private void validateLoginAttempt(String username, String password) throws InvalidRequestDataException {
         User user = userDao.getUserByUsername(username);
         if (user == null || !passCrypter.check(password, user.getPassword())) {
             throw new InvalidRequestDataException("Wrong user or password.");
         }
     }
-
     private void validateToken(VerificationToken token) throws MyException {
         if (token == null) {
             throw new NotFoundException("Token was not found.");
@@ -356,7 +341,6 @@ public class UserController extends AbstractController {
             throw new InvalidRequestDataException("That token has already expired.");
         }
     }
-
     private void validateUserPasswordInput(String givenPass, String userPass) throws InvalidRequestDataException {
         if (!passCrypter.check(givenPass, userPass)) {
             throw new InvalidRequestDataException("Wrong password.");
@@ -364,6 +348,42 @@ public class UserController extends AbstractController {
     }
 
     /* ----- OTHER METHODS ----- */
+    private String changePassword(User user, String newPassword, String newPassword2)
+            throws MyException {
+        newPassword = newPassword.trim();
+        newPassword2 = newPassword2.trim();
+        validateNewPassword(newPassword, newPassword2);
+        user.setPassword(passCrypter.crypt(newPassword));
+        return "Password changed successfully. ";
+    }
+    private String changeEmail(User user, String newEmail)
+            throws MyException {
+        this.validateEmail(newEmail);
+        user.setEmail(newEmail);
+        user.setEmailConfirmed(false);
+        this.sendVerificationTokenToUser(user);
+        return "Email changed successfully. Confirmation token sent. ";
+    }
+    private String changeNames(User user, String firstName, String lastName) {
+        String message = "";
+        if (user.getFirstName() == null && firstName != null && !firstName.isEmpty()) {
+            user.setFirstName(firstName);
+            message = message.concat("First name changed successfully. ");
+        }
+        if (user.getFirstName() != null && (firstName == null || firstName.isEmpty())) {
+            user.setFirstName(null);
+            message = message.concat("First name deleted successfully. ");
+        }
+        if (user.getLastName() == null && lastName != null && !lastName.isEmpty()) {
+            user.setLastName(lastName);
+            message = message.concat("Last name changed successfully. ");
+        }
+        if (user.getLastName() != null && (lastName == null || lastName.isEmpty())) {
+            user.setLastName(null);
+            message = message.concat("Last name deleted successfully. ");
+        }
+        return message;
+    }
     private void setupSession(HttpSession session, User user, HttpServletRequest request)
             throws JsonProcessingException {
         session.setAttribute(SESSION_USER_KEY, AbstractController.toJson(user));
@@ -371,26 +391,22 @@ public class UserController extends AbstractController {
         session.setAttribute(SESSION_IP_ADDR_KEY, request.getRemoteAddr());
         session.setMaxInactiveInterval(-1);
     }
-
     private String formatName(String name) {
         if (name != null && name.isEmpty()) {
             return null;
         }
         return name;
     }
-
     private void sendVerificationTokenToUser(User user)
             throws EmailSender.EmailAlreadyConfirmedException, InvalidRequestDataException {
         VerificationToken token = tokenDao.getNewToken(user, false);
         emailSender.sendEmailConfirmationToken(user, token);
     }
-
     private void sendPasswordResetTokenToUser(User user)
             throws UnauthorizedAccessException, InvalidRequestDataException {
         VerificationToken token = tokenDao.getNewToken(user, true);
         emailSender.sendPasswordResetLink(user, token);
     }
-
     private ProfileInfoDTO getProfileInfoDTO(User user) {
         return new ProfileInfoDTO(user.getUserId(), user.getUsername(),
                 user.getFirstName(), user.getLastName(), user.getEmail(),

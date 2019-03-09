@@ -30,7 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
-@RequestMapping(value = "/profile")
+@RequestMapping(value = "/profile", produces = "application/json")
 @Controller
 public class PlannedTransactionController extends AbstractController {
     static final ReentrantLock concurrentLock = new ReentrantLock();
