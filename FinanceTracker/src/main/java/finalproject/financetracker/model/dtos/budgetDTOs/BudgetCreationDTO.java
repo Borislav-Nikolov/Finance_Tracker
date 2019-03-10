@@ -13,20 +13,18 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class BudgetCreationDTO implements IRequestDTO {
     private String budgetName;
-    private double amount;
+    private Double amount;
     private String startingDate;
     private String endDate;
-    private long userId;
-    private long categoryId;
+    private Long categoryId;
 
     @Override
     public void checkValid() throws InvalidRequestDataException {
         if (budgetName == null ||
-            amount <= 0 ||
+            amount == null ||
             startingDate == null ||
             endDate == null ||
-            userId <= 0 ||
-            categoryId <= 0) {
+            categoryId == null) {
             throw new InvalidRequestDataException("Improper data input at budget creation.");
         }
     }

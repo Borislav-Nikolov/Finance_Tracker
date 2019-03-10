@@ -54,8 +54,8 @@ public class UserController extends AbstractController {
         String username = regInfo.getUsername().trim();
         String password = regInfo.getPassword().trim();
         String password2 = regInfo.getPassword2().trim();
-        String firstName = this.formatName(regInfo.getFirstName().trim());
-        String lastName = this.formatName(regInfo.getLastName().trim());
+        String firstName = this.formatName(regInfo.getFirstName());
+        String lastName = this.formatName(regInfo.getLastName());
         String email = regInfo.getEmail().trim();
         boolean isSubscribed = regInfo.isSubscribed();
         this.validateUsername(username);
@@ -149,7 +149,38 @@ public class UserController extends AbstractController {
     }
 
     /* ----- PROFILE ACTIONS ----- */
-    @PutMapping(value = "/profile/subscribe")
+
+    @PutMapping(value = "/profile/edit")
+    public MsgObjectDTO editProfile(@RequestBody ProfileEditDTO profileEditDTO,
+                                    HttpSession session, HttpServletRequest request)
+                    throws MyException, IOException {
+        String dtoMessage = "Profile edited successfully: ";
+        int initialIdx = dtoMessage.lastIndexOf("successfully");
+        profileEditDTO.checkValid();
+        User user = this.getLoggedValidUserFromSession(session, request);
+        String password = profileEditDTO.getPassword();
+        String newEmail = profileEditDTO.getNewEmail();
+        String newPassword = profileEditDTO.getNewPassword();
+        String newPassword2 = profileEditDTO.getNewPassword2();
+        String firstName = profileEditDTO.getFirstName();
+        String lastName = profileEditDTO.getLastName();
+        this.validateUserPasswordInput(password, user.getPassword());
+        if (newEmail != null && !newEmail.isEmpty()) {
+            dtoMessage = dtoMessage.concat(this.changeEmail(user, newEmail));
+        }
+        if (profileEditDTO.getNewPassword() != null && !profileEditDTO.getNewPassword().isEmpty()) {
+            dtoMessage = dtoMessage.concat(this.changePassword(user, newPassword, newPassword2));
+        }
+        dtoMessage = dtoMessage.concat(this.changeNames(user, firstName, lastName));
+        this.setupSession(session, user, request);
+        userDao.updateUser(user);
+        ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
+        if (initialIdx == dtoMessage.lastIndexOf("successfully")) {
+            dtoMessage = "No changes were made.";
+        }
+        return new MsgObjectDTO(dtoMessage, LocalDateTime.now(), profileInfoDTO);
+    }
+    @PutMapping(value = "/profile/edit/subscribe")
     public MsgObjectDTO subscribeEmail(HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
@@ -158,7 +189,7 @@ public class UserController extends AbstractController {
         }
         return this.setUserSubscriptionAndGetMessage(user, session, request, true);
     }
-    @PutMapping(value = "/profile/unsubscribe")
+    @PutMapping(value = "/profile/edit/unsubscribe")
     public MsgObjectDTO unsubscribeEmail(HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
@@ -238,32 +269,6 @@ public class UserController extends AbstractController {
         this.setupSession(session, user, request);
         ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
         return new MsgObjectDTO("Password changed successfully.", LocalDateTime.now(), profileInfoDTO);
-    }
-    @PutMapping(value = "/profile/edit")
-    public MsgObjectDTO editProfile(@RequestBody ProfileEditDTO profileEditDTO,
-                                    HttpSession session, HttpServletRequest request)
-                    throws MyException, IOException {
-        String dtoMessage = "Profile edited successfully: ";
-        profileEditDTO.checkValid();
-        User user = this.getLoggedValidUserFromSession(session, request);
-        String password = profileEditDTO.getPassword();
-        String newEmail = profileEditDTO.getNewEmail();
-        String newPassword = profileEditDTO.getNewPassword();
-        String newPassword2 = profileEditDTO.getNewPassword2();
-        String firstName = profileEditDTO.getFirstName();
-        String lastName = profileEditDTO.getLastName();
-        this.validateUserPasswordInput(password, user.getPassword());
-        if (newEmail != null && !newEmail.isEmpty()) {
-            dtoMessage = dtoMessage.concat(this.changeEmail(user, newEmail));
-        }
-        if (profileEditDTO.getNewPassword() != null && !profileEditDTO.getNewPassword().isEmpty()) {
-            dtoMessage = dtoMessage.concat(this.changePassword(user, newPassword, newPassword2));
-        }
-        dtoMessage = dtoMessage.concat(this.changeNames(user, firstName, lastName));
-        this.setupSession(session, user, request);
-        userDao.updateUser(user);
-        ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO(dtoMessage, LocalDateTime.now(), profileInfoDTO);
     }
     @DeleteMapping(value = "/profile")
     public MsgObjectDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session,
@@ -356,12 +361,19 @@ public class UserController extends AbstractController {
             throws MyException {
         newPassword = newPassword.trim();
         newPassword2 = newPassword2.trim();
+        if (passCrypter.check(newPassword, user.getPassword())) {
+            return "";
+        }
         validateNewPassword(newPassword, newPassword2);
         user.setPassword(passCrypter.crypt(newPassword));
         return "Password changed successfully. ";
     }
     private String changeEmail(User user, String newEmail)
             throws MyException {
+        newEmail = newEmail.trim();
+        if (newEmail.equals(user.getEmail())) {
+            return "";
+        }
         this.validateEmail(newEmail);
         user.setEmail(newEmail);
         user.setEmailConfirmed(false);
@@ -369,24 +381,18 @@ public class UserController extends AbstractController {
         return "Email changed successfully. Confirmation token sent. ";
     }
     private String changeNames(User user, String firstName, String lastName) {
-        String message = "";
-        if (user.getFirstName() == null && firstName != null && !firstName.isEmpty()) {
-            user.setFirstName(firstName);
-            message = message.concat("First name changed successfully. ");
+        firstName = this.formatName(firstName);
+        lastName = this.formatName(lastName);
+        if (((firstName == null && user.getFirstName() == null) ||
+            (user.getFirstName() != null && user.getFirstName().equals(firstName)))
+                &&
+            ((lastName == null && user.getLastName() == null) ||
+            (user.getLastName() != null && user.getLastName().equals(lastName)))) {
+            return "";
         }
-        if (user.getFirstName() != null && (firstName == null || firstName.isEmpty())) {
-            user.setFirstName(null);
-            message = message.concat("First name deleted successfully. ");
-        }
-        if (user.getLastName() == null && lastName != null && !lastName.isEmpty()) {
-            user.setLastName(lastName);
-            message = message.concat("Last name changed successfully. ");
-        }
-        if (user.getLastName() != null && (lastName == null || lastName.isEmpty())) {
-            user.setLastName(null);
-            message = message.concat("Last name deleted successfully. ");
-        }
-        return message;
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        return "Name edited successfully.";
     }
     private void setupSession(HttpSession session, User user, HttpServletRequest request)
             throws JsonProcessingException {
@@ -396,9 +402,10 @@ public class UserController extends AbstractController {
         session.setMaxInactiveInterval(-1);
     }
     private String formatName(String name) {
-        if (name != null && name.isEmpty()) {
+        if (name != null && name.trim().isEmpty()) {
             return null;
         }
+        if (name != null) name = name.trim();
         return name;
     }
     private void sendVerificationTokenToUser(User user)

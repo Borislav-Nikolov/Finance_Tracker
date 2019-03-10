@@ -66,36 +66,38 @@ public class UserDao {
         deletedUser.setEmail(deletedUserValues);
         deletedUser.setEmailConfirmed(false);
         deletedUser.setSubscribed(false);
+        deletedUser.setLastNotified(null);
+        deletedUser.setLastLogin(null);
 
 
         List<Account> accounts = accountRepo.findAllByUserId(deletedUser.getUserId());
-        if (accounts != null && accounts.size() > 0) {
+        if (accounts != null) {
             for (Account account : accounts) {
-                accountRepo.delete(account);
                 List<PlannedTransaction> plannedTransactions = plannedTransactionRepo
                                               .findAllByAccountId(account.getAccountId());  //TODO find all by userId
-                if (plannedTransactions != null && plannedTransactions.size() > 0) {
+                if (plannedTransactions != null) {
                     for (PlannedTransaction plannedTransaction : plannedTransactions) {
                         plannedTransactionRepo.delete(plannedTransaction);
                     }
                 }
                 List<Transaction> transactions = transactionRepo
                                               .findAllByAccountId(account.getAccountId());
-                if (transactions != null && transactions.size() > 0) {
+                if (transactions != null) {
                     for (Transaction transaction : transactions) {
                         transactionRepo.delete(transaction);
                     }
                 }
+                accountRepo.delete(account);
             }
         }
         List<Budget> budgets = budgetRepository.findAllByUserId(deletedUser.getUserId());
-        if (budgets != null && budgets.size() > 0) {
+        if (budgets != null) {
             for (Budget budget : budgets) {
                 budgetRepository.delete(budget);
             }
         }
         List<Category> categories = categoryRepository.findAllByUserId(deletedUser.getUserId());
-        if (categories != null && categories.size() > 0) {
+        if (categories != null) {
             for (Category category : categories) {
                 categoryRepository.delete(category);
             }

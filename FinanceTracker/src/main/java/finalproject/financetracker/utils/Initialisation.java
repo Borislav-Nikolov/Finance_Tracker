@@ -37,7 +37,7 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
             if (imageDao.getImageById(1) == null) {
                 imageDao.addAllIcons();
             }
-            if (userRepository.findByUsername("Dragoto") == null) {
+            if (userRepository.findByUsername("Batko") == null) {
                 executeSqlQueriesFromFile("SQL_default_DB_insertions.txt");
             }
         } catch (IOException ex) {

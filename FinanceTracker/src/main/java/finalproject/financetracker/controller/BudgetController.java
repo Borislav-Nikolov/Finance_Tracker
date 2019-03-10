@@ -96,7 +96,7 @@ public class BudgetController extends AbstractController {
             @RequestParam(value = "categoryId", required = false) String categoryId,
             HttpSession session,
             HttpServletRequest request)
-                                throws IOException, MyException, SQLException {
+                                throws IOException, MyException {
         Double parsedAmount = parseDouble(amount);
         Long parsedLong = parseLong(categoryId);
         User user = this.getLoggedValidUserFromSession(session, request);
