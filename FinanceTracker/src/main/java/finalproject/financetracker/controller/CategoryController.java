@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -67,7 +67,7 @@ public class CategoryController extends AbstractController {
         Category category = new Category(categoryName, isIncome, user.getUserId(), imageId);
         categoryDao.addCategory(category);
         CategoryInfoDTO categoryInfo = getCategoryInfoDTO(category);
-        return new MsgObjectDTO("Category created successfully.", new Date(), categoryInfo);
+        return new MsgObjectDTO("Category created successfully.", LocalDateTime.now(), categoryInfo);
     }
 
     @PutMapping(value = "/categories/{categoryId}")
@@ -90,7 +90,7 @@ public class CategoryController extends AbstractController {
         }
         categoryRepository.save(category);
         CategoryInfoDTO categoryInfo = getCategoryInfoDTO(category);
-        return new MsgObjectDTO("Category edited successfully.", new Date(), categoryInfo);
+        return new MsgObjectDTO("Category edited successfully.", LocalDateTime.now(), categoryInfo);
     }
 
     @DeleteMapping(value = "/categories/{categoryId}")
@@ -105,7 +105,7 @@ public class CategoryController extends AbstractController {
         }
         categoryDao.deleteCategory(category);
         CategoryInfoDTO categoryInfo = getCategoryInfoDTO(category);
-        return new MsgObjectDTO("Category deleted successfully.", new Date(), categoryInfo);
+        return new MsgObjectDTO("Category deleted successfully.", LocalDateTime.now(), categoryInfo);
     }
 
     public Category getCategoryById(long categoryId, HttpSession session, HttpServletRequest request)

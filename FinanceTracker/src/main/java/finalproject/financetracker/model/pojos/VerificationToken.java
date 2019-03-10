@@ -31,6 +31,7 @@ public class VerificationToken {
         this.token = token;
         this.userId = userId;
         this.expiryDate = this.calculateEmailVerificationExpiryDate(isPasswordReset);
+        System.out.println(this.expiryDate);
         this.isPasswordReset = isPasswordReset;
     }
 

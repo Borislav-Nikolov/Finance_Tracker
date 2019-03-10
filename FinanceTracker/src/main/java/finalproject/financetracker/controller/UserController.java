@@ -23,6 +23,7 @@ import javax.mail.internet.InternetAddress;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 
@@ -48,7 +49,7 @@ public class UserController extends AbstractController {
     @PostMapping(value = "/register")
     public MsgObjectDTO registerUser(@RequestBody RegistrationDTO regInfo,
                                      HttpServletRequest request, HttpSession session)
-            throws InvalidRequestDataException, FailedActionException, AlreadyLoggedInException {
+            throws InvalidRequestDataException, FailedActionException, JsonProcessingException {
         regInfo.checkValid();
         String username = regInfo.getUsername().trim();
         String password = regInfo.getPassword().trim();
@@ -79,8 +80,10 @@ public class UserController extends AbstractController {
             }
             throw new FailedActionException("User registration failed.");
         }
+        this.setupSession(session, user, request);
         ProfileInfoDTO profile = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO("User registered. Verification email successfully sent.", new Date(), profile);
+        return new MsgObjectDTO("User registered. Verification email successfully sent.",
+                LocalDateTime.now(), profile);
     }
     @PostMapping(value = "/login")
     public MsgObjectDTO loginUser(@RequestBody LoginInfoDTO loginInfo, HttpSession session, HttpServletRequest request)
@@ -95,7 +98,7 @@ public class UserController extends AbstractController {
             user.setLastLogin(new Date());
             userRepository.save(user);
             ProfileInfoDTO profile = this.getProfileInfoDTO(user);
-            return new MsgObjectDTO("Login successful.", new Date(), profile);
+            return new MsgObjectDTO("Login successful.", LocalDateTime.now(), profile);
         } else {
             this.validateIpAddr(session, request);
             throw new AlreadyLoggedInException();
@@ -107,7 +110,7 @@ public class UserController extends AbstractController {
         User user = this.getLoggedValidUserFromSession(session, request);
         session.invalidate();
         ProfileInfoDTO profile = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO("Logout successful.", new Date(), profile);
+        return new MsgObjectDTO("Logout successful.", LocalDateTime.now(), profile);
     }
     @GetMapping(value = "/profile")
     public ProfileInfoDTO getLoggedUserProfile(HttpSession session, HttpServletRequest request)
@@ -127,7 +130,7 @@ public class UserController extends AbstractController {
         this.setupSession(session, user, request);
         userDao.verifyUserEmail(user, verToken);
         ProfileInfoDTO profile = getProfileInfoDTO(user);
-        return new MsgObjectDTO("Email " + user.getEmail() + " was confirmed.", new Date(), profile);
+        return new MsgObjectDTO("Email " + user.getEmail() + " was confirmed.", LocalDateTime.now(), profile);
     }
 
     @PutMapping(value = "/new_token")
@@ -141,7 +144,8 @@ public class UserController extends AbstractController {
         user.setLastNotified(new Date());
         this.setupSession(session, user, request);
         this.sendVerificationTokenToUser(user);
-        return new CommonMsgDTO("Confirmation email sent successfully to " + user.getEmail() + ".", new Date());
+        return new CommonMsgDTO("Confirmation email sent successfully to " + user.getEmail() + ".",
+                LocalDateTime.now());
     }
 
     /* ----- PROFILE ACTIONS ----- */
@@ -174,7 +178,7 @@ public class UserController extends AbstractController {
             throw new UnauthorizedAccessException("Email not confirmed.");
         }
         this.sendPasswordResetTokenToUser(user);
-        return new CommonMsgDTO("Password reset key sent to " + user.getEmail() + ".", new Date());
+        return new CommonMsgDTO("Password reset key sent to " + user.getEmail() + ".", LocalDateTime.now());
     }
     @PutMapping(value = "/reset_password")
     public CommonMsgDTO activatePasswordReset(@RequestParam(value = "token") String token, HttpSession session,
@@ -213,7 +217,7 @@ public class UserController extends AbstractController {
         userRepository.save(user);
         this.setupSession(session, user, request);
         new ResetPassInvalidator(user, session, request.getRemoteAddr()).start();
-        return new CommonMsgDTO("User set for password reset.", new Date());
+        return new CommonMsgDTO("User set for password reset.", LocalDateTime.now());
     }
     @PutMapping(value = "/profile/edit/reset_password")
     public MsgObjectDTO resetPassword(@RequestBody PasswordResetDTO passwordResetDTO, HttpSession session,
@@ -233,7 +237,7 @@ public class UserController extends AbstractController {
         userRepository.save(user);
         this.setupSession(session, user, request);
         ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO("Password changed successfully.", new Date(), profileInfoDTO);
+        return new MsgObjectDTO("Password changed successfully.", LocalDateTime.now(), profileInfoDTO);
     }
     @PutMapping(value = "/profile/edit")
     public MsgObjectDTO editProfile(@RequestBody ProfileEditDTO profileEditDTO,
@@ -259,7 +263,7 @@ public class UserController extends AbstractController {
         this.setupSession(session, user, request);
         userDao.updateUser(user);
         ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO(dtoMessage, new Date(), profileInfoDTO);
+        return new MsgObjectDTO(dtoMessage, LocalDateTime.now(), profileInfoDTO);
     }
     @DeleteMapping(value = "/profile")
     public MsgObjectDTO deleteProfile(@RequestBody Map<String, String> password, HttpSession session,
@@ -270,7 +274,7 @@ public class UserController extends AbstractController {
         userDao.deleteUser(user);
         session.invalidate();
         ProfileInfoDTO profile = getProfileInfoDTO(user);
-        return new MsgObjectDTO("User deleted successfully.", new Date(), profile);
+        return new MsgObjectDTO("User deleted successfully.", LocalDateTime.now(), profile);
     }
     /* ----- VALIDATIONS ----- */
 
@@ -421,6 +425,6 @@ public class UserController extends AbstractController {
         userRepository.save(user);
         this.setupSession(session, user, request);
         ProfileInfoDTO profileInfoDTO = this.getProfileInfoDTO(user);
-        return new MsgObjectDTO(user.getEmail() + " successfully " + text + ".", new Date(), profileInfoDTO);
+        return new MsgObjectDTO(user.getEmail() + " successfully " + text + ".", LocalDateTime.now(), profileInfoDTO);
     }
 }

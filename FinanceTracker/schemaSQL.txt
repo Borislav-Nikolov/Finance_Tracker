@@ -5,7 +5,7 @@ USE final_project;
 CREATE TABLE IF NOT EXISTS final_project.users (
 	user_id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(45) NOT NULL UNIQUE,
-    password VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     first_name VARCHAR(45),
     last_name VARCHAR(45),
     email VARCHAR(60) NOT NULL UNIQUE,
@@ -110,3 +110,33 @@ CREATE TABLE IF NOT EXISTS final_project.budgets (
     CONSTRAINT budget_category_fk FOREIGN KEY (category_id)
     REFERENCES categories(category_id) ON DELETE CASCADE
 );
+
+INSERT INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Dragoto", "$2a$13$slnR.YrmveZzo5h4/cB6Ie/jfIqpfL9oR9K.9bpNAGQ11uvdaRlu2", "Dragostin", "Mirchevich",
+"dragonmagic@abv.bg", false, true, false, "2019-03-03", "2019-03-04");
+
+INSERT INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Voxi", "$2a$13$j86GTAUlTLZtCVhiqmsP.Oq2t7gTSI1w/fFxucZbxm93wAPuwNRG6", "Vokila", "Ivanova",
+"vokillah@abv.bg", false, true, false, "2019-03-03", "2019-03-04");
+
+INSERT INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Marchitu", "$2a$13$I1YtLK9D19SwfTeGo1ZqJ./SUTx.VNDlZPmQ5RWoIMYnmshS.eQb.", "Mara", "Popova",
+"maraty@abv.bg", false, false, false, "2019-03-03", "2019-03-04");
+
+INSERT INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Tiran", "$2a$13$duSb8/phb1OLzDBCQOlHfOjbg7pIjIbzGoQjnvpCFbHi.5bdEKrdC", "Titi", "Radulov",
+"tiranistraz@abv.bg", false, true, false, "2019-03-03", "2019-03-04");
+
+INSERT INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+ is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+ VALUES ("Velinda", "$2a$13$z/eBtUN5SQBFo7jctbjj7O98BH7J2426Tp8pSM4icjm.LuUzuumy6", "Velka", "Zaskova",
+ "vlinzsq@abv.bg", false, true, false, "2019-03-03", "2019-03-04");
+
+ INSERT INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+  is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+  VALUES ("Batko", "$2a$13$iCB9B9ZOjajrAP5mOmOy2uCR3FErOH7fso/fyCrQSeaT7MpLoBMyG", "Bombadil", "Nikolov",
+  "b.a.nikolov17@gmail.com", false, false, false, "2019-03-03", "2019-03-04");

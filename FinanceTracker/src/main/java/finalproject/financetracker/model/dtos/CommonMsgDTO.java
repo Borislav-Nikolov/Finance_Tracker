@@ -4,12 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
-
+import java.time.LocalDateTime;
 @Getter
 @Setter
 @AllArgsConstructor
 public class CommonMsgDTO {
     private String msg;
-    private Date date;
+    private LocalDateTime time;
 }

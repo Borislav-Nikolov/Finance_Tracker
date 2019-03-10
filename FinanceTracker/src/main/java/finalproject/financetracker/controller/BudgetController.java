@@ -2,7 +2,6 @@ package finalproject.financetracker.controller;
 
 import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.exceptions.NotFoundException;
-import finalproject.financetracker.model.daos.TransactionDao;
 import finalproject.financetracker.model.daos.UserDao;
 import finalproject.financetracker.model.dtos.MsgObjectDTO;
 import finalproject.financetracker.model.pojos.*;
@@ -22,8 +21,8 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -41,8 +40,6 @@ public class BudgetController extends AbstractController {
     private UserDao userDao;
     @Autowired
     private CategoryController categoryController;
-    @Autowired
-    private TransactionDao transactionDao;
 
     @GetMapping(value = "/budgets")
     public BudgetsViewDTO viewBudgets(HttpSession session, HttpServletRequest request)
@@ -87,7 +84,7 @@ public class BudgetController extends AbstractController {
         this.validateDates(budget);
         budgetRepository.save(budget);
         BudgetInfoDTO budgetInfo = getBudgetInfoDTO(budget);
-        return new MsgObjectDTO("Budget created successfully.", new Date(), budgetInfo);
+        return new MsgObjectDTO("Budget created successfully.", LocalDateTime.now(), budgetInfo);
     }
 
     @PutMapping(value = "/budgets/{budgetId}")
@@ -122,7 +119,7 @@ public class BudgetController extends AbstractController {
         }
         budgetRepository.save(budget);
         BudgetInfoDTO budgetInfo = getBudgetInfoDTO(budget);
-        return new MsgObjectDTO("Budget edited successfully.", new Date(), budgetInfo);
+        return new MsgObjectDTO("Budget edited successfully.", LocalDateTime.now(), budgetInfo);
     }
 
     @DeleteMapping(value = "/budgets/{budgetId}")
@@ -133,7 +130,7 @@ public class BudgetController extends AbstractController {
         this.validateBudgetOwnership(budget, user.getUserId());
         budgetRepository.delete(budget);
         BudgetInfoDTO budgetInfo = getBudgetInfoDTO(budget);
-        return new MsgObjectDTO("Budget deleted successfully.", new Date(), budgetInfo);
+        return new MsgObjectDTO("Budget deleted successfully.", LocalDateTime.now(), budgetInfo);
     }
 
     public void subtractFromBudgets(double amount, long userId, long categoryId) throws SQLException {
