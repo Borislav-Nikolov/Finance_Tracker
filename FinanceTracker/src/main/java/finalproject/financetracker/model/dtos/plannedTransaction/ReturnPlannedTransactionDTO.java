@@ -6,15 +6,13 @@ import finalproject.financetracker.model.pojos.Account;
 import finalproject.financetracker.model.pojos.Category;
 import finalproject.financetracker.model.pojos.PlannedTransaction;
 import finalproject.financetracker.model.pojos.User;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReturnPlannedTransactionDTO {

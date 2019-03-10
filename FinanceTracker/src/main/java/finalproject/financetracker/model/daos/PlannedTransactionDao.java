@@ -2,13 +2,17 @@ package finalproject.financetracker.model.daos;
 
 import finalproject.financetracker.model.dtos.plannedTransaction.ReturnPlannedTransactionDTO;
 import finalproject.financetracker.model.pojos.PlannedTransaction;
+import lombok.ToString;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Component
+@ToString
 public class PlannedTransactionDao extends AbstractDao {
     private JdbcTemplate jdbcTemplate;
 
@@ -16,10 +20,14 @@ public class PlannedTransactionDao extends AbstractDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public List<ReturnPlannedTransactionDTO> getAllWhereExecDateBeofreNext24Hours() {
-        String sql = "SELECT pt.pt_name, " +
+    public List<PlannedTransaction> getAllPlannedTransactionBefore(LocalDate localDate) {
+        long currentDate = localDate
+                .atTime(0,0,0).toEpochSecond(ZoneOffset.ofHoursMinutes(2,0));
+        String sql =
+                "SELECT pt.pt_id, " +
+                "pt.pt_name, " +
                 "pt.next_execution_date, " +
-                "pt.pt_amount AS amount, " +
+                "pt.pt_amount, " +
                 "pt.account_id, " +
                 "pt.category_id, " +
                 "pt.repeat_period, " +
@@ -29,9 +37,10 @@ public class PlannedTransactionDao extends AbstractDao {
                 "a.user_id AS user_id " +
                 "FROM final_project.planned_transactions AS pt " +
                 "JOIN accounts AS a ON pt.account_id = a.account_id " +
-                "JOIN categories AS c ON a.user_id = c.user_id " +  //TODO /////////////
-                "WHERE next_execution_date < DATE(NOW()+ INTERVAL 24 HOUR)";
-        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(ReturnPlannedTransactionDTO.class));
+                "JOIN categories AS c ON pt.category_id = c.category_id " +
+                "WHERE next_execution_date < FROM_UNIXTIME("+currentDate+")";
+        System.out.println(sql); //todo remove sql
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(PlannedTransaction.class));
     }
 
     public List<ReturnPlannedTransactionDTO> getAllByAccIdIsIncomeOrder(
@@ -39,11 +48,13 @@ public class PlannedTransactionDao extends AbstractDao {
             Long accId,
             Long catId,
             Boolean isIncome,
-            SQLColumnName columnName,
-            SQLOderBy orderBy) {
+            SQLOrderBy orderBy,
+            SQLOrder order) {
         String incomeQuery = (isIncome != null) ? ("AND c.is_income = " + isIncome + " ") : " ";
         String accIdQuery = (accId != null) ? ("AND a.account_id = " + accId + " ") : " ";
         String catIdQuery = (catId != null) ? ("AND c.category_id = " + catId + " ") : " ";
+        String orderInQuery = (order != null) ? (" "+order.toString() + " ") : "";
+        String orderByInQuery = (orderBy != null) ? ("ORDER BY " + orderBy.toString() + orderInQuery) : " ";
 
         String sql = "SELECT " +
                 "u.username," +
@@ -69,7 +80,7 @@ public class PlannedTransactionDao extends AbstractDao {
                  accIdQuery +
                  catIdQuery +
                  incomeQuery +
-                "ORDER BY " + columnName.toString() + " " + orderBy.toString() + ";";
+                 orderByInQuery + ";";
         System.out.println(sql);  //TODO {remove}show sql query in console
         return jdbcTemplate.query(
                 sql,

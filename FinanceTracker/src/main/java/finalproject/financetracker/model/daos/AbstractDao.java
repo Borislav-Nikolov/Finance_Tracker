@@ -30,7 +30,7 @@ public abstract class AbstractDao {
         }
     }
 
-    public enum SQLColumnName {
+    public enum SQLOrderBy {
         USER_ID,
         EXECUTION_DATE,
         AMOUNT,
@@ -39,11 +39,11 @@ public abstract class AbstractDao {
         PT_NAME,
         NEXT_EXECUTION_DATE, CATEGORY_NAME, PT_AMOUNT;
 
-        SQLColumnName() {
+        SQLOrderBy() {
         }
     }
 
-    public enum SQLOderBy {
+    public enum SQLOrder {
         ASC, DESC
     }
 

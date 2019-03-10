@@ -59,6 +59,7 @@ public class MyPdfWriter {
             tableAccount.addCell(new Cell().add("in/out \nlast \nyear").setBold());
             tableAccount.addCell(new Cell().add("in/out \ntotal").setBold());
 
+
             for (ReturnAccountDTO account: accounts){
 
                 //----------------------- Account name -----------------------//
@@ -68,7 +69,9 @@ public class MyPdfWriter {
                 tableAccount.addCell(new Cell().add(formatter.format(account.getAmount())));
 
                 //----------------------- Total transactions -----------------------//
-                tableAccount.addCell(new Cell().add(Integer.toString(transactions.size())));
+                tableAccount.addCell(new Cell().add(Integer.toString(transactions.stream()
+                        .filter(returnTransactionDTO->(returnTransactionDTO.getAccountId() == account.getAccountId()))
+                        .mapToInt(returnTransactionDTO->1).reduce(0,(a1,a2)->a1+a2))));
 
                 //----------------------- In/Out last week -----------------------//
                 double incomeTransactionsLastWeek = transactions
@@ -162,6 +165,8 @@ public class MyPdfWriter {
                         +" / "
                         +formatter.format(expenseTransactionsTotal)));
             }
+            tableAccount.addCell(new Cell().add("TOTAL transactions").setBold());
+            tableAccount.addCell(new Cell().add(Integer.toString(transactions.size())).setBold());
         }
         // Adding Table to document
         document.add(new Paragraph("\nAccounts").setBold().setFontSize(13));
@@ -204,13 +209,13 @@ public class MyPdfWriter {
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getTransactionName()));
                 tablePlannedTransactions.addCell(new Cell().add(formatter.format(transactionDTO.getAmount())));
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getNextExecutionDate()
-                        .format(DateTimeFormatter.ofPattern("dd.MM.YY HH:mm:"))));
+                        .format(DateTimeFormatter.ofPattern("dd.MM.YY HH:mm"))));
                 long days = (transactionDTO.getRepeatPeriod()/(1000*60*60*24));
                 long hours = ((transactionDTO.getRepeatPeriod()%(1000*60*60*24))/(1000*60*60));
                 long minutes = ((transactionDTO.getRepeatPeriod()%(1000*60*60*24))%(1000*60*60))/(1000*60);
-                String repeatPeriod = days+" "+((days>1)?"days":"day")+",\n"+
-                                     +hours+" "+((hours>1)?"hours":"hour")+",\n"+
-                                     +minutes+" "+((minutes>1)?"minutes":"minute");
+                String repeatPeriod = ((days==0)?"":(days+" "+((days>1)?"days,\n":"day,\n")))+
+                                      ((hours==0)?"":hours+" "+((hours>1)?"hours,\n":"hour,\n"))+
+                                      ((minutes==0)?"":(minutes+" "+((minutes>1)?"minutes":"minute")));
                 tablePlannedTransactions.addCell(repeatPeriod);
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getCategoryName()));
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getAccountName()));

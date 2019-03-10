@@ -78,7 +78,7 @@ public class TransactionController extends AbstractController {
                 LocalDateTime.now(),
                 addTransactionDTO.getAccountId(),
                 addTransactionDTO.getCategoryId());
-        this.calculateBudgetAndAccountAmount(t, u.getUserId());
+        this.calculateBudgetAndAccountAmount(t);
         repo.save(t);
         return new ReturnTransactionDTO(t)
                 .withUser(u)
@@ -166,26 +166,26 @@ public class TransactionController extends AbstractController {
             }
         }
 
-        AbstractDao.SQLColumnName columnName = AbstractDao.SQLColumnName.EXECUTION_DATE;
+        AbstractDao.SQLOrderBy columnName = AbstractDao.SQLOrderBy.EXECUTION_DATE;
         if (order != null) {
             switch (order) {
                 case "amount": {
-                    columnName = AbstractDao.SQLColumnName.AMOUNT;
+                    columnName = AbstractDao.SQLOrderBy.AMOUNT;
                     break;
                 }
                 case "tname": {
-                    columnName = AbstractDao.SQLColumnName.TRANSACTION_NAME;
+                    columnName = AbstractDao.SQLOrderBy.TRANSACTION_NAME;
                     break;
                 }
                 case "aname": {
-                    columnName = AbstractDao.SQLColumnName.ACCOUNT_NAME;
+                    columnName = AbstractDao.SQLOrderBy.ACCOUNT_NAME;
                     break;
                 }
             }
         }
-        AbstractDao.SQLOderBy orderBy = AbstractDao.SQLOderBy.ASC;
+        AbstractDao.SQLOrder orderBy = AbstractDao.SQLOrder.ASC;
         if (desc != null) {
-            if (desc.equalsIgnoreCase("true")) orderBy = AbstractDao.SQLOderBy.DESC;
+            if (desc.equalsIgnoreCase("true")) orderBy = AbstractDao.SQLOrder.DESC;
         }
         return dao.getAllByAccIdStartDateEndDateIsIncome(
                 u.getUserId(),
@@ -237,7 +237,7 @@ public class TransactionController extends AbstractController {
         return t;
     }
 
-    void calculateBudgetAndAccountAmount(Transaction t, long userId) throws SQLException {
+    void calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
         double transactionAmount = 0;
         Account a = accountDao.getById(t.getAccountId());
         Category c = categoryRepository.findByCategoryId(t.getCategoryId());
@@ -246,7 +246,7 @@ public class TransactionController extends AbstractController {
             transactionAmount = t.getAmount();
         } else {
             transactionAmount = t.getAmount() * -1;
-                budgetController.subtractFromBudgets(t.getAmount(), userId, c.getCategoryId());
+                budgetController.subtractFromBudgets(t.getAmount(), a.getUserId(), c.getCategoryId());
 
             t.setAmount(Math.abs(transactionAmount));
         }

@@ -91,24 +91,24 @@ public class AccountDao extends AbstractDao {
     }
 
     public List<Account> getAllAccountsAsc(long userId) throws SQLException {
-        return getAll(userId, QUERY_RETURN_MAX_LIMIT, QUERY_RETURN_OFFSET_DEFAULT, SQLOderBy.ASC);
+        return getAll(userId, QUERY_RETURN_MAX_LIMIT, QUERY_RETURN_OFFSET_DEFAULT, SQLOrder.ASC);
     }
 
     public List<Account> getAllAccountsDesc(long userId) throws SQLException {
-        return getAll(userId, QUERY_RETURN_MAX_LIMIT, QUERY_RETURN_OFFSET_DEFAULT, SQLOderBy.DESC);
+        return getAll(userId, QUERY_RETURN_MAX_LIMIT, QUERY_RETURN_OFFSET_DEFAULT, SQLOrder.DESC);
     }
 
-    private List<Account> getAll(long userId, int limit, int offset, SQLOderBy order) throws SQLException {
-        return getAllWhere(SQLColumnName.USER_ID, SQLCompareOperator.EQUALS, userId, limit, offset, order);
+    private List<Account> getAll(long userId, int limit, int offset, SQLOrder order) throws SQLException {
+        return getAllWhere(SQLOrderBy.USER_ID, SQLCompareOperator.EQUALS, userId, limit, offset, order);
     }
 
     private List<Account> getAllWhere(
-            SQLColumnName param,
+            SQLOrderBy param,
             SQLCompareOperator operator,
             long idColumnValueLong,
             int limit,
             int offset,
-            SQLOderBy order)
+            SQLOrder order)
             throws
             SQLException {
 

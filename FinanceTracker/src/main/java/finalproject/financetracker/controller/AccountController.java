@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -225,11 +226,10 @@ public class AccountController extends AbstractController {
 
 
     //-----------------------< Account scheduled Task >----------------------//
-    @PostConstruct
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "00 20 00 * * *")
     //<second> <minute> <hour> <day-of-month> <month> <day-of-week> {optional}<year>
     void executePlannedTransactions() {
-        plannedTransactionController.startScheduledCheck();
+        plannedTransactionController.startScheduledCheck(LocalDate.now().plusDays(1));
     }
 
     //-----------------------< /Scheduled Task >----------------------//
