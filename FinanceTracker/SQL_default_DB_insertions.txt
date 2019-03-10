@@ -1,0 +1,157 @@
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Clothes", false, null, 24);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Kids", false, null, 7);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Toys", false, null, 26);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Work", true, null, 8);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Electronics", false, null, 25);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Pets", false, null, 21);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Child support", true, null, 7);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Scholarship", true, null, 4);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Bonus", true, null, 15);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Gift", true, null, 2);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Investment income", true, null, 30);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Entertainment", false, null, 9);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Car", false, null, 6);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Food", false, null, 27);
+
+
+
+INSERT IGNORE INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Dragoto", "$2a$13$slnR.YrmveZzo5h4/cB6Ie/jfIqpfL9oR9K.9bpNAGQ11uvdaRlu2", "Dragostin", "Mirchevich",
+"dragonmagic@abv.bg", false, true, false, "2019-03-03", "2019-03-04");
+
+INSERT IGNORE INTO final_project.accounts(account_name, amount, user_id) VALUES ("Cash", 245.43,
+(SELECT user_id FROM final_project.users WHERE username LIKE "Dragoto"));
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Women", false, (SELECT user_id FROM final_project.users WHERE username LIKE "Dragoto"), 19);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Mom", true, (SELECT user_id FROM final_project.users WHERE username LIKE "Dragoto"), 16);
+
+INSERT IGNORE INTO final_project.budgets(budget_name, amount, starting_date, end_date, user_id, category_id)
+VALUES ("Food", 200, "2019-03-12", "2019-04-12", (SELECT user_id FROM final_project.users WHERE username LIKE "Dragoto"), 14);
+
+INSERT IGNORE INTO final_project.transactions(transaction_name, amount, execution_date, account_id, category_id)
+VALUES ("Lili - buket", 14, "2019-02-14 14:14:14",
+(SELECT account_id FROM final_project.accounts WHERE user_id = (SELECT user_id FROM final_project.users WHERE username LIKE "Dragoto")
+AND account_name LIKE "Cash" LIMIT 1),
+(SELECT category_id FROM final_project.categories WHERE user_id = (SELECT user_id FROM final_project.users WHERE username LIKE "Dragoto")
+AND category_name LIKE "Women" LIMIT 1));
+
+
+
+INSERT IGNORE INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Voxi", "$2a$13$j86GTAUlTLZtCVhiqmsP.Oq2t7gTSI1w/fFxucZbxm93wAPuwNRG6", "Vokila", "Ivanova",
+"vokillah@abv.bg", false, true, false, "2019-03-03", "2019-03-04");
+
+INSERT IGNORE INTO final_project.accounts(account_name, amount, user_id) VALUES ("Cash", 267.99,
+(SELECT user_id FROM final_project.users WHERE username LIKE "Voxi"));
+
+INSERT IGNORE INTO final_project.accounts(account_name, amount, user_id) VALUES ("Sibank", 3450.20,
+(SELECT user_id FROM final_project.users WHERE username LIKE "Voxi"));
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Games", false, (SELECT user_id FROM final_project.users WHERE username LIKE "Voxi"), 9);
+
+INSERT IGNORE INTO final_project.budgets(budget_name, amount, starting_date, end_date, user_id, category_id)
+VALUES ("Food", 300, "2019-03-12", "2019-04-12", (SELECT user_id FROM final_project.users WHERE username LIKE "Voxi"), 14);
+
+INSERT IGNORE INTO final_project.budgets(budget_name, amount, starting_date, end_date, user_id, category_id)
+VALUES ("Games", 1000, "2019-03-05", "2019-06-12",
+(SELECT user_id FROM final_project.users WHERE username LIKE "Voxi"),
+(SELECT category_id FROM final_project.categories WHERE user_id = (SELECT user_id FROM final_project.users WHERE username LIKE "Voxi")
+AND category_name LIKE "Games" LIMIT 1));
+
+
+
+INSERT IGNORE INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Marchitu", "$2a$13$I1YtLK9D19SwfTeGo1ZqJ./SUTx.VNDlZPmQ5RWoIMYnmshS.eQb.", "Mara", "Popova",
+"maraty@abv.bg", false, false, false, "2019-03-03", "2019-03-04");
+
+INSERT IGNORE INTO final_project.accounts(account_name, amount, user_id) VALUES ("Cash", 245.43,
+(SELECT user_id FROM final_project.users WHERE username LIKE "Marchitu"));
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Men", false, (SELECT user_id FROM final_project.users WHERE username LIKE "Marchitu"), 30);
+
+INSERT IGNORE INTO final_project.budgets(budget_name, amount, starting_date, end_date, user_id, category_id)
+VALUES ("Food", 300, "2019-03-12", "2019-04-12", (SELECT user_id FROM final_project.users WHERE username LIKE "Marchitu"), 14);
+
+
+
+INSERT IGNORE INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Tiran", "$2a$13$duSb8/phb1OLzDBCQOlHfOjbg7pIjIbzGoQjnvpCFbHi.5bdEKrdC", "Titi", "Radulov",
+"tiranistraz@abv.bg", false, true, false, "2019-03-03", "2019-03-04");
+
+INSERT IGNORE INTO final_project.accounts(account_name, amount, user_id) VALUES ("Cash", 245.43,
+(SELECT user_id FROM final_project.users WHERE username LIKE "Tiran"));
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Women", false, (SELECT user_id FROM final_project.users WHERE username LIKE "Tiran"), 19);
+
+INSERT IGNORE INTO final_project.budgets(budget_name, amount, starting_date, end_date, user_id, category_id)
+VALUES ("Food", 300, "2019-03-12", "2019-04-12", (SELECT user_id FROM final_project.users WHERE username LIKE "Tiran"), 14);
+
+
+
+INSERT IGNORE INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+ is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+ VALUES ("Velinda", "$2a$13$z/eBtUN5SQBFo7jctbjj7O98BH7J2426Tp8pSM4icjm.LuUzuumy6", "Velka", "Zaskova",
+ "vlinzsq@abv.bg", false, true, false, "2019-03-03", "2019-03-04");
+
+INSERT IGNORE INTO final_project.accounts(account_name, amount, user_id) VALUES ("Cash", 245.43,
+(SELECT user_id FROM final_project.users WHERE username LIKE "Velinda"));
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Men", false, (SELECT user_id FROM final_project.users WHERE username LIKE "Velinda"), 30);
+
+INSERT IGNORE INTO final_project.budgets(budget_name, amount, starting_date, end_date, user_id, category_id)
+VALUES ("Food", 300, "2019-03-12", "2019-04-12", (SELECT user_id FROM final_project.users WHERE username LIKE "Velinda"), 14);
+
+
+
+INSERT IGNORE INTO final_project.users(username, password, first_name, last_name, email, is_email_confirmed,
+is_subscribed, is_eligible_for_password_reset, last_notified, last_login)
+VALUES ("Batko", "$2a$13$iCB9B9ZOjajrAP5mOmOy2uCR3FErOH7fso/fyCrQSeaT7MpLoBMyG", "Bombadil", "Nikolov",
+"b.a.nikolov17@gmail.com", false, false, false, "2019-03-03", "2019-03-04");
+
+INSERT IGNORE INTO final_project.accounts(account_name, amount, user_id) VALUES ("Cash", 245.43,
+(SELECT user_id FROM final_project.users WHERE username LIKE "Batko"));
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Women", false, (SELECT user_id FROM final_project.users WHERE username LIKE "Batko"), 19);
+
+INSERT IGNORE INTO final_project.budgets(budget_name, amount, starting_date, end_date, user_id, category_id)
+VALUES ("Food", 300, "2019-03-12", "2019-04-12", (SELECT user_id FROM final_project.users WHERE username LIKE "Batko"), 14);

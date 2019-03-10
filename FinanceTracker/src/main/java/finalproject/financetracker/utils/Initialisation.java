@@ -1,5 +1,6 @@
 package finalproject.financetracker.utils;
 
+import finalproject.financetracker.model.repositories.UserRepository;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,29 +26,28 @@ public class Initialisation implements ApplicationListener<ContextRefreshedEvent
     @Autowired
     private ImageDao imageDao;
     @Autowired
-    private CategoryDao categoryDao;
+    private UserRepository userRepository;
 
     private Logger logger = LogManager.getLogger(Logger.class);
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         try {
-            createSchemaIfNotExists();
+            executeSqlQueriesFromFile("schemaSQL.txt");
             if (imageDao.getImageById(1) == null) {
                 imageDao.addAllIcons();
-
             }
-            if (categoryDao.getCategoryById(1) == null) {
-                categoryDao.addAllPredefinedCategories();
+            if (userRepository.findByUsername("Dragoto") == null) {
+                executeSqlQueriesFromFile("SQL_default_DB_insertions.txt");
             }
-        } catch (SQLException | IOException ex) {
+        } catch (IOException ex) {
             logger.error("Couldn't initialize DB: " + ex.getMessage());
         }
     }
-    private void createSchemaIfNotExists() throws SQLException, IOException {
+    private void executeSqlQueriesFromFile(String fileName) throws IOException {
         StringBuilder oneQuerySB = new StringBuilder();
         List<StringBuilder> allQueriesSB = new ArrayList<>();
-        File file = new File("schemaSQL.txt");
+        File file = new File(fileName);
         if (file.exists()) {
             logger.info("SQL schema query file - found!");
             try (FileInputStream fis = new FileInputStream(file)) {
