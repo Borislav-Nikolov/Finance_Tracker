@@ -32,7 +32,7 @@ import java.util.Optional;
 @RestController
 public abstract class AbstractController {
     public static final int SEC_TO_MILLIS = 1000;
-    public static final long MILLIS_FOR_MONTH = 2419200000L;
+    static final long MILLIS_FOR_MONTH = 2419200000L;
     static final String SESSION_USERNAME_KEY = "Username";
     static final String SESSION_USER_KEY = "User";
     static final String SESSION_IP_ADDR_KEY = "IpAddr";
@@ -40,7 +40,7 @@ public abstract class AbstractController {
 
     //---------------------< Methods >----------------------//
 
-    protected void logInfo(String msg) {
+    void logInfo(String msg) {
         logger.info(msg);
     }
 
@@ -58,14 +58,14 @@ public abstract class AbstractController {
                 + "\n\tmsg = " + e.getMessage(), e);
     }
 
-    protected void logError(HttpStatus httpStatusCode, Exception e) {
+    void logError(HttpStatus httpStatusCode, Exception e) {
         logger.error(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
                 + "\n\tmsg = " + e.getMessage(), e);
     }
 
-    protected User getLoggedValidUserFromSession(HttpSession sess, HttpServletRequest request)
+    User getLoggedValidUserFromSession(HttpSession sess, HttpServletRequest request)
             throws
             IOException,
             MyException {
@@ -80,7 +80,7 @@ public abstract class AbstractController {
         return mapper.readValue(sess.getAttribute(SESSION_USER_KEY).toString(), User.class);
     }
 
-    protected void checkIfBelongsToLoggedUser(long resourceUserId, User u)
+    void checkIfBelongsToLoggedUser(long resourceUserId, User u)
             throws
             ForbiddenRequestException {
 
@@ -112,18 +112,18 @@ public abstract class AbstractController {
         return u;
     }
 
-    protected <T extends Object> void checkIfNotNull(Class<?> c, T t) throws NotFoundException {
+    <T extends Object> void checkIfNotNull(Class<?> c, T t) throws NotFoundException {
         String className = c.getName().substring(c.getName().lastIndexOf(".") + 1);
         if (t == null) throw new NotFoundException(className + " not found");
     }
 
-    protected <T> T checkIfOptionalPresent(Class<?> c, Optional<T> o) throws NotFoundException {
+    private <T> T checkIfOptionalPresent(Class<?> c, Optional<T> o) throws NotFoundException {
         String className = c.getName().substring(c.getName().lastIndexOf(".") + 1);
         if (!o.isPresent()) throw new NotFoundException(className + " not found");
         return o.get();
     }
 
-    protected <T> T validateDataAndGetByIdFromRepo(String id,
+    <T> T validateDataAndGetByIdFromRepo(String id,
                                                    JpaRepository<T, Long> repo,
                                                    Class<?> c)
             throws NotFoundException,
@@ -134,7 +134,7 @@ public abstract class AbstractController {
         return checkIfOptionalPresent(c, t);
     }
 
-    protected <T> T validateDataAndGetByIdFromRepo(long id,
+    <T> T validateDataAndGetByIdFromRepo(long id,
                                                    JpaRepository<T, Long> repo,
                                                    Class<?> c)
             throws NotFoundException {
@@ -143,12 +143,12 @@ public abstract class AbstractController {
         return checkIfOptionalPresent(c, t);
     }
 
-    public static <T extends Object> String toJson(T u) throws JsonProcessingException {
+    static <T extends Object> String toJson(T u) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(u);
     }
 
-    public Integer parseInt(String num) throws InvalidRequestDataException {
+    Integer parseInt(String num) throws InvalidRequestDataException {
         try {
             return Integer.parseInt(num);
         } catch (IllegalArgumentException ex) {
@@ -156,7 +156,7 @@ public abstract class AbstractController {
         }
     }
 
-    public Long parseLong(String num) throws InvalidRequestDataException {
+    Long parseLong(String num) throws InvalidRequestDataException {
         try {
             return Long.parseLong(num);
         } catch (IllegalArgumentException | NullPointerException ex) {
@@ -164,7 +164,7 @@ public abstract class AbstractController {
         }
     }
 
-    public Double parseDouble(String num) throws InvalidRequestDataException {
+    Double parseDouble(String num) throws InvalidRequestDataException {
         try {
             return Double.parseDouble(num);
         } catch (IllegalArgumentException | NullPointerException ex) {

@@ -283,7 +283,7 @@ public class UserController extends AbstractController {
     }
     /* ----- VALIDATIONS ----- */
 
-    public static boolean isLoggedIn(HttpSession session) {
+    static boolean isLoggedIn(HttpSession session) {
         return !(session.isNew() || session.getAttribute("Username") == null);
     }
 

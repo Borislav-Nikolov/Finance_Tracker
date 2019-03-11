@@ -145,7 +145,7 @@ public class BudgetController extends AbstractController {
         return new MsgObjectDTO("Budget deleted successfully.", LocalDateTime.now(), budgetInfo);
     }
 
-    public void subtractFromBudgets(double amount, long userId, long categoryId) throws SQLException {
+    void subtractFromBudgets(double amount, long userId, long categoryId) throws SQLException {
         List<Budget> budgets = budgetRepository.findAllByUserId(userId);
         for (Budget budget : budgets) {
             if (budget.getCategoryId() == categoryId && budget.getEndDate().isAfter(LocalDate.now())) {

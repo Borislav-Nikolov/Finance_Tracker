@@ -108,7 +108,7 @@ public class CategoryController extends AbstractController {
         return new MsgObjectDTO("Category deleted successfully.", LocalDateTime.now(), categoryInfo);
     }
 
-    public Category getCategoryById(long categoryId, HttpSession session, HttpServletRequest request)
+    Category getCategoryById(long categoryId, HttpSession session, HttpServletRequest request)
             throws IOException,
             MyException {
 
