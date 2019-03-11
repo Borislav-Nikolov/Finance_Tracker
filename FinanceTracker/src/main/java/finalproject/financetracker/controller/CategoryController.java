@@ -94,11 +94,11 @@ public class CategoryController extends AbstractController {
     }
 
     @DeleteMapping(value = "/categories/{categoryId}")
-    public MsgObjectDTO deleteCategory(@PathVariable("categoryId") long categoryId, HttpSession session,
+    public MsgObjectDTO deleteCategory(@PathVariable("categoryId") String categoryId, HttpSession session,
                                           HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
-        Category category = categoryRepository.findByCategoryId(categoryId);
+        Category category = categoryRepository.findByCategoryId(parseLong(categoryId));
         this.validateCategoryAndUserOwnership(user, category);
         if (category.getUserId() == null) {
             throw new UnauthorizedAccessException("Default category cannot be deleted.");

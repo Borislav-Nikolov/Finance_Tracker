@@ -228,7 +228,7 @@ public abstract class AbstractController {
         resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
         return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Ooops! Server error occurred!",
+                "Oops, a server error occurred!",
                 LocalDateTime.now());
     }
 }

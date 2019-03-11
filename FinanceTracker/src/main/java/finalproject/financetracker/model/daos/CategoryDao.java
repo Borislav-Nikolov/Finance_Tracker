@@ -49,7 +49,7 @@ public class CategoryDao {
             plannedTransaction.setCategoryId(defaultCategoryId);
             plannedTransactionRepo.save(plannedTransaction);
         }
-        List<Budget> budgets = budgetRepository.findAllByCategoryId(defaultCategoryId);
+        List<Budget> budgets = budgetRepository.findAllByCategoryId(category.getCategoryId());
         for (Budget budget : budgets) {
             budget.setCategoryId(defaultCategoryId);
             budgetRepository.save(budget);
