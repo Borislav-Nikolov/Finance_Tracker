@@ -16,6 +16,7 @@ import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -52,6 +53,7 @@ public class PlannedTransactionController extends AbstractController {
     //--------------add transaction for given account---------------------//
     @RequestMapping(value = "/ptransactions", method = RequestMethod.POST)
     @ResponseBody
+    @Transactional(rollbackFor = Exception.class)
     public ReturnPlannedTransactionDTO addPlannedTransaction(@RequestBody AddPlannedTransactionDTO addTransactionDTO,
                                                              HttpSession sess, HttpServletRequest request)
             throws
@@ -79,7 +81,8 @@ public class PlannedTransactionController extends AbstractController {
                 addTransactionDTO.getAccountId(),
                 addTransactionDTO.getCategoryId(),
                 addTransactionDTO.getRepeatPeriod());
-        new PlannedTransactionExecutor(t).start();
+        System.out.println(Thread.currentThread().getName() +" is calling execute");  //todo remove
+        transactionController.execute(t);
         return new ReturnPlannedTransactionDTO(repo.save(t))
                 .withUser(u)
                 .withCategory(c)
@@ -236,7 +239,7 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void execute(PlannedTransaction pt) throws SQLException {
+    public void recalculateAndSave(PlannedTransaction pt) throws SQLException {
         Transaction t = new Transaction(
                 pt.getPtName()
                         .concat(pt.getNextExecutionDate()
@@ -259,11 +262,10 @@ public class PlannedTransactionController extends AbstractController {
         new PlannedTransactionScheduler(toDate).start();
     }
 
-
-    private class PlannedTransactionScheduler extends Thread {
+    public class PlannedTransactionScheduler extends Thread {
         private LocalDate localDate;
 
-        PlannedTransactionScheduler(LocalDate localDate){
+        public PlannedTransactionScheduler(LocalDate localDate){
             this.localDate = localDate;
         }
 
@@ -271,61 +273,13 @@ public class PlannedTransactionController extends AbstractController {
         public void run() {
             logInfo("PlannedTransactionScheduler is performing check...");
             List<PlannedTransaction> transactions = PlannedTransactionController.this.dao
-                                                                 .getAllPlannedTransactionBefore(localDate);
+                    .getAllPlannedTransactionBefore(localDate);
             logInfo("Found " + transactions.size() + " transactions for execution.");
 
             for (PlannedTransaction pt : transactions) {
-                new PlannedTransactionExecutor(pt).start();
+                System.out.println(Thread.currentThread().getName() +" is calling execute");  //todo remove
+                transactionController.execute(pt);
             }
         }
     }
-
-    private class PlannedTransactionExecutor extends Thread {
-        private PlannedTransaction plannedTransaction;
-
-        PlannedTransactionExecutor(PlannedTransaction pt) {
-            this.plannedTransaction = pt;
-        }
-
-        @Override
-        public synchronized void start() {
-            super.start();
-            logInfo("New PlannedTransactionExecutor started for " + this.plannedTransaction);
-        }
-
-        @Override
-        public void run() {
-
-            while (this.plannedTransaction.getNextExecutionDate().isBefore(LocalDateTime.now())) {
-                try {
-                    synchronized (PlannedTransactionController.concurrentLock) {
-                        PlannedTransactionController.this.execute(this.plannedTransaction);
-                    }
-                } catch (Exception e) {
-                    logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
-                }
-            }
-            try {
-                if (this.plannedTransaction.getNextExecutionDate()
-                        .isBefore(LocalDate.now().plusDays(1).atTime(0, 0, 0))) {
-                    logInfo("Waiting..... " + plannedTransaction);
-                    Thread.sleep(this.plannedTransaction.getNextExecutionDate()
-                                            .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILLIS
-                                          -
-                                        LocalDateTime.now()
-                                            .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILLIS);
-                    logInfo("Executing... " + this.plannedTransaction);
-                    synchronized (PlannedTransactionController.concurrentLock) {
-                        PlannedTransactionController.this.execute(plannedTransaction);
-                    }
-                    logInfo("Executed.... " + this.plannedTransaction);
-                }
-            } catch (Exception e) {
-                logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
-            }
-        }
-    }
-
 }
-
-

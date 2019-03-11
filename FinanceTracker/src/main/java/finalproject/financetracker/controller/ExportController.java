@@ -39,7 +39,7 @@ public class ExportController {
                                                           0L,
                                                           null,
                                                           null,
-                                                          null,
+                                                           AbstractDao.SQLOrderBy.EXECUTION_DATE,
                                                           null,
                                                           null,
                                                           null),
@@ -47,7 +47,7 @@ public class ExportController {
                                                           null,
                                                           null,
                                                           null,
-                                                          null,
+                                                          AbstractDao.SQLOrderBy.NEXT_EXECUTION_DATE,
                                                           null)
                         ).create();
     }

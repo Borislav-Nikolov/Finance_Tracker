@@ -16,7 +16,7 @@ import java.util.List;
 public class PlannedTransactionDao extends AbstractDao {
     private JdbcTemplate jdbcTemplate;
 
-    PlannedTransactionDao(JdbcTemplate jdbcTemplate) {
+    public PlannedTransactionDao(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 

@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AddPlannedTransactionDTO implements IRequestDTO {
+    public static final int SECOND_IN_DAY = 86400000;
     private String transactionName;
     private long executionOffset;
     private double amount;
@@ -27,7 +28,7 @@ public class AddPlannedTransactionDTO implements IRequestDTO {
                 this.amount <= 0 ||
                 this.categoryId <= 0 ||
                 this.accountId <= 0 ||
-                this.repeatPeriod == 0) {  //TODO repeat period >= 1 day in millis
+                this.repeatPeriod < SECOND_IN_DAY) {
             throw new InvalidRequestDataException();
         }
     }

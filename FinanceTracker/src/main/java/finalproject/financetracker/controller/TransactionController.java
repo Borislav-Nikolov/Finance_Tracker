@@ -8,14 +8,13 @@ import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.transaction.AddTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.UpdateTransactionDTO;
-import finalproject.financetracker.model.pojos.Account;
-import finalproject.financetracker.model.pojos.Category;
-import finalproject.financetracker.model.pojos.Transaction;
-import finalproject.financetracker.model.pojos.User;
+import finalproject.financetracker.model.pojos.*;
 import finalproject.financetracker.model.repositories.AccountRepo;
 import finalproject.financetracker.model.repositories.CategoryRepository;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -24,15 +23,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @RequestMapping(value = "/profile", produces = "application/json")
 @Controller
 @ResponseBody
 public class TransactionController extends AbstractController {
-
-
+    @Autowired
+    private PlannedTransactionController plannedTransactionController;
     @Autowired
     private TransactionRepo repo;
     @Autowired
@@ -63,8 +64,8 @@ public class TransactionController extends AbstractController {
         User u = getLoggedValidUserFromSession(sess, request);
         addTransactionDTO.checkValid();
         List<Transaction> transactions = repo.findAllByAccountId(addTransactionDTO.getAccountId());
-        ReturnAccountDTO a = accountController.getAccByIdLong(addTransactionDTO.getAccountId(), sess, request);    // WebService
-        Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess, request);        // WebService
+        ReturnAccountDTO a = accountController.getAccByIdLong(addTransactionDTO.getAccountId(), sess, request);// WebService
+        Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess, request); // WebService
 
         for (Transaction transaction : transactions) {
             if (addTransactionDTO.getTransactionName().equalsIgnoreCase(transaction.getTransactionName())) {
@@ -237,7 +238,7 @@ public class TransactionController extends AbstractController {
         return t;
     }
 
-    void calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
+    public void calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
         double transactionAmount = 0;
         Account a = accountDao.getById(t.getAccountId());
         Category c = categoryRepository.findByCategoryId(t.getCategoryId());
@@ -252,5 +253,41 @@ public class TransactionController extends AbstractController {
         }
         a.setAmount(a.getAmount() + transactionAmount);
         accountRepo.save(a);
+    }
+
+    @Async
+    @Transactional(rollbackFor = Exception.class)
+    public void execute(PlannedTransaction pt){
+        System.out.println(Thread.currentThread().getName()+" starts executing");
+        boolean error = false;
+        while (pt.getNextExecutionDate().isBefore(LocalDateTime.now())) {
+            try {
+                synchronized (PlannedTransactionController.concurrentLock) {
+                    plannedTransactionController.recalculateAndSave(pt);
+                }
+            } catch (Exception e) {
+                logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+                error = true;
+                break;
+            }
+        }
+        try {
+            if (!error && pt.getNextExecutionDate()
+                    .isBefore(LocalDate.now().plusDays(1).atTime(0, 0, 0))) {
+                logInfo("Waiting..... " + pt);
+                Thread.sleep(pt.getNextExecutionDate()
+                        .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILLIS
+                        -
+                        LocalDateTime.now()
+                                .toEpochSecond(ZoneOffset.UTC) * SEC_TO_MILLIS);
+                logInfo("Executing... " + pt);
+                synchronized (PlannedTransactionController.concurrentLock) {
+                    plannedTransactionController.recalculateAndSave(pt);
+                }
+                logInfo("Executed.... " + pt);
+            }
+        } catch (Exception e) {
+            logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
     }
 }

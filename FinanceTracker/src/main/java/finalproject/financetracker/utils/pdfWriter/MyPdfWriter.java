@@ -44,9 +44,9 @@ public class MyPdfWriter {
                 "\nFirst name: " +  user.getFirstName() +
                 "\nLast name: " + user.getLastName() +
                 "\nEmail: " + user.getEmail()));
-        StringBuilder accountsText = new StringBuilder();
-        // Creating a table
-        float [] pointColumnWidths = {150F, 150F,150F,150F,};
+
+        // ------------Creating a tables---------------
+
         Table tableAccount = new Table(7);
         NumberFormat formatter = new DecimalFormat("#0.00");
         // Adding cells to the table
@@ -185,7 +185,7 @@ public class MyPdfWriter {
                 tableTransactions.addCell(new Cell().add(transactionDTO.getTransactionName()));
                 tableTransactions.addCell(new Cell().add(formatter.format(transactionDTO.getAmount())));
                 tableTransactions.addCell(new Cell().add(transactionDTO.getExecutionDate()
-                        .format(DateTimeFormatter.ofPattern("dd.MM.YY HH:mm:"))));
+                        .format(DateTimeFormatter.ofPattern("dd.MM.YY HH:mm"))));
                 tableTransactions.addCell(new Cell().add(transactionDTO.getCategoryName()));
                 tableTransactions.addCell(new Cell().add(transactionDTO.getAccountName()));
                 tableTransactions.addCell(new Cell().add(transactionDTO.getIsIncome().toString()));
@@ -213,9 +213,9 @@ public class MyPdfWriter {
                 long days = (transactionDTO.getRepeatPeriod()/(1000*60*60*24));
                 long hours = ((transactionDTO.getRepeatPeriod()%(1000*60*60*24))/(1000*60*60));
                 long minutes = ((transactionDTO.getRepeatPeriod()%(1000*60*60*24))%(1000*60*60))/(1000*60);
-                String repeatPeriod = ((days==0)?"":(days+" "+((days>1)?"days,\n":"day,\n")))+
-                                      ((hours==0)?"":hours+" "+((hours>1)?"hours,\n":"hour,\n"))+
-                                      ((minutes==0)?"":(minutes+" "+((minutes>1)?"minutes":"minute")));
+                String repeatPeriod = ((days==0)?"":(days+" "+((days>1)?"days":"day")))+
+                                      ((hours==0)?"":(",\n"+hours+" "+((hours>1)?"hours":"hour")))+
+                                      ((minutes==0)?"":(",\n"+minutes+" "+((minutes>1)?"minutes":"minute")));
                 tablePlannedTransactions.addCell(repeatPeriod);
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getCategoryName()));
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getAccountName()));

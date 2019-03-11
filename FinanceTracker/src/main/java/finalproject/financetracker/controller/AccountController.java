@@ -179,7 +179,7 @@ public class AccountController extends AbstractController {
             MyException {
 
         User u = getLoggedValidUserFromSession(sess, request);
-        List<Account> result;
+        List<Account> result;                                     // ORDER BY Account name
         if (order != null && order == true) {
             result = dao.getAllAccountsDesc(u.getUserId());
         } else {
@@ -226,7 +226,7 @@ public class AccountController extends AbstractController {
 
 
     //-----------------------< Account scheduled Task >----------------------//
-    @Scheduled(cron = "00 20 00 * * *")
+    @Scheduled(cron = "00 00 00 * * *")
     //<second> <minute> <hour> <day-of-month> <month> <day-of-week> {optional}<year>
     void executePlannedTransactions() {
         plannedTransactionController.startScheduledCheck(LocalDate.now().plusDays(1));
