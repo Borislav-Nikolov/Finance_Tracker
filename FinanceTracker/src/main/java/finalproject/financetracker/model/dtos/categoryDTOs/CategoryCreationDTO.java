@@ -12,10 +12,12 @@ import lombok.Setter;
 public class CategoryCreationDTO implements IRequestDTO {
     private String categoryName;
     private boolean isIncome;
-    private long imageId;
+    private Long imageId;
 
     @Override
     public void checkValid() throws InvalidRequestDataException {
-        if (categoryName == null) throw new InvalidRequestDataException("Category name is null.");
+        if (this.categoryName == null || this.imageId == null) {
+            throw new InvalidRequestDataException("Category name is null.");
+        }
     }
 }

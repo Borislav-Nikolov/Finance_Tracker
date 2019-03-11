@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 
@@ -159,7 +160,7 @@ public abstract class AbstractController {
     public Long parseLong(String num) throws InvalidRequestDataException {
         try {
             return Long.parseLong(num);
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | NullPointerException ex) {
             throw new InvalidRequestDataException("Non-numeric value given.");
         }
     }
@@ -167,7 +168,7 @@ public abstract class AbstractController {
     public Double parseDouble(String num) throws InvalidRequestDataException {
         try {
             return Double.parseDouble(num);
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | NullPointerException ex) {
             throw new InvalidRequestDataException("Non-numeric value given.");
         }
     }
@@ -194,7 +195,7 @@ public abstract class AbstractController {
             HttpMessageNotReadableException.class})  //400
     public ErrMsg MyExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.BAD_REQUEST.value());
-        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(),new Date());
+        return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({
@@ -203,31 +204,31 @@ public abstract class AbstractController {
             UnauthorizedAccessException.class})  // 401
     public ErrMsg MyLoginExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.UNAUTHORIZED.value());
-        return new ErrMsg(HttpStatus.UNAUTHORIZED.value(), e.getMessage(),new Date());
+        return new ErrMsg(HttpStatus.UNAUTHORIZED.value(), e.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({ForbiddenRequestException.class})  //403
     public ErrMsg MyForbiddenExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.FORBIDDEN.value());
-        return new ErrMsg(HttpStatus.FORBIDDEN.value(), e.getMessage(),new Date());
+        return new ErrMsg(HttpStatus.FORBIDDEN.value(), e.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({NotFoundException.class})  //404
     public ErrMsg MyNotFoundExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.NOT_FOUND.value());
-        return new ErrMsg(HttpStatus.NOT_FOUND.value(), e.getMessage(),new Date());
+        return new ErrMsg(HttpStatus.NOT_FOUND.value(), e.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({FailedActionException.class}) // 417
     public ErrMsg expectationFailedHandler(Exception e, HttpServletResponse resp) {
         resp.setStatus(HttpStatus.EXPECTATION_FAILED.value());
-        return new ErrMsg(HttpStatus.EXPECTATION_FAILED.value(), e.getMessage(),new Date());
+        return new ErrMsg(HttpStatus.EXPECTATION_FAILED.value(), e.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({Exception.class,SQLException.class, DataAccessException.class,IOException.class}) //500
     public ErrMsg ExceptionHandler(Exception e, HttpServletResponse resp){
         resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
-        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(),new Date());
+        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(), LocalDateTime.now());
     }
 }

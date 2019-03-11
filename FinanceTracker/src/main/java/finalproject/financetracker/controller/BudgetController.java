@@ -74,6 +74,9 @@ public class BudgetController extends AbstractController {
         User user = this.getLoggedValidUserFromSession(session, request);
         String budgetName = budgetCreationDTO.getBudgetName();
         double amount = budgetCreationDTO.getAmount();
+        if (amount < 0) {
+            throw new InvalidRequestDataException("Budget amount is less than 0.");
+        }
         LocalDate startingDate = timeUtil.checkParseLocalDate(budgetCreationDTO.getStartingDate());
         LocalDate endDate = timeUtil.checkParseLocalDate(budgetCreationDTO.getEndDate());
         long userId = user.getUserId();
@@ -92,30 +95,33 @@ public class BudgetController extends AbstractController {
             @PathVariable String budgetId,
             @RequestParam(value = "budgetName", required = false) String budgetName,
             @RequestParam(value = "amount", required = false) String amount,
+            @RequestParam(value = "startingDate", required = false) String startingDate,
             @RequestParam(value = "endDate", required = false) String endDate,
             @RequestParam(value = "categoryId", required = false) String categoryId,
             HttpSession session,
             HttpServletRequest request)
                                 throws IOException, MyException {
-        Double parsedAmount = parseDouble(amount);
-        Long parsedLong = parseLong(categoryId);
         User user = this.getLoggedValidUserFromSession(session, request);
-        categoryController.getCategoryById(parsedLong, session, request);
+        Long parsedCategoryId = null;
+        if (categoryId != null) {
+            parsedCategoryId = parseLong(categoryId);
+            categoryController.getCategoryById(parsedCategoryId, session, request);
+        }
         Budget budget = budgetRepository.findByBudgetId(parseLong(budgetId));
+        if (amount != null) {
+            Double parsedAmount = parseDouble(amount);
+            if (parsedAmount < 0) {
+                throw new InvalidRequestDataException("Budget amount is less than 0.");
+            }
+            budget.setAmount(parsedAmount);
+        }
         this.validateBudgetOwnership(budget, user.getUserId());
         if (budgetName != null) {
             budget.setBudgetName(budgetName);
         }
-        if (amount != null) {
-            budget.setAmount(parsedAmount);
-        }
-        if (endDate != null) {
-            LocalDate parsedEndDate = timeUtil.checkParseLocalDate(endDate);
-            budget.setEndDate(parsedEndDate);
-            this.validateDates(budget);
-        }
+        this.changeDates(budget, startingDate, endDate);
         if (categoryId != null) {
-            budget.setCategoryId(parsedLong);
+            budget.setCategoryId(parsedCategoryId);
         }
         budgetRepository.save(budget);
         BudgetInfoDTO budgetInfo = getBudgetInfoDTO(budget);
@@ -155,6 +161,18 @@ public class BudgetController extends AbstractController {
                 budget.getBudgetId(), budget.getBudgetName(),
                 budget.getAmount(), budget.getStartingDate(),
                 budget.getEndDate(), budget.getUserId(), budget.getCategoryId());
+    }
+
+    private void changeDates(Budget budget, String startingDate, String endDate) throws InvalidRequestDataException {
+        if (startingDate != null) {
+            LocalDate parsedStartingDate = timeUtil.checkParseLocalDate(startingDate);
+            budget.setStartingDate(parsedStartingDate);
+        }
+        if (endDate != null) {
+            LocalDate parsedEndDate = timeUtil.checkParseLocalDate(endDate);
+            budget.setEndDate(parsedEndDate);
+        }
+        this.validateDates(budget);
     }
 
     /* ----- VALIDATIONS ----- */

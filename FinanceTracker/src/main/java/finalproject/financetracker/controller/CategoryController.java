@@ -117,7 +117,7 @@ public class CategoryController extends AbstractController {
         if (category.getUserId() == UserDao.DEFAULT_CATEGORY_USER_ID || user.getUserId() == category.getUserId()) {
             return category;
         }
-        throw new ForbiddenRequestException("Category does not belong to this user.");
+        throw new ForbiddenRequestException("Forbidden request.");
     }
 
     private CategoryInfoDTO getCategoryInfoDTO(Category category) {

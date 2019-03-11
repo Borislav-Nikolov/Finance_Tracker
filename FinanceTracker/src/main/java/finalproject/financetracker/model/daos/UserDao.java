@@ -74,7 +74,7 @@ public class UserDao {
         if (accounts != null) {
             for (Account account : accounts) {
                 List<PlannedTransaction> plannedTransactions = plannedTransactionRepo
-                                              .findAllByAccountId(account.getAccountId());  //TODO find all by userId
+                                              .findAllByAccountId(account.getAccountId());
                 if (plannedTransactions != null) {
                     for (PlannedTransaction plannedTransaction : plannedTransactions) {
                         plannedTransactionRepo.delete(plannedTransaction);
