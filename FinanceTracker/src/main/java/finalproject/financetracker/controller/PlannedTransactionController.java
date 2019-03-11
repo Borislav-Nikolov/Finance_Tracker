@@ -251,7 +251,7 @@ public class PlannedTransactionController extends AbstractController {
 
     private void reSchedule(PlannedTransaction pt, long init) {
         long period = init > 0 ? init : pt.getRepeatPeriod();
-        if (period % MILLIS_FOR_MONTH == 0 && LocalDate.now().getDayOfMonth()<29) {
+        if (period % MILLIS_FOR_MONTH == 0) {
             pt.setNextExecutionDate(pt.getNextExecutionDate().plusMonths(period / MILLIS_FOR_MONTH));
         } else {
             pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(period / SEC_TO_MILLIS));

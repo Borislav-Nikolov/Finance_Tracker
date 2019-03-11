@@ -11,6 +11,7 @@ import finalproject.financetracker.model.dtos.plannedTransaction.ReturnPlannedTr
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
 import finalproject.financetracker.model.pojos.User;
 import lombok.AllArgsConstructor;
+import org.springframework.web.servlet.mvc.AbstractController;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -21,9 +22,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import static finalproject.financetracker.controller.AbstractController.MILLIS_FOR_MONTH;
+
 @AllArgsConstructor
 public class MyPdfWriter {
-    public static final long MILLIS_FOR_MONTH = 2419200000L;
+
     public static final int DAYS_IN_WEEK = 7;
     private User user;
     private List<ReturnAccountDTO> accounts;
@@ -208,9 +211,8 @@ public class MyPdfWriter {
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getNextExecutionDate()
                         .format(DateTimeFormatter.ofPattern("dd.MM.YY HH:mm"))));
                 String repeatPeriod;
-                if (transactionDTO.getRepeatPeriod()% MILLIS_FOR_MONTH == 0 &&
-                                                    transactionDTO.getNextExecutionDate().getDayOfMonth()<29) {
-                    long months = transactionDTO.getRepeatPeriod()/MILLIS_FOR_MONTH;
+                if (transactionDTO.getRepeatPeriod()% MILLIS_FOR_MONTH == 0) {
+                    long months = transactionDTO.getRepeatPeriod()/ MILLIS_FOR_MONTH;
                     repeatPeriod = (months==1) ? "every month":"every "+months+" months";
                 }else {
                     long days = (transactionDTO.getRepeatPeriod() / (1000 * 60 * 60 * 24));

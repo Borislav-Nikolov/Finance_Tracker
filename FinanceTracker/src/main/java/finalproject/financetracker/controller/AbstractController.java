@@ -32,7 +32,7 @@ import java.util.Optional;
 @RestController
 public abstract class AbstractController {
     public static final int SEC_TO_MILLIS = 1000;
-    static final long MILLIS_FOR_MONTH = 2419200000L;
+    public static final long MILLIS_FOR_MONTH = 2678400000L;
     static final String SESSION_USERNAME_KEY = "Username";
     static final String SESSION_USER_KEY = "User";
     static final String SESSION_IP_ADDR_KEY = "IpAddr";
