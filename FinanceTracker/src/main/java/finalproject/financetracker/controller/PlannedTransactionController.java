@@ -238,7 +238,7 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void recalculateAndSave(PlannedTransaction pt) throws SQLException {
+    public void recalculateAndSave(PlannedTransaction pt) throws SQLException, MyException {
         Transaction t = new Transaction(
                 pt.getPtName()
                         .concat(pt.getNextExecutionDate()
@@ -253,7 +253,11 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     private void reSchedule(PlannedTransaction pt) {
-        pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(pt.getRepeatPeriod() / SEC_TO_MILLIS));
+        if (pt.getRepeatPeriod()% MILLIS_FOR_MONTH != 0) {
+            pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(pt.getRepeatPeriod() / SEC_TO_MILLIS));
+        }else {
+            pt.setNextExecutionDate(pt.getNextExecutionDate().plusMonths(pt.getRepeatPeriod()/MILLIS_FOR_MONTH));
+        }
         repo.save(pt);
     }
 

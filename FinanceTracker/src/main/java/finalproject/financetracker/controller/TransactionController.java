@@ -238,10 +238,10 @@ public class TransactionController extends AbstractController {
         return t;
     }
 
-    public void calculateBudgetAndAccountAmount(Transaction t) throws SQLException {
+    public void calculateBudgetAndAccountAmount(Transaction t) throws SQLException, MyException {
         double transactionAmount = 0;
-        Account a = accountDao.getById(t.getAccountId());
-        Category c = categoryRepository.findByCategoryId(t.getCategoryId());
+        Account a = validateDataAndGetByIdFromRepo(t.getAccountId(),accountRepo,Account.class);
+        Category c = validateDataAndGetByIdFromRepo(t.getCategoryId(),categoryRepository,Category.class);
 
         if (c.isIncome()) {
             transactionAmount = t.getAmount();
@@ -258,7 +258,6 @@ public class TransactionController extends AbstractController {
     @Async
     @Transactional(rollbackFor = Exception.class)
     public void execute(PlannedTransaction pt){
-        System.out.println(Thread.currentThread().getName()+" starts executing");
         boolean error = false;
         while (pt.getNextExecutionDate().isBefore(LocalDateTime.now())) {
             try {

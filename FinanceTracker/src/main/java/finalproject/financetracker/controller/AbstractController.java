@@ -32,13 +32,13 @@ import java.util.Optional;
 @RestController
 public abstract class AbstractController {
     public static final int SEC_TO_MILLIS = 1000;
+    public static final long MILLIS_FOR_MONTH = 2419200000L;
     static final String SESSION_USERNAME_KEY = "Username";
     static final String SESSION_USER_KEY = "User";
     static final String SESSION_IP_ADDR_KEY = "IpAddr";
+    private Logger logger = LogManager.getLogger(Logger.class);
 
     //---------------------< Methods >----------------------//
-
-    private Logger logger = LogManager.getLogger(Logger.class);
 
     protected void logInfo(String msg) {
         logger.info(msg);
