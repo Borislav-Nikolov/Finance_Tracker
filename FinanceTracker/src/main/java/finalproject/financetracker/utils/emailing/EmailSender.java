@@ -34,7 +34,7 @@ public class EmailSender {
             toBeNotified = userDao.getEmailsToBeNotifiedByReminder();
             for (Map<String, Object> email : toBeNotified) {
                 String recipientEmail = (String) email.get("email");
-                new Thread(()->mailUtil.sendSimpleMessage(recipientEmail, "noreply@traxter.com", subject, message))
+                new Thread(()->mailUtil.sendSimpleMessage(recipientEmail,  subject, message))
                 .start();
             }
         userDao.updateUsersLastNotified(toBeNotified);
@@ -46,7 +46,7 @@ public class EmailSender {
         String message = user.getUsername() + ",\n" +
                 "Your " + budget.getBudgetName() + " budget is at " + budget.getAmount() + ".";
         new Thread(()->
-                mailUtil.sendSimpleMessage(user.getEmail(), "noreply@traxter.com", subject, message)).start();
+                mailUtil.sendSimpleMessage(user.getEmail(),  subject, message)).start();
     }
 
     public void sendEmailConfirmationToken(User user, VerificationToken verToken)
@@ -62,7 +62,7 @@ public class EmailSender {
         String subject = "Confirm Email";
         String confirmationUrl = "http://localhost:8888/confirm?token=" + token;
         String message = "Please, click the following link to confirm your email:\n" + confirmationUrl;
-        new Thread(() -> mailUtil.sendSimpleMessage(recipientAddress, "noreply@traxter.com", subject, message))
+        new Thread(() -> mailUtil.sendSimpleMessage(recipientAddress,  subject, message))
                 .start();
     }
     public void sendPasswordResetLink(User user, VerificationToken verToken)
@@ -77,7 +77,7 @@ public class EmailSender {
         String token = verToken.getToken();
         String subject = "Reset Password Key";
         String message = "Please, use the following key to reset your password:\n" + token;
-        new Thread(() -> mailUtil.sendSimpleMessage(recipientAddress, "noreply@traxter.com", subject, message))
+        new Thread(() -> mailUtil.sendSimpleMessage(recipientAddress,  subject, message))
                 .start();
     }
 

@@ -39,7 +39,7 @@ public class PlannedTransactionDao extends AbstractDao {
                 "JOIN accounts AS a ON pt.account_id = a.account_id " +
                 "JOIN categories AS c ON pt.category_id = c.category_id " +
                 "WHERE next_execution_date < FROM_UNIXTIME("+currentDate+")";
-        System.out.println(sql); //todo remove sql
+        System.out.println(sql);
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(PlannedTransaction.class));
     }
 
@@ -81,7 +81,7 @@ public class PlannedTransactionDao extends AbstractDao {
                  catIdQuery +
                  incomeQuery +
                  orderByInQuery + ";";
-        System.out.println(sql);  //TODO {remove}show sql query in console
+        System.out.println(sql);
         return jdbcTemplate.query(
                 sql,
                 new Object[]{userId},

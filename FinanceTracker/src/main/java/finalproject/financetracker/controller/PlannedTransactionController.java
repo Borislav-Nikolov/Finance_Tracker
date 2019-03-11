@@ -81,7 +81,6 @@ public class PlannedTransactionController extends AbstractController {
                 addTransactionDTO.getAccountId(),
                 addTransactionDTO.getCategoryId(),
                 addTransactionDTO.getRepeatPeriod());
-        System.out.println(Thread.currentThread().getName() +" is calling execute");  //todo remove
         transactionController.execute(t);
         return new ReturnPlannedTransactionDTO(repo.save(t))
                 .withUser(u)
@@ -277,7 +276,6 @@ public class PlannedTransactionController extends AbstractController {
             logInfo("Found " + transactions.size() + " transactions for execution.");
 
             for (PlannedTransaction pt : transactions) {
-                System.out.println(Thread.currentThread().getName() +" is calling execute");  //todo remove
                 transactionController.execute(pt);
             }
         }

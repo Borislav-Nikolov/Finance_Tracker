@@ -64,7 +64,7 @@ public class TransactionDao {
                 catIdQuery +
                 orderByInQuery +
                 limitInQuery + ";";
-        System.out.println(sql);  //TODO {remove}show sql query in console
+        System.out.println(sql);
         return jdbcTemplate.query(
                 sql,
                 new Object[]

@@ -18,7 +18,7 @@ public class ImageController {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         FileInputStream fis = new FileInputStream(newImage);
         int nRead;
-        byte[] data = new byte[16384];  // max picture size
+        byte[] data = new byte[1048576];  // max picture size
 
         while ((nRead = fis.read(data, 0, data.length)) != -1) {
             byteArrayOutputStream.write(data, 0, nRead);

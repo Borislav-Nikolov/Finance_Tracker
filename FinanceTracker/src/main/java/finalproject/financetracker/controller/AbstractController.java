@@ -26,7 +26,6 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Optional;
 
 @NoArgsConstructor
@@ -56,14 +55,14 @@ public abstract class AbstractController {
         logger.warn(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
-                + "\n\tmsg = " + e.getMessage(),e);
+                + "\n\tmsg = " + e.getMessage(), e);
     }
 
     protected void logError(HttpStatus httpStatusCode, Exception e) {
         logger.error(httpStatusCode
                 + "\n\tOccurred in class = " + this.getClass()
                 + ",\n\tException class = " + e.getClass()
-                + "\n\tmsg = " + e.getMessage(),e);
+                + "\n\tmsg = " + e.getMessage(), e);
     }
 
     protected User getLoggedValidUserFromSession(HttpSession sess, HttpServletRequest request)
@@ -74,7 +73,7 @@ public abstract class AbstractController {
         ObjectMapper mapper = new ObjectMapper();
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        if(!UserController.isLoggedIn(sess)){
+        if (!UserController.isLoggedIn(sess)) {
             throw new NotLoggedInException();
         }
         this.validateIpAddr(sess, request);
@@ -83,9 +82,9 @@ public abstract class AbstractController {
 
     protected void checkIfBelongsToLoggedUser(long resourceUserId, User u)
             throws
-            ForbiddenRequestException{
+            ForbiddenRequestException {
 
-        if (resourceUserId != u.getUserId() ) {
+        if (resourceUserId != u.getUserId()) {
             throw new ForbiddenRequestException();
         }
     }
@@ -93,8 +92,8 @@ public abstract class AbstractController {
     protected <T extends Account> void checkIfAccountBelongsToLoggedUser(Long resourceUserId, JpaRepository<T, Long> repo, Class<T> c, User u)
             throws
             MyException {
-        T t = validateDataAndGetByIdFromRepo(resourceUserId,repo,c);
-        if (t.getUserId() != u.getUserId() ) {
+        T t = validateDataAndGetByIdFromRepo(resourceUserId, repo, c);
+        if (t.getUserId() != u.getUserId()) {
             throw new ForbiddenRequestException();
         }
     }
@@ -106,42 +105,42 @@ public abstract class AbstractController {
 
             throws
             MyException,
-            IOException{
+            IOException {
 
         User u = getLoggedValidUserFromSession(session, request);
-        checkIfBelongsToLoggedUser(resourceUserId,u);
+        checkIfBelongsToLoggedUser(resourceUserId, u);
         return u;
     }
 
-    protected <T extends Object> void checkIfNotNull(Class<?> c,T t ) throws NotFoundException {
-        String className = c.getName().substring(c.getName().lastIndexOf(".")+1);
+    protected <T extends Object> void checkIfNotNull(Class<?> c, T t) throws NotFoundException {
+        String className = c.getName().substring(c.getName().lastIndexOf(".") + 1);
         if (t == null) throw new NotFoundException(className + " not found");
     }
 
-    protected <T> T checkIfOptionalPresent(Class<?> c, Optional<T> o ) throws NotFoundException {
-        String className = c.getName().substring(c.getName().lastIndexOf(".")+1);
-        if (!o.isPresent())throw new NotFoundException(className + " not found");
+    protected <T> T checkIfOptionalPresent(Class<?> c, Optional<T> o) throws NotFoundException {
+        String className = c.getName().substring(c.getName().lastIndexOf(".") + 1);
+        if (!o.isPresent()) throw new NotFoundException(className + " not found");
         return o.get();
     }
 
     protected <T> T validateDataAndGetByIdFromRepo(String id,
-                                                   JpaRepository<T,Long> repo,
-                                                   Class<?>c)
+                                                   JpaRepository<T, Long> repo,
+                                                   Class<?> c)
             throws NotFoundException,
             InvalidRequestDataException {
 
         long idL = parseLong(id);
         Optional<T> t = repo.findById(idL);
-        return checkIfOptionalPresent(c,t);
+        return checkIfOptionalPresent(c, t);
     }
 
     protected <T> T validateDataAndGetByIdFromRepo(long id,
-                                                   JpaRepository<T,Long> repo,
-                                                   Class<?>c)
+                                                   JpaRepository<T, Long> repo,
+                                                   Class<?> c)
             throws NotFoundException {
 
         Optional<T> t = repo.findById(id);
-        return checkIfOptionalPresent(c,t);
+        return checkIfOptionalPresent(c, t);
     }
 
     public static <T extends Object> String toJson(T u) throws JsonProcessingException {
@@ -185,7 +184,6 @@ public abstract class AbstractController {
     //---------------------< /Methods >----------------------//
 
     //---------------------Global Exception Handlers---------------------//
-    //todo change msgs ---------------------------------/
 
     @ExceptionHandler({
             MyException.class,
@@ -193,7 +191,7 @@ public abstract class AbstractController {
             JsonParseException.class,
             JsonEOFException.class,
             HttpMessageNotReadableException.class})  //400
-    public ErrMsg MyExceptionHandler(Exception e, HttpServletResponse resp){
+    public ErrMsg MyExceptionHandler(Exception e, HttpServletResponse resp) {
         resp.setStatus(HttpStatus.BAD_REQUEST.value());
         return new ErrMsg(HttpStatus.BAD_REQUEST.value(), e.getMessage(), LocalDateTime.now());
     }
@@ -202,19 +200,19 @@ public abstract class AbstractController {
             NotLoggedInException.class,
             HttpClientErrorException.Unauthorized.class,
             UnauthorizedAccessException.class})  // 401
-    public ErrMsg MyLoginExceptionHandler(Exception e, HttpServletResponse resp){
+    public ErrMsg MyLoginExceptionHandler(Exception e, HttpServletResponse resp) {
         resp.setStatus(HttpStatus.UNAUTHORIZED.value());
         return new ErrMsg(HttpStatus.UNAUTHORIZED.value(), e.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({ForbiddenRequestException.class})  //403
-    public ErrMsg MyForbiddenExceptionHandler(Exception e, HttpServletResponse resp){
+    public ErrMsg MyForbiddenExceptionHandler(Exception e, HttpServletResponse resp) {
         resp.setStatus(HttpStatus.FORBIDDEN.value());
         return new ErrMsg(HttpStatus.FORBIDDEN.value(), e.getMessage(), LocalDateTime.now());
     }
 
     @ExceptionHandler({NotFoundException.class})  //404
-    public ErrMsg MyNotFoundExceptionHandler(Exception e, HttpServletResponse resp){
+    public ErrMsg MyNotFoundExceptionHandler(Exception e, HttpServletResponse resp) {
         resp.setStatus(HttpStatus.NOT_FOUND.value());
         return new ErrMsg(HttpStatus.NOT_FOUND.value(), e.getMessage(), LocalDateTime.now());
     }
@@ -225,10 +223,12 @@ public abstract class AbstractController {
         return new ErrMsg(HttpStatus.EXPECTATION_FAILED.value(), e.getMessage(), LocalDateTime.now());
     }
 
-    @ExceptionHandler({Exception.class,SQLException.class, DataAccessException.class,IOException.class}) //500
-    public ErrMsg ExceptionHandler(Exception e, HttpServletResponse resp){
+    @ExceptionHandler({Exception.class, SQLException.class, DataAccessException.class, IOException.class}) //500
+    public ErrMsg ExceptionHandler(Exception e, HttpServletResponse resp) {
         resp.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        logError(HttpStatus.INTERNAL_SERVER_ERROR,e);
-        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(), LocalDateTime.now());
+        logError(HttpStatus.INTERNAL_SERVER_ERROR, e);
+        return new ErrMsg(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Ooops! Server error occurred!",
+                LocalDateTime.now());
     }
 }
