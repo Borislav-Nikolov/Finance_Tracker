@@ -75,12 +75,11 @@ public class PlannedTransactionController extends AbstractController {
         PlannedTransaction t = new PlannedTransaction(
                 addTransactionDTO.getTransactionName(),
                 addTransactionDTO.getAmount(),
-                LocalDateTime
-                        .now()
-                        .plusSeconds(addTransactionDTO.getExecutionOffset() / SEC_TO_MILLIS),
+                LocalDateTime.now(),
                 addTransactionDTO.getAccountId(),
                 addTransactionDTO.getCategoryId(),
                 addTransactionDTO.getRepeatPeriod());
+        reSchedule(t,addTransactionDTO.getExecutionOffset());
         transactionController.execute(t);
         return new ReturnPlannedTransactionDTO(repo.save(t))
                 .withUser(u)
@@ -249,16 +248,17 @@ public class PlannedTransactionController extends AbstractController {
                 pt.getCategoryId());
         transactionController.calculateBudgetAndAccountAmount(t);
         this.transactionRepo.save(t);
-        reSchedule(pt);
+        reSchedule(pt,0);
+        repo.save(pt);
     }
 
-    private void reSchedule(PlannedTransaction pt) {
+    private void reSchedule(PlannedTransaction pt, long init) {
+        long period = init > 0 ? init : pt.getRepeatPeriod();
         if (pt.getRepeatPeriod()% MILLIS_FOR_MONTH != 0) {
-            pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(pt.getRepeatPeriod() / SEC_TO_MILLIS));
+            pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(period / SEC_TO_MILLIS));
         }else {
-            pt.setNextExecutionDate(pt.getNextExecutionDate().plusMonths(pt.getRepeatPeriod()/MILLIS_FOR_MONTH));
+            pt.setNextExecutionDate(pt.getNextExecutionDate().plusMonths(period/MILLIS_FOR_MONTH));
         }
-        repo.save(pt);
     }
 
     void startScheduledCheck(LocalDate toDate) {
