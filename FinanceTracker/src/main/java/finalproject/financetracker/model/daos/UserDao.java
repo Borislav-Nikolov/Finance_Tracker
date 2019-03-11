@@ -68,8 +68,6 @@ public class UserDao {
         deletedUser.setSubscribed(false);
         deletedUser.setLastNotified(null);
         deletedUser.setLastLogin(null);
-
-
         List<Account> accounts = accountRepo.findAllByUserId(deletedUser.getUserId());
         if (accounts != null) {
             for (Account account : accounts) {

@@ -82,6 +82,9 @@ public class BudgetController extends AbstractController {
         long userId = user.getUserId();
         long categoryId = budgetCreationDTO.getCategoryId();
         Category category = categoryController.getCategoryById(categoryId, session, request);
+        if (category.isIncome()) {
+            throw new InvalidRequestDataException("Budget category cannot be of type income.");
+        }
         categoryController.validateCategoryAndUserOwnership(user, category);
         Budget budget = new Budget(budgetName, amount, startingDate, endDate, userId, categoryId);
         this.validateDates(budget);
@@ -105,7 +108,10 @@ public class BudgetController extends AbstractController {
         Long parsedCategoryId = null;
         if (categoryId != null) {
             parsedCategoryId = parseLong(categoryId);
-            categoryController.getCategoryById(parsedCategoryId, session, request);
+            Category category = categoryController.getCategoryById(parsedCategoryId, session, request);
+            if (category.isIncome()) {
+                throw new InvalidRequestDataException("Budget category cannot be of type income.");
+            }
         }
         Budget budget = budgetRepository.findByBudgetId(parseLong(budgetId));
         if (amount != null) {

@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface TransactionRepo extends JpaRepository<Transaction,Long> {
     List<Transaction> findAllByAccountId(long accountId);
+    List<Transaction> findAllByCategoryId(long categoryId);
     int deleteByAccountId(long accountId);
     int deleteByTransactionId(long transactionId);
 }

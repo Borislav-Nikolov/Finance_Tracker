@@ -25,7 +25,7 @@ public class EmailSender {
     @Autowired
     MailUtil mailUtil;
 
-    @Scheduled(fixedDelay = REMINDER_INTERVAL)
+    @Scheduled(initialDelay = REMINDER_INITIAL_DELAY, fixedDelay = REMINDER_INTERVAL)
     public void sendReminders() {
         new Thread(()->{
             String subject = "Track your finances at our Finance Tracker";

@@ -8,6 +8,7 @@ import java.util.List;
 public interface PlannedTransactionRepo extends JpaRepository<PlannedTransaction, Long > {
 
     List<PlannedTransaction> findAllByAccountId(long accountId);
+    List<PlannedTransaction> findAllByCategoryId(long categoryId);
     int deleteAllByAccountId(long accountId);
     int deletePlannedTransactionByAccountId(long accountId);
     int deleteByPtId(long transactionId);

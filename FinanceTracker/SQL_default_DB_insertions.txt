@@ -1,21 +1,27 @@
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
-VALUES ("Clothes", false, null, 24);
+VALUES ("General Income", true, null, 18);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("General Expense", false, null, 18);
+
+INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
+VALUES ("Clothes", false, null, 25);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
 VALUES ("Kids", false, null, 7);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
-VALUES ("Toys", false, null, 26);
+VALUES ("Toys", false, null, 27);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
 VALUES ("Work", true, null, 8);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
-VALUES ("Electronics", false, null, 25);
+VALUES ("Electronics", false, null, 26);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
-VALUES ("Pets", false, null, 21);
+VALUES ("Pets", false, null, 22);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
 VALUES ("Child support", true, null, 7);
@@ -30,7 +36,7 @@ INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, i
 VALUES ("Gift", true, null, 2);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
-VALUES ("Investment income", true, null, 30);
+VALUES ("Investment income", true, null, 31);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
 VALUES ("Entertainment", false, null, 9);
@@ -39,7 +45,7 @@ INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, i
 VALUES ("Car", false, null, 6);
 
 INSERT IGNORE INTO final_project.categories(category_name, is_income, user_id, image_id)
-VALUES ("Food", false, null, 27);
+VALUES ("Food", false, null, 28);
 
 
 
