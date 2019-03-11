@@ -3,27 +3,22 @@ package finalproject.financetracker.utils.pdfWriter;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.*;
-import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
 import finalproject.financetracker.model.dtos.account.ReturnAccountDTO;
 import finalproject.financetracker.model.dtos.plannedTransaction.ReturnPlannedTransactionDTO;
 import finalproject.financetracker.model.dtos.transaction.ReturnTransactionDTO;
 import finalproject.financetracker.model.pojos.User;
 import lombok.AllArgsConstructor;
 
-
-import javax.swing.text.DateFormatter;
 import java.io.ByteArrayOutputStream;
-
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class MyPdfWriter {
@@ -41,7 +36,7 @@ public class MyPdfWriter {
         Document document = new Document(pdfDocument);
         document.add(new Paragraph("Finance Tracker").setBold().setFontSize(18));
         document.add(new Paragraph("Username: " + user.getUsername() +
-                "\nFirst name: " +  user.getFirstName() +
+                "\nFirst name: " + user.getFirstName() +
                 "\nLast name: " + user.getLastName() +
                 "\nEmail: " + user.getEmail()));
 
@@ -50,7 +45,8 @@ public class MyPdfWriter {
         Table tableAccount = new Table(7);
         NumberFormat formatter = new DecimalFormat("#0.00");
         // Adding cells to the table
-        if (accounts.size()>0) {
+        if (accounts.size() > 0) {
+            document.add(new Paragraph("\nAccounts").setBold().setFontSize(13));
             tableAccount.addCell(new Cell().add("account name").setBold());
             tableAccount.addCell(new Cell().add("balance").setBold());
             tableAccount.addCell(new Cell().add("total \ntransactions").setBold());
@@ -60,7 +56,7 @@ public class MyPdfWriter {
             tableAccount.addCell(new Cell().add("in/out \ntotal").setBold());
 
 
-            for (ReturnAccountDTO account: accounts){
+            for (ReturnAccountDTO account : accounts) {
 
                 //----------------------- Account name -----------------------//
                 tableAccount.addCell(new Cell().add(account.getAccountName()));
@@ -70,8 +66,8 @@ public class MyPdfWriter {
 
                 //----------------------- Total transactions -----------------------//
                 tableAccount.addCell(new Cell().add(Integer.toString(transactions.stream()
-                        .filter(returnTransactionDTO->(returnTransactionDTO.getAccountId() == account.getAccountId()))
-                        .mapToInt(returnTransactionDTO->1).reduce(0,(a1,a2)->a1+a2))));
+                        .filter(returnTransactionDTO -> (returnTransactionDTO.getAccountId() == account.getAccountId()))
+                        .mapToInt(returnTransactionDTO -> 1).reduce(0, (a1, a2) -> a1 + a2))));
 
                 //----------------------- In/Out last week -----------------------//
                 double incomeTransactionsLastWeek = transactions
@@ -80,48 +76,48 @@ public class MyPdfWriter {
                                 &&
                                 returnTransactionDTO.getExecutionDate()
                                         .isAfter(LocalDateTime.now()
-                                        .minusDays(DAYS_IN_WEEK))
+                                                .minusDays(DAYS_IN_WEEK))
                                 && returnTransactionDTO.getAccountId() == account.getAccountId())
                         .mapToDouble(ReturnTransactionDTO::getAmount)
-                        .reduce(0,(a1, a2)->a1+a2);
+                        .reduce(0, (a1, a2) -> a1 + a2);
                 double expenseTransactionsLastWeek = transactions
                         .stream()
                         .filter(returnTransactionDTO -> !returnTransactionDTO.getIsIncome()
                                 &&
                                 returnTransactionDTO.getExecutionDate()
-                                         .isAfter(LocalDateTime.now()
-                                         .minusWeeks(1))
+                                        .isAfter(LocalDateTime.now()
+                                                .minusWeeks(1))
                                 && returnTransactionDTO.getAccountId() == account.getAccountId())
                         .mapToDouble(ReturnTransactionDTO::getAmount)
-                        .reduce(0,(a1, a2)->a1+a2);
+                        .reduce(0, (a1, a2) -> a1 + a2);
                 tableAccount.addCell(new Cell().add(formatter.format(incomeTransactionsLastWeek)
-                        +" / "
-                        +formatter.format(expenseTransactionsLastWeek)));
+                        + " / "
+                        + formatter.format(expenseTransactionsLastWeek)));
 
                 //----------------------- In/Out last month -----------------------//
                 double incomeTransactionsLastMonth = transactions
                         .stream()
                         .filter(returnTransactionDTO -> returnTransactionDTO.getIsIncome()
-                                        &&
+                                &&
                                 returnTransactionDTO.getExecutionDate()
                                         .isAfter(LocalDateTime.now()
-                                        .minusMonths(1))
-                                && returnTransactionDTO.getAccountId() == account.getAccountId())
-                        .mapToDouble(ReturnTransactionDTO::getAmount)
-                        .reduce(0,(a1, a2)->a1+a2);
-                double expenseTransactionsLastMonth = transactions
-                        .stream()
-                        .filter(returnTransactionDTO -> !returnTransactionDTO.getIsIncome()
-                                        &&
-                                returnTransactionDTO.getExecutionDate()
-                                                .isAfter(LocalDateTime.now()
                                                 .minusMonths(1))
                                 && returnTransactionDTO.getAccountId() == account.getAccountId())
                         .mapToDouble(ReturnTransactionDTO::getAmount)
-                        .reduce(0,(a1, a2)->a1+a2);
+                        .reduce(0, (a1, a2) -> a1 + a2);
+                double expenseTransactionsLastMonth = transactions
+                        .stream()
+                        .filter(returnTransactionDTO -> !returnTransactionDTO.getIsIncome()
+                                &&
+                                returnTransactionDTO.getExecutionDate()
+                                        .isAfter(LocalDateTime.now()
+                                                .minusMonths(1))
+                                && returnTransactionDTO.getAccountId() == account.getAccountId())
+                        .mapToDouble(ReturnTransactionDTO::getAmount)
+                        .reduce(0, (a1, a2) -> a1 + a2);
                 tableAccount.addCell(new Cell().add(formatter.format(incomeTransactionsLastMonth)
-                        +" / "
-                        +formatter.format(expenseTransactionsLastMonth)));
+                        + " / "
+                        + formatter.format(expenseTransactionsLastMonth)));
 
                 //----------------------- In/Out last year -----------------------//
                 double incomeTransactionsLastYear = transactions
@@ -133,7 +129,7 @@ public class MyPdfWriter {
                                                 .minusYears(1))
                                 && returnTransactionDTO.getAccountId() == account.getAccountId())
                         .mapToDouble(ReturnTransactionDTO::getAmount)
-                        .reduce(0,(a1, a2)->a1+a2);
+                        .reduce(0, (a1, a2) -> a1 + a2);
                 double expenseTransactionsLastYear = transactions
                         .stream()
                         .filter(returnTransactionDTO -> !returnTransactionDTO.getIsIncome()
@@ -141,12 +137,12 @@ public class MyPdfWriter {
                                 returnTransactionDTO.getExecutionDate()
                                         .isAfter(LocalDateTime.now()
                                                 .minusYears(1))
-                        && returnTransactionDTO.getAccountId() == account.getAccountId())
+                                && returnTransactionDTO.getAccountId() == account.getAccountId())
                         .mapToDouble(ReturnTransactionDTO::getAmount)
-                        .reduce(0,(a1, a2)->a1+a2);
+                        .reduce(0, (a1, a2) -> a1 + a2);
                 tableAccount.addCell(new Cell().add(formatter.format(incomeTransactionsLastYear)
-                        +" / "
-                        +formatter.format(expenseTransactionsLastYear)));
+                        + " / "
+                        + formatter.format(expenseTransactionsLastYear)));
 
                 //----------------------- In/Out total -----------------------//
                 double incomeTransactionsTotal = transactions
@@ -154,26 +150,26 @@ public class MyPdfWriter {
                         .filter(returnTransactionDTO -> returnTransactionDTO.getIsIncome()
                                 && returnTransactionDTO.getAccountId() == account.getAccountId())
                         .mapToDouble(ReturnTransactionDTO::getAmount)
-                        .reduce(0,(a1, a2)->a1+a2);
+                        .reduce(0, (a1, a2) -> a1 + a2);
                 double expenseTransactionsTotal = transactions
                         .stream()
                         .filter(returnTransactionDTO -> !returnTransactionDTO.getIsIncome()
                                 && returnTransactionDTO.getAccountId() == account.getAccountId())
                         .mapToDouble(ReturnTransactionDTO::getAmount)
-                        .reduce(0,(a1, a2)->a1+a2);
+                        .reduce(0, (a1, a2) -> a1 + a2);
                 tableAccount.addCell(new Cell().add(formatter.format(incomeTransactionsTotal)
-                        +" / "
-                        +formatter.format(expenseTransactionsTotal)));
+                        + " / "
+                        + formatter.format(expenseTransactionsTotal)));
             }
             tableAccount.addCell(new Cell().add("TOTAL transactions").setBold());
             tableAccount.addCell(new Cell().add(Integer.toString(transactions.size())).setBold());
         }
         // Adding Table to document
-        document.add(new Paragraph("\nAccounts").setBold().setFontSize(13));
         document.add(tableAccount);
 
         Table tableTransactions = new Table(6);
-        if (transactions.size()>0) {
+        if (transactions.size() > 0) {
+            document.add(new Paragraph("\nTransactions").setBold().setFontSize(13));
             tableTransactions.addCell(new Cell().add("transaction name").setBold());
             tableTransactions.addCell(new Cell().add("amount").setBold());
             tableTransactions.addCell(new Cell().add("execution date").setBold());
@@ -181,7 +177,7 @@ public class MyPdfWriter {
             tableTransactions.addCell(new Cell().add("account name").setBold());
             tableTransactions.addCell(new Cell().add("income").setBold());
 
-            for (ReturnTransactionDTO transactionDTO: transactions){
+            for (ReturnTransactionDTO transactionDTO : transactions) {
                 tableTransactions.addCell(new Cell().add(transactionDTO.getTransactionName()));
                 tableTransactions.addCell(new Cell().add(formatter.format(transactionDTO.getAmount())));
                 tableTransactions.addCell(new Cell().add(transactionDTO.getExecutionDate()
@@ -191,12 +187,12 @@ public class MyPdfWriter {
                 tableTransactions.addCell(new Cell().add(transactionDTO.getIsIncome().toString()));
             }
         }
-        document.add(new Paragraph("\nTransactions").setBold().setFontSize(13));
         // Adding Table to document
         document.add(tableTransactions);
 
         Table tablePlannedTransactions = new Table(7);
-        if (plannedTransactions.size()>0) {
+        if (plannedTransactions.size() > 0) {
+            document.add(new Paragraph("\nPlanned Transactions").setBold().setFontSize(13));
             tablePlannedTransactions.addCell(new Cell().add("transaction name").setBold());
             tablePlannedTransactions.addCell(new Cell().add("amount").setBold());
             tablePlannedTransactions.addCell(new Cell().add("next execution date").setBold());
@@ -205,24 +201,25 @@ public class MyPdfWriter {
             tablePlannedTransactions.addCell(new Cell().add("account name").setBold());
             tablePlannedTransactions.addCell(new Cell().add("income").setBold());
 
-            for (ReturnPlannedTransactionDTO transactionDTO: plannedTransactions){
+            for (ReturnPlannedTransactionDTO transactionDTO : plannedTransactions) {
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getTransactionName()));
                 tablePlannedTransactions.addCell(new Cell().add(formatter.format(transactionDTO.getAmount())));
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getNextExecutionDate()
                         .format(DateTimeFormatter.ofPattern("dd.MM.YY HH:mm"))));
-                long days = (transactionDTO.getRepeatPeriod()/(1000*60*60*24));
-                long hours = ((transactionDTO.getRepeatPeriod()%(1000*60*60*24))/(1000*60*60));
-                long minutes = ((transactionDTO.getRepeatPeriod()%(1000*60*60*24))%(1000*60*60))/(1000*60);
-                String repeatPeriod = ((days==0)?"":(days+" "+((days>1)?"days":"day")))+
-                                      ((hours==0)?"":(",\n"+hours+" "+((hours>1)?"hours":"hour")))+
-                                      ((minutes==0)?"":(",\n"+minutes+" "+((minutes>1)?"minutes":"minute")));
+                long days = (transactionDTO.getRepeatPeriod() / (1000 * 60 * 60 * 24));
+                long hours = ((transactionDTO.getRepeatPeriod() % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                long minutes = ((transactionDTO.getRepeatPeriod() % (1000 * 60 * 60 * 24)) % (1000 * 60 * 60)) / (1000 * 60);
+                String repeatPeriod = ((days == 0) ? "" : (days + " " + ((days > 1) ? "days" : "day"))) +
+                        ((days>0 && hours>0)?",\n":"")+
+                        ((hours == 0) ? "" : (hours + " " + ((hours > 1) ? "hours" : "hour"))) +
+                        ((hours>0 && minutes>0)?",\n":"")+
+                        ((minutes == 0) ? "" : (minutes + " " + ((minutes > 1) ? "minutes" : "minute")));
                 tablePlannedTransactions.addCell(repeatPeriod);
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getCategoryName()));
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getAccountName()));
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getIsIncome().toString()));
             }
         }
-        document.add(new Paragraph("\nPlanned Transactions").setBold().setFontSize(13));
         // Adding Table to document
         document.add(tablePlannedTransactions);
         document.close();
