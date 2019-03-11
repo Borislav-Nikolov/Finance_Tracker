@@ -180,7 +180,7 @@ public class AccountController extends AbstractController {
 
         User u = getLoggedValidUserFromSession(sess, request);
         List<Account> result;                                     // ORDER BY Account name
-        if (order != null && order == true) {
+        if (order != null && order) {
             result = dao.getAllAccountsDesc(u.getUserId());
         } else {
             result = dao.getAllAccountsAsc(u.getUserId());

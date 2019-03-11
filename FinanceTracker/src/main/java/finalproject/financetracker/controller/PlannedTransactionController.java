@@ -15,8 +15,6 @@ import finalproject.financetracker.model.pojos.User;
 import finalproject.financetracker.model.repositories.PlannedTransactionRepo;
 import finalproject.financetracker.model.repositories.TransactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +25,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -79,7 +76,7 @@ public class PlannedTransactionController extends AbstractController {
                 addTransactionDTO.getAccountId(),
                 addTransactionDTO.getCategoryId(),
                 addTransactionDTO.getRepeatPeriod());
-        reSchedule(t,addTransactionDTO.getExecutionOffset());
+        reSchedule(t, addTransactionDTO.getExecutionOffset());
         transactionController.execute(t);
         return new ReturnPlannedTransactionDTO(repo.save(t))
                 .withUser(u)
@@ -237,27 +234,27 @@ public class PlannedTransactionController extends AbstractController {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void recalculateAndSave(PlannedTransaction pt) throws SQLException, MyException {
+    void recalculateAndSave(PlannedTransaction pt) throws SQLException, MyException {
         Transaction t = new Transaction(
                 pt.getPtName()
                         .concat(pt.getNextExecutionDate()
-                                .format(DateTimeFormatter.ofPattern("(dd.MM.YY/HH:mm)"))),
+                                .format(DateTimeFormatter.ofPattern(" (dd.MM.YY/HH:mm)"))),
                 pt.getPtAmount(),
                 LocalDateTime.now(),
                 pt.getAccountId(),
                 pt.getCategoryId());
         transactionController.calculateBudgetAndAccountAmount(t);
         this.transactionRepo.save(t);
-        reSchedule(pt,0);
+        reSchedule(pt, 0);
         repo.save(pt);
     }
 
     private void reSchedule(PlannedTransaction pt, long init) {
         long period = init > 0 ? init : pt.getRepeatPeriod();
-        if (pt.getRepeatPeriod()% MILLIS_FOR_MONTH != 0) {
+        if (period % MILLIS_FOR_MONTH == 0 && LocalDate.now().getDayOfMonth()<29) {
+            pt.setNextExecutionDate(pt.getNextExecutionDate().plusMonths(period / MILLIS_FOR_MONTH));
+        } else {
             pt.setNextExecutionDate(pt.getNextExecutionDate().plusSeconds(period / SEC_TO_MILLIS));
-        }else {
-            pt.setNextExecutionDate(pt.getNextExecutionDate().plusMonths(period/MILLIS_FOR_MONTH));
         }
     }
 
@@ -265,10 +262,10 @@ public class PlannedTransactionController extends AbstractController {
         new PlannedTransactionScheduler(toDate).start();
     }
 
-    public class PlannedTransactionScheduler extends Thread {
+    class PlannedTransactionScheduler extends Thread {
         private LocalDate localDate;
 
-        public PlannedTransactionScheduler(LocalDate localDate){
+        PlannedTransactionScheduler(LocalDate localDate) {
             this.localDate = localDate;
         }
 

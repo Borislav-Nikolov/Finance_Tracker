@@ -238,7 +238,7 @@ public class TransactionController extends AbstractController {
         return t;
     }
 
-    public void calculateBudgetAndAccountAmount(Transaction t) throws SQLException, MyException {
+    void calculateBudgetAndAccountAmount(Transaction t) throws SQLException, MyException {
         double transactionAmount = 0;
         Account a = validateDataAndGetByIdFromRepo(t.getAccountId(),accountRepo,Account.class);
         Category c = validateDataAndGetByIdFromRepo(t.getCategoryId(),categoryRepository,Category.class);
@@ -257,7 +257,7 @@ public class TransactionController extends AbstractController {
 
     @Async
     @Transactional(rollbackFor = Exception.class)
-    public void execute(PlannedTransaction pt){
+    void execute(PlannedTransaction pt){
         boolean error = false;
         while (pt.getNextExecutionDate().isBefore(LocalDateTime.now())) {
             try {

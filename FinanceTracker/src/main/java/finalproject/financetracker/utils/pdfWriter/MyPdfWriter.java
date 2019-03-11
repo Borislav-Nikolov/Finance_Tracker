@@ -16,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -207,18 +208,20 @@ public class MyPdfWriter {
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getNextExecutionDate()
                         .format(DateTimeFormatter.ofPattern("dd.MM.YY HH:mm"))));
                 String repeatPeriod;
-                if (transactionDTO.getRepeatPeriod()% MILLIS_FOR_MONTH != 0) {
+                if (transactionDTO.getRepeatPeriod()% MILLIS_FOR_MONTH == 0 &&
+                                                    transactionDTO.getNextExecutionDate().getDayOfMonth()<29) {
+                    long months = transactionDTO.getRepeatPeriod()/MILLIS_FOR_MONTH;
+                    repeatPeriod = (months==1) ? "every month":"every "+months+" months";
+                }else {
                     long days = (transactionDTO.getRepeatPeriod() / (1000 * 60 * 60 * 24));
                     long hours = ((transactionDTO.getRepeatPeriod() % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    long minutes = ((transactionDTO.getRepeatPeriod() % (1000 * 60 * 60 * 24)) % (1000 * 60 * 60)) / (1000 * 60);
-                     repeatPeriod = ((days == 0) ? "" : (days + " " + ((days > 1) ? "days" : "day"))) +
+                    long minutes = ((transactionDTO.getRepeatPeriod() % (1000 * 60 * 60 * 24)) %
+                                                                                 (1000 * 60 * 60)) / (1000 * 60);
+                    repeatPeriod = ((days == 0) ? "" : (days + " " + ((days > 1) ? "days" : "day"))) +
                             ((days > 0 && hours > 0) ? ",\n" : "") +
                             ((hours == 0) ? "" : (hours + " " + ((hours > 1) ? "hours" : "hour"))) +
                             ((hours > 0 && minutes > 0) ? ",\n" : "") +
                             ((minutes == 0) ? "" : (minutes + " " + ((minutes > 1) ? "minutes" : "minute")));
-                }else {
-                    long months = transactionDTO.getRepeatPeriod()/MILLIS_FOR_MONTH;
-                    repeatPeriod = (months==1) ? "every month":"every "+months+" months";
                 };
                 tablePlannedTransactions.addCell(repeatPeriod);
                 tablePlannedTransactions.addCell(new Cell().add(transactionDTO.getCategoryName()));
