@@ -27,7 +27,7 @@ public class PlannedTransactionDao extends AbstractDao {
                 "SELECT pt.pt_id, " +
                 "pt.pt_name, " +
                 "pt.next_execution_date, " +
-                "pt.pt_amount, " +
+                "ROUND(pt.pt_amount) AS pt_amount, " +
                 "pt.account_id, " +
                 "pt.category_id, " +
                 "pt.repeat_period, " +
@@ -63,7 +63,7 @@ public class PlannedTransactionDao extends AbstractDao {
                 "a.account_id," +
                 "pt.pt_id AS transaction_id," +
                 "pt.pt_name AS transaction_name, " +
-                "pt.pt_amount AS amount," +
+                "ROUND(pt.pt_amount,2) AS amount," +
                 "pt.next_execution_date," +
                 "pt.repeat_period," +
                 "c.category_id, " +

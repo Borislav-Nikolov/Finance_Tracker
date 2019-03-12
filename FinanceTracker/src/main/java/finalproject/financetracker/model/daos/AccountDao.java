@@ -118,7 +118,7 @@ public class AccountDao extends AbstractDao {
         ArrayList<Account> arr;
         try {
             String sql =
-                    "SELECT a.account_id, a.account_name, a.amount, a.user_id " +
+                    "SELECT a.account_id, a.account_name, ROUND(a.amount,2) AS amount, a.user_id " +
                             "FROM final_project.accounts AS a " +
                             "WHERE a." + param.toString() + " " + operator.getValue() + " ? " +
                             "ORDER BY a.account_name " + order + " LIMIT ? OFFSET ?;";
@@ -181,7 +181,7 @@ public class AccountDao extends AbstractDao {
         checkConnAndReInitIfBad();
         try {
             String sql =
-                    "SELECT a.account_id, a.account_name, a.amount, a.user_id " +
+                    "SELECT a.account_id, a.account_name, ROUND(a.amount,2), a.user_id " +
                             "FROM final_project.accounts AS a " +
                             "WHERE a.account_id = ?;";
 

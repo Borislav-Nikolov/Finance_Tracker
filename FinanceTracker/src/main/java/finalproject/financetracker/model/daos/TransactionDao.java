@@ -44,7 +44,7 @@ public class TransactionDao {
                 "a.account_id," +
                 "t.transaction_id," +
                 "t.transaction_name, " +
-                "t.amount," +
+                "ROUND(t.amount,2) AS amount," +
                 "t.execution_date," +
                 "c.category_id, " +
                 "c.category_name, " +
