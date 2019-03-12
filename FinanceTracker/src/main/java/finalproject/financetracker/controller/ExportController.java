@@ -39,8 +39,8 @@ public class ExportController {
                                                           0L,
                                                           null,
                                                           null,
-                                                           AbstractDao.SQLOrderBy.EXECUTION_DATE,
-                                                          null,
+                                                          AbstractDao.SQLOrderBy.EXECUTION_DATE,
+                                                          AbstractDao.SQLOrder.DESC,
                                                           null,
                                                           null),
                         plannedTransactionDao.getAllByAccIdIsIncomeOrder(u.getUserId(),
@@ -48,7 +48,7 @@ public class ExportController {
                                                           null,
                                                           null,
                                                           AbstractDao.SQLOrderBy.NEXT_EXECUTION_DATE,
-                                                          null)
+                                                          AbstractDao.SQLOrder.ASC)
                         ).create();
     }
 }

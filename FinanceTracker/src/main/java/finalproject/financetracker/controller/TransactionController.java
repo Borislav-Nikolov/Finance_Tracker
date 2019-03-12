@@ -67,11 +67,11 @@ public class TransactionController extends AbstractController {
         ReturnAccountDTO a = accountController.getAccByIdLong(addTransactionDTO.getAccountId(), sess, request);// WebService
         Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess, request); // WebService
 
-        for (Transaction transaction : transactions) {
-            if (addTransactionDTO.getTransactionName().equalsIgnoreCase(transaction.getTransactionName())) {
-                throw new ForbiddenRequestException("transaction with such name exists");
-            }
-        }
+//        for (Transaction transaction : transactions) {
+//            if (addTransactionDTO.getTransactionName().equalsIgnoreCase(transaction.getTransactionName())) {
+//                throw new ForbiddenRequestException("transaction with such name exists");
+//            }
+//        }
 
         Transaction t = new Transaction(
                 addTransactionDTO.getTransactionName(),
@@ -255,7 +255,7 @@ public class TransactionController extends AbstractController {
         accountRepo.save(a);
     }
 
-    @Async
+    @Async //start the code in a separate Thread
     @Transactional(rollbackFor = Exception.class)
     void execute(PlannedTransaction pt){
         boolean error = false;

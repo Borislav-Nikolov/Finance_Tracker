@@ -64,11 +64,11 @@ public class PlannedTransactionController extends AbstractController {
         Category c = categoryController.getCategoryById(addTransactionDTO.getCategoryId(), sess, request);// WebService
         ReturnAccountDTO a = accountController.getAccByIdLong(addTransactionDTO.getAccountId(), sess, request);
 
-        for (PlannedTransaction transaction : transactions) {
-            if (addTransactionDTO.getTransactionName().equalsIgnoreCase(transaction.getPtName())) {
-                throw new ForbiddenRequestException("planned transaction with such name exists");
-            }
-        }
+//        for (PlannedTransaction transaction : transactions) {
+//            if (addTransactionDTO.getTransactionName().equalsIgnoreCase(transaction.getPtName())) {
+//                throw new ForbiddenRequestException("planned transaction with such name exists");
+//            }
+//        }
         PlannedTransaction t = new PlannedTransaction(
                 addTransactionDTO.getTransactionName(),
                 addTransactionDTO.getAmount(),
@@ -220,7 +220,7 @@ public class PlannedTransactionController extends AbstractController {
 
     @RequestMapping(value = "/ptransactions/{id}", method = RequestMethod.DELETE)
     @ResponseBody
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ReturnPlannedTransactionDTO deletePlannedTransaction(@PathVariable(value = "id") String deleteId,
                                                                 HttpSession sess, HttpServletRequest request)
             throws
