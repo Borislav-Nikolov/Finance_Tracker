@@ -1,19 +1,36 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.exceptions.MyException;
 import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.model.daos.ImageDao;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import finalproject.financetracker.model.pojos.Image;
+import finalproject.financetracker.model.repositories.ImageRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
 
 @RestController
 @RequestMapping(produces = "application/json")
-public class ImageController {
+public class ImageController extends AbstractController {
+
+    @Autowired
+    private ImageRepository imageRepository;
+
     @GetMapping(value="/images/{name}", produces = "image/png")
     public byte[] downloadImage(@PathVariable("name") String imageName) throws IOException, NotFoundException {
+        return getImageFromName(imageName);
+    }
+    @GetMapping(value="/images", produces = "image/png")
+    public byte[] downloadImageById(@RequestParam("imageId") String imageId) throws IOException, MyException {
+        Image image = imageRepository.findByImageId(parseLong(imageId));
+        if (image == null) {
+            throw new NotFoundException("Image not found.");
+        }
+        String imageName = image.getUri();
+        return getImageFromName(imageName);
+    }
+    private byte[] getImageFromName(String imageName) throws NotFoundException, IOException {
         File newImage = new File(ImageDao.ICONS_ABSOLUTE_PATH +imageName);
         if (!newImage.exists()) {
             throw new NotFoundException("Image not found.");
