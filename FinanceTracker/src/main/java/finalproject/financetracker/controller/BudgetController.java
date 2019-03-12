@@ -58,7 +58,7 @@ public class BudgetController extends AbstractController {
     }
 
     @GetMapping(value = "/budgets/{budgetId}")
-    public BudgetInfoDTO viewBudget(@PathVariable String budgetId, HttpSession session, HttpServletRequest request)
+    public BudgetInfoDTO viewBudget(@PathVariable("budgetId") String budgetId, HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
         Budget budget = budgetRepository.findByBudgetId(parseLong(budgetId));
@@ -95,7 +95,7 @@ public class BudgetController extends AbstractController {
 
     @PutMapping(value = "/budgets/{budgetId}")
     public MsgObjectDTO editBudget(
-            @PathVariable String budgetId,
+            @PathVariable("budgetId") String budgetId,
             @RequestParam(value = "budgetName", required = false) String budgetName,
             @RequestParam(value = "amount", required = false) String amount,
             @RequestParam(value = "startingDate", required = false) String startingDate,
@@ -135,7 +135,7 @@ public class BudgetController extends AbstractController {
     }
 
     @DeleteMapping(value = "/budgets/{budgetId}")
-    public MsgObjectDTO deleteBudget(@PathVariable String budgetId, HttpSession session, HttpServletRequest request)
+    public MsgObjectDTO deleteBudget(@PathVariable("budgetId") String budgetId, HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
         Budget budget = budgetRepository.findByBudgetId(parseLong(budgetId));

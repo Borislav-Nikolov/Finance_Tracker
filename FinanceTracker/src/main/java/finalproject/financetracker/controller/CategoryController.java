@@ -45,7 +45,8 @@ public class CategoryController extends AbstractController {
     }
 
     @GetMapping(value = "/categories/{categoryId}")
-    public CategoryInfoDTO viewCategory(@PathVariable String categoryId, HttpSession session, HttpServletRequest request)
+    public CategoryInfoDTO viewCategory(@PathVariable(value = "categoryId") String categoryId,
+                                        HttpSession session, HttpServletRequest request)
             throws IOException, MyException {
         User user = this.getLoggedValidUserFromSession(session, request);
         Category category = categoryRepository.findByCategoryId(parseLong(categoryId));
@@ -71,7 +72,7 @@ public class CategoryController extends AbstractController {
     }
 
     @PutMapping(value = "/categories/{categoryId}")
-    public MsgObjectDTO editCategory(@PathVariable String categoryId,
+    public MsgObjectDTO editCategory(@PathVariable("categoryId") String categoryId,
                                      @RequestParam(value = "categoryName", required = false) String categoryName,
                                      @RequestParam(value = "imageId", required = false) String imageId,
                                      HttpSession session, HttpServletRequest request)

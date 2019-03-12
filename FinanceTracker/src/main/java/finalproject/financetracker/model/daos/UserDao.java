@@ -47,11 +47,10 @@ public class UserDao {
     private PassCrypter passCrypter;
 
     @Transactional(rollbackFor = ServerErrorException.class)
-    public void verifyUserEmail(User user, VerificationToken token) {
+    public void saveUserAndDeleteToken(User user, VerificationToken token) {
         userRepository.save(user);
         tokenRepository.delete(token);
     }
-
     @Transactional(rollbackFor = MyException.class)
     public void deleteUser(User user) {
         User deletedUser = userRepository.findByUsername(user.getUsername());

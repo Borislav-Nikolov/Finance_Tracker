@@ -1,5 +1,6 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.exceptions.InvalidRequestDataException;
 import finalproject.financetracker.exceptions.MyException;
 import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.model.daos.ImageDao;
@@ -18,11 +19,16 @@ public class ImageController extends AbstractController {
     private ImageRepository imageRepository;
 
     @GetMapping(value="/images/{name}", produces = "image/png")
-    public byte[] downloadImage(@PathVariable("name") String imageName) throws IOException, NotFoundException {
+    public byte[] downloadImage(@PathVariable(value = "name") String imageName)
+            throws IOException, MyException {
         return getImageFromName(imageName);
     }
     @GetMapping(value="/images", produces = "image/png")
-    public byte[] downloadImageById(@RequestParam("imageId") String imageId) throws IOException, MyException {
+    public byte[] downloadImageById(@RequestParam(value = "imageId", required = false) String imageId)
+            throws IOException, MyException {
+        if (imageId == null) {
+            throw new InvalidRequestDataException("No image id was input.");
+        }
         Image image = imageRepository.findByImageId(parseLong(imageId));
         if (image == null) {
             throw new NotFoundException("Image not found.");

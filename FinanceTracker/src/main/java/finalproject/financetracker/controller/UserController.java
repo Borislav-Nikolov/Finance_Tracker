@@ -119,16 +119,19 @@ public class UserController extends AbstractController {
         return getProfileInfoDTO(user);
     }
     @PutMapping(value = "/confirm")
-    public MsgObjectDTO confirmEmail(@RequestParam(value = "token") String token,
+    public MsgObjectDTO confirmEmail(@RequestParam(value = "token", required = false) String token,
                                      HttpSession session,
                                      HttpServletRequest request)
             throws MyException, JsonProcessingException {
+        if (token == null) {
+            throw new InvalidRequestDataException("No token was input.");
+        }
         VerificationToken verToken = tokenRepository.findByToken(token);
         this.validateToken(verToken);
         User user = userRepository.getByUserId(verToken.getUserId());
         user.setEmailConfirmed(true);
         this.setupSession(session, user, request);
-        userDao.verifyUserEmail(user, verToken);
+        userDao.saveUserAndDeleteToken(user, verToken);
         ProfileInfoDTO profile = getProfileInfoDTO(user);
         return new MsgObjectDTO("Email " + user.getEmail() + " was confirmed.", LocalDateTime.now(), profile);
     }
@@ -212,9 +215,13 @@ public class UserController extends AbstractController {
         return new CommonMsgDTO("Password reset key sent to " + user.getEmail() + ".", LocalDateTime.now());
     }
     @PutMapping(value = "/reset_password")
-    public CommonMsgDTO activatePasswordReset(@RequestParam(value = "token") String token, HttpSession session,
+    public CommonMsgDTO activatePasswordReset(@RequestParam(value = "token", required = false) String token,
+                                              HttpSession session,
                                               HttpServletRequest request)
             throws MyException, JsonProcessingException {
+        if (token == null) {
+            throw new InvalidRequestDataException("No token was input.");
+        }
         @AllArgsConstructor
         class ResetPassInvalidator extends Thread {
             private User u;
@@ -245,7 +252,7 @@ public class UserController extends AbstractController {
         validateToken(verToken);
         User user = userRepository.getByUserId(verToken.getUserId());
         user.setEligibleForPasswordReset(true);
-        userRepository.save(user);
+        userDao.saveUserAndDeleteToken(user, verToken);
         this.setupSession(session, user, request);
         new ResetPassInvalidator(user, session, request.getRemoteAddr()).start();
         return new CommonMsgDTO("User set for password reset.", LocalDateTime.now());
