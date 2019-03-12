@@ -1,5 +1,6 @@
 package finalproject.financetracker.controller;
 
+import finalproject.financetracker.exceptions.NotFoundException;
 import finalproject.financetracker.model.daos.ImageDao;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,8 +13,11 @@ import java.io.*;
 @RequestMapping(produces = "application/json")
 public class ImageController {
     @GetMapping(value="/images/{name}", produces = "image/png")
-    public byte[] downloadImage(@PathVariable("name") String imageName) throws IOException {
+    public byte[] downloadImage(@PathVariable("name") String imageName) throws IOException, NotFoundException {
         File newImage = new File(ImageDao.ICONS_ABSOLUTE_PATH +imageName);
+        if (!newImage.exists()) {
+            throw new NotFoundException("Image not found.");
+        }
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         FileInputStream fis = new FileInputStream(newImage);
         int nRead;
